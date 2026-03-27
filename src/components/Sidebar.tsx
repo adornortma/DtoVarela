@@ -8,7 +8,7 @@ const Sidebar = () => {
   const pathname = usePathname();
 
   const navItems = [
-    { label: 'Evolución Semanal', icon: FileText, href: '/evolucion' },
+    { label: 'Evolución Semanal', icon: FileText, href: '/' },
   ];
 
   const adminItems = [
