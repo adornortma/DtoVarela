@@ -13,6 +13,11 @@ interface ProcessingSummary {
 }
 
 export default function CargaAdminPage() {
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authError, setAuthError] = useState(false);
+
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [pastedData, setPastedData] = useState<string>('');
   const [pastedCellData, setPastedCellData] = useState<string>('');
@@ -20,6 +25,65 @@ export default function CargaAdminPage() {
   const [summary, setSummary] = useState<ProcessingSummary | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearStatus, setClearStatus] = useState<string | null>(null);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (user === 'adornor' && pass === 'Bera4545') {
+       setIsLoggedIn(true);
+       setAuthError(false);
+    } else {
+       setAuthError(true);
+    }
+  };
+
+  if (!isLoggedIn) {
+     return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '20px' }}>
+            <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', border: '1px solid #eef2f6', width: '100%', maxWidth: '400px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <div style={{ width: '64px', height: '64px', backgroundColor: 'var(--movistar-blue)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto 16px', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
+                        <Info size={32} />
+                    </div>
+                    <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>Acceso Restringido</h2>
+                    <p style={{ color: '#666', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>Solo personal autorizado</p>
+                </div>
+
+                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Usuario</label>
+                        <input 
+                            type="text" 
+                            value={user}
+                            onChange={(e) => setUser(e.target.value)}
+                            placeholder="Usuario"
+                            style={{ padding: '16px', borderRadius: '12px', border: '2px solid #eef2f6', outline: 'none', fontWeight: '700', color: '#1a1a1a' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contraseña</label>
+                        <input 
+                            type="password" 
+                            value={pass}
+                            // @ts-ignore
+                            onChange={(e) => setPass(e.target.value)}
+                            placeholder="••••••••"
+                            style={{ padding: '16px', borderRadius: '12px', border: '2px solid #eef2f6', outline: 'none', fontWeight: '700', color: '#1a1a1a' }}
+                        />
+                    </div>
+                    {authError && (
+                        <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: '800', textAlign: 'center' }}>Credenciales incorrectas</p>
+                    )}
+                    <button 
+                        type="submit"
+                        style={{ backgroundColor: 'var(--movistar-blue)', color: 'white', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '16px', fontWeight: '950', cursor: 'pointer', marginTop: '8px', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.2)' }}
+                    >
+                        Ingresar
+                    </button>
+                </form>
+            </div>
+        </div>
+     );
+  }
 
   // Check if Supabase is configured
   const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
