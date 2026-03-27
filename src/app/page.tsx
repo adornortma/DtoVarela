@@ -11,7 +11,8 @@ import {
   Clock, 
   Zap, 
   CheckCircle2, 
-  Loader2 
+  Loader2,
+  Pencil
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
@@ -174,11 +175,15 @@ const MetricCard = ({
   onUpdate?: (newValue: number) => void
 }) => {
   const [localValue, setLocalValue] = useState<string>(entry.value !== null ? entry.value.toString() : '');
+  const [isFocused, setIsFocused] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const colors = getStatusColors(entry.value, kpi, config);
   
   useEffect(() => {
-    setLocalValue(entry.value !== null ? entry.value.toString() : '');
-  }, [entry.value]);
+    if (!isFocused) {
+      setLocalValue(entry.value !== null ? entry.value.toString() : '');
+    }
+  }, [entry.value, isFocused]);
 
   let trend = null;
   if (entry.value !== null && prevValue != null) {
@@ -194,13 +199,14 @@ const MetricCard = ({
       }
   }
 
-  const handleBlur = () => {
+  const handleSave = async () => {
     const num = parseFloat(localValue.replace(',', '.'));
     if (!isNaN(num) && num !== entry.value) {
-      onUpdate?.(num);
-    } else if (localValue === '') {
-      // Logic for deleting? Keep as is for now
+      setIsSaving(true);
+      await onUpdate?.(num);
+      setIsSaving(false);
     }
+    setIsFocused(false);
   };
 
   return (
@@ -215,26 +221,64 @@ const MetricCard = ({
         justifyContent: 'center',
         position: 'relative',
         boxShadow: entry.value !== null ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
-        border: '1px solid rgba(255,255,255,0.2)'
+        border: isFocused ? '2px solid var(--movistar-blue)' : '1px solid rgba(255,255,255,0.2)',
+        transition: 'all 0.2s',
+        cursor: isEditable ? 'text' : 'default'
       }}>
-        {isEditable ? (
-          <input 
-            type="text"
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleBlur}
-            style={{
-              width: '80%',
-              background: 'transparent',
-              border: 'none',
-              textAlign: 'center',
-              fontSize: '17px',
-              fontWeight: '800',
-              color: colors.text,
-              outline: 'none',
-              padding: 0
-            }}
-          />
+        {isEditable && !isFocused && !isSaving && (
+          <div style={{ position: 'absolute', top: '4px', right: '4px', opacity: 0.5 }}>
+            <Pencil size={10} />
+          </div>
+        )}
+
+        {isSaving ? (
+            <Loader2 size={16} className="animate-spin" color="var(--movistar-blue)" />
+        ) : isEditable ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '0 4px' }}>
+            <input 
+              type="text"
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={(e) => {
+                // Prevent immediate blur if clicking the check button
+                if (e.relatedTarget?.getAttribute('data-save-btn')) return;
+                handleSave();
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                textAlign: 'center',
+                fontSize: '17px',
+                fontWeight: '800',
+                color: colors.text,
+                outline: 'none',
+                padding: 0
+              }}
+            />
+            {isFocused && (
+                <button 
+                  data-save-btn="true"
+                  onClick={handleSave}
+                  style={{ 
+                    position: 'absolute', 
+                    right: '4px', 
+                    background: '#10b981', 
+                    border: 'none', 
+                    borderRadius: '4px', 
+                    color: 'white', 
+                    padding: '2px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                    <CheckCircle2 size={12} />
+                </button>
+            )}
+          </div>
         ) : (
           <span style={{ 
               fontSize: '17px', 
@@ -247,7 +291,7 @@ const MetricCard = ({
           </span>
         )}
         
-        {trend && (
+        {trend && !isFocused && (
             <div style={{ 
                 fontSize: '10px', 
                 fontWeight: '700', 
