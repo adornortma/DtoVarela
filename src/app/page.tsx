@@ -1,22 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, TrendingUp, BarChart3, ArrowUpRight, ArrowDownRight, Clock, Zap, CheckCircle2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  TrendingUp, 
+  BarChart3, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  Clock, 
+  Zap, 
+  CheckCircle2, 
+  Loader2 
+} from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
-import { useEffect } from 'react';
 
 // --- Types ---
 type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
 
+interface MetricEntry {
+  value: number | null;
+  id?: string; // Supabase row ID
+  date: string; // The specific date for this week and tech
+}
+
 interface MetricData {
-  s1: number | null;
-  s2: number | null;
-  s3: number | null;
-  s4: number | null;
+  s1: MetricEntry;
+  s2: MetricEntry;
+  s3: MetricEntry;
+  s4: MetricEntry;
 }
 
 interface ItemRow {
+  id?: string; // Tecnico ID or Cell Name
   name: string;
   metrics: Record<KpiType, MetricData>;
   isCell: boolean;
@@ -34,7 +51,6 @@ interface KpiConfigItem {
     targets: { green: number; yellow: number; reverse?: boolean };
 }
 
-// Default config (updated from DB later)
 const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
   resolucion: { label: 'Resolución', unit: '%', targets: { green: 75, yellow: 70 } },
   reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4, yellow: 4.49, reverse: true } },
@@ -54,7 +70,6 @@ const getWeekOfDate = (date: Date): 's1' | 's2' | 's3' | 's4' => {
 const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
   if (value === null) return { bg: '#f1f5f9', text: '#666' };
   const { targets } = config[kpi];
-  
   const TEXT_DARK = '#1a1a1a';
 
   if (targets.reverse) {
@@ -70,7 +85,7 @@ const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiT
 
 const calculateAverage = (metrics: MetricData): number | null => {
   if (!metrics) return null;
-  const values = [metrics.s1, metrics.s2, metrics.s3, metrics.s4].filter(v => v !== null) as number[];
+  const values = [metrics.s1.value, metrics.s2.value, metrics.s3.value, metrics.s4.value].filter(v => v !== null) as number[];
   if (values.length === 0) return null;
   return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
 };
@@ -141,12 +156,33 @@ const DistrictOverview = ({ config }: { config: Record<KpiType, KpiConfigItem> }
   );
 };
 
-const MetricCard = ({ value, prevValue, kpi, unit, config }: { value: number | null, prevValue?: number | null, kpi: KpiType, unit: string, config: Record<KpiType, KpiConfigItem> }) => {
-  const colors = getStatusColors(value, kpi, config);
+const MetricCard = ({ 
+  entry, 
+  prevValue, 
+  kpi, 
+  unit, 
+  config, 
+  isEditable = false, 
+  onUpdate 
+}: { 
+  entry: MetricEntry, 
+  prevValue?: number | null, 
+  kpi: KpiType, 
+  unit: string, 
+  config: Record<KpiType, KpiConfigItem>,
+  isEditable?: boolean,
+  onUpdate?: (newValue: number) => void
+}) => {
+  const [localValue, setLocalValue] = useState<string>(entry.value !== null ? entry.value.toString() : '');
+  const colors = getStatusColors(entry.value, kpi, config);
   
+  useEffect(() => {
+    setLocalValue(entry.value !== null ? entry.value.toString() : '');
+  }, [entry.value]);
+
   let trend = null;
-  if (value !== null && prevValue != null) {
-      const diff = value - prevValue;
+  if (entry.value !== null && prevValue != null) {
+      const diff = entry.value - prevValue;
       const isBetter = config[kpi].targets.reverse ? diff < 0 : diff > 0;
       const Icon = isBetter ? ArrowUpRight : ArrowDownRight;
       if (Math.abs(diff) > 0.05) {
@@ -158,6 +194,15 @@ const MetricCard = ({ value, prevValue, kpi, unit, config }: { value: number | n
       }
   }
 
+  const handleBlur = () => {
+    const num = parseFloat(localValue.replace(',', '.'));
+    if (!isNaN(num) && num !== entry.value) {
+      onUpdate?.(num);
+    } else if (localValue === '') {
+      // Logic for deleting? Keep as is for now
+    }
+  };
+
   return (
     <td style={{ padding: '4px' }}>
       <div style={{
@@ -168,21 +213,39 @@ const MetricCard = ({ value, prevValue, kpi, unit, config }: { value: number | n
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '0px',
-        transition: 'all 0.2s',
         position: 'relative',
-        boxShadow: value !== null ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
+        boxShadow: entry.value !== null ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
         border: '1px solid rgba(255,255,255,0.2)'
       }}>
-        <span style={{ 
-            fontSize: '17px', 
-            fontWeight: '800', 
-            color: colors.text,
-            letterSpacing: '-0.3px',
-            lineHeight: '1'
-        }}>
-          {value !== null ? `${value}${unit}` : '-'}
-        </span>
+        {isEditable ? (
+          <input 
+            type="text"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleBlur}
+            style={{
+              width: '80%',
+              background: 'transparent',
+              border: 'none',
+              textAlign: 'center',
+              fontSize: '17px',
+              fontWeight: '800',
+              color: colors.text,
+              outline: 'none',
+              padding: 0
+            }}
+          />
+        ) : (
+          <span style={{ 
+              fontSize: '17px', 
+              fontWeight: '800', 
+              color: colors.text,
+              letterSpacing: '-0.3px',
+              lineHeight: '1'
+          }}>
+            {entry.value !== null ? `${entry.value}${unit}` : '-'}
+          </span>
+        )}
         
         {trend && (
             <div style={{ 
@@ -203,7 +266,17 @@ const MetricCard = ({ value, prevValue, kpi, unit, config }: { value: number | n
   );
 };
 
-const CellGroup = ({ row, kpi, config }: { row: ItemRow, kpi: KpiType, config: Record<KpiType, KpiConfigItem> }) => {
+const CellGroup = ({ 
+  row, 
+  kpi, 
+  config, 
+  onUpdateMetric 
+}: { 
+  row: ItemRow, 
+  kpi: KpiType, 
+  config: Record<KpiType, KpiConfigItem>,
+  onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const metrics = row.metrics[kpi];
   const unit = config[kpi].unit;
@@ -268,10 +341,10 @@ const CellGroup = ({ row, kpi, config }: { row: ItemRow, kpi: KpiType, config: R
                             <span style={{ fontSize: '10px', color: '#666', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Célula Operativa</span>
                         </div>
                     </td>
-                    <MetricCard value={metrics.s1} kpi={kpi} unit={unit} config={config} />
-                    <MetricCard value={metrics.s2} prevValue={metrics.s1} kpi={kpi} unit={unit} config={config} />
-                    <MetricCard value={metrics.s3} prevValue={metrics.s2} kpi={kpi} unit={unit} config={config} />
-                    <MetricCard value={metrics.s4} prevValue={metrics.s3} kpi={kpi} unit={unit} config={config} />
+                    <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
+                    <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
+                    <MetricCard entry={metrics.s3} prevValue={metrics.s2.value} kpi={kpi} unit={unit} config={config} />
+                    <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
                     <td style={{ padding: '8px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '52px' }}>
                             <span style={{ fontSize: '18px', fontWeight: '950', color: '#1a1a1a' }}>{average !== null ? `${average}${unit}` : '-'}</span>
@@ -289,10 +362,21 @@ const CellGroup = ({ row, kpi, config }: { row: ItemRow, kpi: KpiType, config: R
                                 <span style={{ fontSize: '13px', color: '#333', fontWeight: '700' }}>{tech.name}</span>
                             </div>
                         </td>
-                        <MetricCard value={tech.metrics[kpi].s1} kpi={kpi} unit={unit} config={config} />
-                        <MetricCard value={tech.metrics[kpi].s2} prevValue={tech.metrics[kpi].s1} kpi={kpi} unit={unit} config={config} />
-                        <MetricCard value={tech.metrics[kpi].s3} prevValue={tech.metrics[kpi].s2} kpi={kpi} unit={unit} config={config} />
-                        <MetricCard value={tech.metrics[kpi].s4} prevValue={tech.metrics[kpi].s3} kpi={kpi} unit={unit} config={config} />
+                        {(['s1', 's2', 's3', 's4'] as const).map((s, idx) => {
+                           const prevS = idx > 0 ? (['s1', 's2', 's3', 's4'] as const)[idx-1] : null;
+                           return (
+                             <MetricCard 
+                               key={s}
+                               entry={tech.metrics[kpi][s]} 
+                               prevValue={prevS ? tech.metrics[kpi][prevS].value : null} 
+                               kpi={kpi} 
+                               unit={unit} 
+                               config={config} 
+                               isEditable={kpi === 'puntualidad' && tech.id !== undefined}
+                               onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[kpi][s].date, val, row.name)}
+                             />
+                           );
+                        })}
                         <td style={{ padding: '8px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '52px' }}>
                                 <span style={{ fontSize: '13px', fontWeight: '800', color: '#666' }}>{calculateAverage(tech.metrics[kpi]) !== null ? `${calculateAverage(tech.metrics[kpi])}${unit}` : '-'}</span>
@@ -334,166 +418,208 @@ export default function Home() {
     fetchConfig();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      
-      const monthIndex = MONTHS.indexOf(selectedMonth);
-      const year = new Date().getFullYear();
-      const startDate = new Date(year, monthIndex, 1).toISOString();
-      const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59).toISOString();
+  const fetchData = async () => {
+    setLoading(true);
+    
+    const monthIndex = MONTHS.indexOf(selectedMonth);
+    const year = new Date().getFullYear();
+    const startDate = new Date(year, monthIndex, 1).toISOString();
+    const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59).toISOString();
 
-      let metrics: any[] = [];
-      let cellTotals: any[] = [];
+    const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (isSupabaseConfigured) {
+      const { data: dbMetrics, error } = await supabase
+        .from('metricas')
+        .select(`
+          *,
+          tecnicos (
+            id,
+            nombre,
+            apellido
+          )
+        `)
+        .gte('fecha', startDate)
+        .lte('fecha', endDate);
 
-      if (isSupabaseConfigured) {
-        const { data: dbMetrics, error } = await supabase
-          .from('metricas')
-          .select(`
-            *,
-            tecnicos (
-              nombre,
-              apellido
-            )
-          `)
-          .gte('fecha', startDate)
-          .lte('fecha', endDate);
+      const metrics = dbMetrics || [];
 
-        metrics = dbMetrics || [];
+      const { data: dbCellTotals } = await supabase
+        .from('metricas_celula')
+        .select('*')
+        .gte('fecha', startDate)
+        .lte('fecha', endDate);
 
-        const { data: dbCellTotals } = await supabase
-          .from('metricas_celula')
-          .select('*')
-          .gte('fecha', startDate)
-          .lte('fecha', endDate);
+      const cellTotals = dbCellTotals || [];
 
-        cellTotals = dbCellTotals || [];
-
-        if (error) {
-          console.error('Error fetching data:', error);
-          setLoading(false);
-          return;
-        }
-      } else {
-        // MOCK DATA FALLBACK
-        if (selectedMonth === 'Marzo') {
-          import('@/lib/data').then(({ mockWeeklyStats }) => {
-            const simulatedMetrics = mockWeeklyStats.map(s => ({
-              ...s,
-              fecha: `2026-03-${(mockWeeklyStats.indexOf(s) % 4) * 7 + 1}`,
-              reitero: s.reiteros,
-              resolucion: s.resolucion,
-              puntualidad: s.puntualidad,
-              productividad: s.productividad,
-              tecnicos: { 
-                apellido: s.tecnico.split(',')[0], 
-                nombre: s.tecnico.split(',')[1]?.trim() || s.tecnico 
-              }
-            }));
-            setData(processData(simulatedMetrics, []));
-            setLoading(false);
-          });
-          return;
-        } else {
-            setData([]);
-            setLoading(false);
-            return;
-        }
+      if (error) {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+        return;
       }
+      setData(processData(metrics, cellTotals, monthIndex, year));
+    } else {
+      // MOCK DATA FALLBACK
+      if (selectedMonth === 'Marzo') {
+        const { mockWeeklyStats } = await import('@/lib/data');
+        const simulatedMetrics = mockWeeklyStats.map(s => ({
+          ...s,
+          fecha: `2026-03-${(mockWeeklyStats.indexOf(s) % 4) * 7 + 1}`,
+          reitero: s.reiteros,
+          resolucion: s.resolucion,
+          puntualidad: s.puntualidad,
+          productividad: s.productividad,
+          tecnicos: { 
+            id: 'mock-' + s.tecnico,
+            apellido: s.tecnico.split(',')[0], 
+            nombre: s.tecnico.split(',')[1]?.trim() || s.tecnico 
+          }
+        }));
+        setData(processData(simulatedMetrics, [], 2, 2026));
+      } else {
+          setData([]);
+      }
+    }
+    setLoading(false);
+  };
 
-      setData(processData(metrics, cellTotals));
-      setLoading(false);
-    };
-
-    const processData = (metrics: any[], cellTotals: any[]) => {
-      const cellMap: Record<string, ItemRow> = {};
-
-      metrics.forEach(m => {
-        const cellName = m.celula;
-        const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
-        const week = getWeekOfDate(new Date(m.fecha));
-
-        if (!cellMap[cellName]) {
-          cellMap[cellName] = {
-            name: cellName,
-            isCell: true,
-            metrics: {
-              reiteros: { s1: null, s2: null, s3: null, s4: null },
-              resolucion: { s1: null, s2: null, s3: null, s4: null },
-              puntualidad: { s1: null, s2: null, s3: null, s4: null },
-              productividad: { s1: null, s2: null, s3: null, s4: null },
-            },
-            technicians: []
-          };
-        }
-
-        const cell = cellMap[cellName];
-        let tech = cell.technicians?.find(t => t.name === techName);
-
-        if (!tech) {
-          tech = {
-            name: techName,
-            isCell: false,
-            metrics: {
-              reiteros: { s1: null, s2: null, s3: null, s4: null },
-              resolucion: { s1: null, s2: null, s3: null, s4: null },
-              puntualidad: { s1: null, s2: null, s3: null, s4: null },
-              productividad: { s1: null, s2: null, s3: null, s4: null },
-            }
-          };
-          cell.technicians?.push(tech);
-        }
-
-        tech.metrics.reiteros[week] = m.reitero;
-        tech.metrics.resolucion[week] = m.resolucion;
-        tech.metrics.puntualidad[week] = m.puntualidad;
-        tech.metrics.productividad[week] = m.productividad;
-      });
-
-      cellTotals.forEach(ct => {
-        const week = getWeekOfDate(new Date(ct.fecha));
-        if (!cellMap[ct.celula]) {
-          cellMap[ct.celula] = {
-            name: ct.celula,
-            isCell: true,
-            metrics: {
-              reiteros: { s1: null, s2: null, s3: null, s4: null },
-              resolucion: { s1: null, s2: null, s3: null, s4: null },
-              puntualidad: { s1: null, s2: null, s3: null, s4: null },
-              productividad: { s1: null, s2: null, s3: null, s4: null },
-            },
-            technicians: []
-          };
-        }
-        
-        const cell = cellMap[ct.celula];
-        cell.metrics.reiteros[week] = ct.reitero;
-        cell.metrics.resolucion[week] = ct.resolucion;
-        cell.metrics.puntualidad[week] = ct.puntualidad;
-        cell.metrics.productividad[week] = ct.productividad;
-      });
-
-      Object.values(cellMap).forEach(cell => {
-          (['reiteros', 'resolucion', 'puntualidad', 'productividad'] as KpiType[]).forEach(kpi => {
-              ['s1', 's2', 's3', 's4'].forEach(w => {
-                  const week = w as keyof MetricData;
-                  if (cell.metrics[kpi][week] === null) {
-                    const techValues = cell.technicians?.map(t => t.metrics[kpi][week]).filter(v => v !== null) as number[];
-                    if (techValues.length > 0) {
-                        cell.metrics[kpi][week] = parseFloat((techValues.reduce((a, b) => a + b, 0) / techValues.length).toFixed(1));
-                    }
-                  }
-              });
-          });
-      });
-
-      return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
-    };
-
+  useEffect(() => {
     fetchData();
   }, [selectedMonth]);
+
+  const processData = (metrics: any[], cellTotals: any[], month: number, year: number) => {
+    const cellMap: Record<string, ItemRow> = {};
+
+    const createEmptyMetricData = (m: number, y: number): MetricData => {
+      return {
+        s1: { value: null, date: new Date(Date.UTC(y, m, 1)).toISOString().split('T')[0] },
+        s2: { value: null, date: new Date(Date.UTC(y, m, 8)).toISOString().split('T')[0] },
+        s3: { value: null, date: new Date(Date.UTC(y, m, 15)).toISOString().split('T')[0] },
+        s4: { value: null, date: new Date(Date.UTC(y, m, 22)).toISOString().split('T')[0] },
+      };
+    };
+
+    metrics.forEach(m => {
+      const cellName = m.celula;
+      const techId = m.tecnicos?.id;
+      const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
+      const week = getWeekOfDate(new Date(m.fecha));
+
+      if (!cellMap[cellName]) {
+        cellMap[cellName] = {
+          name: cellName,
+          isCell: true,
+          metrics: {
+            reiteros: createEmptyMetricData(month, year),
+            resolucion: createEmptyMetricData(month, year),
+            puntualidad: createEmptyMetricData(month, year),
+            productividad: createEmptyMetricData(month, year),
+          },
+          technicians: []
+        };
+      }
+
+      const cell = cellMap[cellName];
+      let tech = cell.technicians?.find(t => t.id === techId || t.name === techName);
+
+      if (!tech) {
+        tech = {
+          id: techId,
+          name: techName,
+          isCell: false,
+          metrics: {
+            reiteros: createEmptyMetricData(month, year),
+            resolucion: createEmptyMetricData(month, year),
+            puntualidad: createEmptyMetricData(month, year),
+            productividad: createEmptyMetricData(month, year),
+          }
+        };
+        cell.technicians?.push(tech);
+      }
+
+      tech.metrics.reiteros[week] = { value: m.reitero, id: m.id, date: m.fecha };
+      tech.metrics.resolucion[week] = { value: m.resolucion, id: m.id, date: m.fecha };
+      tech.metrics.puntualidad[week] = { value: m.puntualidad, id: m.id, date: m.fecha };
+      tech.metrics.productividad[week] = { value: m.productividad, id: m.id, date: m.fecha };
+    });
+
+    cellTotals.forEach(ct => {
+      const week = getWeekOfDate(new Date(ct.fecha));
+      if (!cellMap[ct.celula]) {
+        cellMap[ct.celula] = {
+          name: ct.celula,
+          isCell: true,
+          metrics: {
+            reiteros: createEmptyMetricData(month, year),
+            resolucion: createEmptyMetricData(month, year),
+            puntualidad: createEmptyMetricData(month, year),
+            productividad: createEmptyMetricData(month, year),
+          },
+          technicians: []
+        };
+      }
+      
+      const cell = cellMap[ct.celula];
+      cell.metrics.reiteros[week] = { value: ct.reitero, id: ct.id, date: ct.fecha };
+      cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
+      cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
+      cell.metrics.productividad[week] = { value: ct.productividad, id: ct.id, date: ct.fecha };
+    });
+
+    // Auto-calculate aggregated cell averages if NO cell_metric row exists for that week
+    Object.values(cellMap).forEach(cell => {
+        (['reiteros', 'resolucion', 'puntualidad', 'productividad'] as KpiType[]).forEach(kpi => {
+            (['s1', 's2', 's3', 's4'] as const).forEach(week => {
+                if (cell.metrics[kpi][week].value === null) {
+                  const techValues = cell.technicians?.map(t => t.metrics[kpi][week].value).filter(v => v !== null) as number[];
+                  if (techValues.length > 0) {
+                      cell.metrics[kpi][week].value = parseFloat((techValues.reduce((a, b) => a + b, 0) / techValues.length).toFixed(1));
+                  }
+                }
+            });
+        });
+    });
+
+    return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const updatePuntualidad = async (techId: string, date: string, value: number, celula: string) => {
+    if (techId.startsWith('mock-')) return;
+
+    try {
+      // Find if we already have a metrics row for this tech and date
+      const { data: existing } = await supabase
+        .from('metricas')
+        .select('id')
+        .eq('tecnico_id', techId)
+        .eq('fecha', date)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('metricas')
+          .update({ puntualidad: value })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('metricas')
+          .insert({
+            tecnico_id: techId,
+            fecha: date,
+            celula: celula,
+            puntualidad: value,
+            resolucion: 0,
+            reitero: 0,
+            productividad: 0
+          });
+      }
+      
+      // Refresh data to update local state and averages
+      fetchData();
+    } catch (err) {
+      console.error('Error updating metric:', err);
+    }
+  };
 
   return (
     <div style={{ 
@@ -641,7 +767,13 @@ export default function Home() {
                       <p style={{ fontWeight: '700', color: '#94a3b8' }}>No hay datos registrados para este mes.</p>
                   </div>
               ) : data.map((row) => (
-                  <CellGroup key={row.name} row={row} kpi={selectedKpi} config={kpiConfig} />
+                  <CellGroup 
+                    key={row.name} 
+                    row={row} 
+                    kpi={selectedKpi} 
+                    config={kpiConfig} 
+                    onUpdateMetric={updatePuntualidad}
+                  />
               ))}
           </div>
       </div>
