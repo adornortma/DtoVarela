@@ -25,9 +25,11 @@ const Sidebar = () => {
       display: 'flex',
       flexDirection: 'column',
       gap: '48px',
-      position: 'sticky',
+      position: 'fixed',
+      left: 0,
       top: 0,
-      borderRight: '1px solid rgba(255, 255, 255, 0.1)'
+      borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+      zIndex: 10
     }}>
       <div style={{
        display: 'flex',

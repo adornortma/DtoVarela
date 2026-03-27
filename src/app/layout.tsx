@@ -16,9 +16,11 @@ export default function RootLayout({
     <html lang="es">
       <body>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
-          <Sidebar />
+          <div style={{ width: '280px', flexShrink: 0 }}>
+             <Sidebar />
+          </div>
           <main style={{ flex: 1, backgroundColor: 'var(--background)' }}>
-            {children}
+             {children}
           </main>
         </div>
       </body>

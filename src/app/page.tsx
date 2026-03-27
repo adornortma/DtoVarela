@@ -489,7 +489,7 @@ export default function Home() {
           });
       });
 
-      return Object.values(cellMap);
+      return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
     };
 
     fetchData();
