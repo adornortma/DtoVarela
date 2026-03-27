@@ -77,6 +77,70 @@ const calculateAverage = (metrics: MetricData): number | null => {
 
 // --- UI Components ---
 
+const DistrictOverview = ({ config }: { config: Record<KpiType, KpiConfigItem> }) => {
+  const stats = [
+    { kpi: 'resolucion' as KpiType, value: 76.21, icon: CheckCircle2, color: '#86efac' },
+    { kpi: 'reiteros' as KpiType, value: 5.21, icon: BarChart3, color: '#fca5a5' },
+    { kpi: 'puntualidad' as KpiType, value: 84.4, icon: Clock, color: '#86efac' },
+    { kpi: 'productividad' as KpiType, value: 5.51, icon: Zap, color: '#fde047' },
+  ];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
+      {stats.map((stat) => {
+        const colors = getStatusColors(stat.value, stat.kpi, config);
+        const { label, unit, targets } = config[stat.kpi];
+        return (
+          <div key={stat.kpi} style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '24px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
+                <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8' }}>Objetivo: {targets.green}{unit}</p>
+              </div>
+              <div style={{ 
+                backgroundColor: `${colors.bg}44`, 
+                padding: '8px', 
+                borderRadius: '12px',
+                color: colors.bg === '#f1f5f9' ? '#64748b' : colors.bg === '#86efac' ? '#059669' : colors.bg === '#fde047' ? '#d97706' : '#dc2626'
+              }}>
+                <stat.icon size={20} />
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <h3 style={{ fontSize: '32px', fontWeight: '950', color: '#003366', letterSpacing: '-1px' }}>{stat.value}{unit}</h3>
+            </div>
+
+            <div style={{ 
+                width: '100%', 
+                height: '4px', 
+                backgroundColor: '#f1f5f9', 
+                borderRadius: '2px', 
+                marginTop: '16px',
+                overflow: 'hidden'
+            }}>
+                <div style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    backgroundColor: colors.bg === '#f1f5f9' ? '#e2e8f0' : colors.bg,
+                    borderRadius: '2px'
+                }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  );
+};
+
 
 const MetricCard = ({ value, prevValue, kpi, unit, config }: { value: number | null, prevValue?: number | null, kpi: KpiType, unit: string, config: Record<KpiType, KpiConfigItem> }) => {
   const colors = getStatusColors(value, kpi, config);
@@ -488,6 +552,8 @@ export default function EvolucionPage() {
             <span style={{ backgroundColor: '#1a1a1a', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '900' }}>{kpiConfig[selectedKpi].label}</span>
         </div>
       </header>
+
+      <DistrictOverview config={kpiConfig} />
 
       {/* 1. FILTRO DE MES */}
       <section style={{ marginBottom: '24px' }}>
