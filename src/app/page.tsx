@@ -382,7 +382,6 @@ const CellGroup = ({
                             }}>
                                 {row.name}
                             </span>
-                            <span style={{ fontSize: '10px', color: '#666', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Célula Operativa</span>
                         </div>
                     </td>
                     <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
@@ -697,7 +696,7 @@ export default function Home() {
                 color: '#1a1a1a',
                 letterSpacing: '-1px',
                 lineHeight: '1'
-                }}>Matriz Operativa</h1>
+                }}>Dashboard Operativo</h1>
                 <p style={{ color: '#666', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>Evolución Semanal del Distrito Varela</p>
             </div>
         </div>
