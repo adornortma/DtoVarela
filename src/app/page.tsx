@@ -85,14 +85,18 @@ const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiT
 };
 
 const getMondayOfNextWeek = (year: number, monthIndex: number, weekIndex: number) => {
-    // Week 1 starts at 1, Week 2 at 8, etc.
-    const day = (weekIndex * 7) + 1;
-    const date = new Date(year, monthIndex, day);
-    // Adjust to Monday
-    const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
-    const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
-    date.setDate(date.getDate() + diff);
-    return date;
+    // Find the first Monday of the month
+    const firstDayOfMonth = new Date(year, monthIndex, 1);
+    let firstMonday = new Date(year, monthIndex, 1);
+    const dayOfWeek = firstMonday.getDay(); // 0 (Sun) to 6 (Sat)
+    
+    // diff to reach next Monday: if Sun(0) -> +1, if Mon(1) -> 0, if Tue(2) -> +6, etc.
+    const diff = (dayOfWeek === 1 ? 0 : (dayOfWeek === 0 ? 1 : 8 - dayOfWeek));
+    firstMonday.setDate(firstMonday.getDate() + diff);
+    
+    const result = new Date(firstMonday);
+    result.setDate(firstMonday.getDate() + (weekIndex * 7));
+    return result;
 };
 
 const calculateAverage = (metrics: MetricData): number | null => {
@@ -127,7 +131,7 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
           return (
             <div key={stat.kpi} style={{
               backgroundColor: 'white',
-              padding: '24px',
+              padding: '28px 32px',
               borderRadius: '24px',
               border: '1px solid #e2e8f0',
               boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
@@ -136,8 +140,8 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
-                  <p style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
-                  <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8' }}>Objetivo: {targets.green}{unit}</p>
+                  <p style={{ fontSize: '11px', fontWeight: '900', color: '#334155', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
+                  <p style={{ fontSize: '10px', fontWeight: '700', color: '#475569' }}>Objetivo: {targets.green}{unit}</p>
                 </div>
                 <div style={{ 
                   backgroundColor: `${colors.bg}44`, 
@@ -469,18 +473,23 @@ export default function Home() {
     const fetchConfig = async () => {
         const { data: dbConfig } = await supabase.from('kpi_thresholds').select('*');
         if (dbConfig) {
-            const newConfig = { ...DEFAULT_KPI_CONFIG };
-            dbConfig.forEach(item => {
-                const kpi = item.kpi_name as KpiType;
-                if (newConfig[kpi]) {
-                    newConfig[kpi].targets = {
-                        green: Number(item.green_val),
-                        yellow: Number(item.yellow_val),
-                        reverse: kpi === 'reiteros'
-                    };
-                }
-            });
-            setKpiConfig(newConfig);
+          const newConfig = { ...DEFAULT_KPI_CONFIG };
+          dbConfig.forEach((row: any) => {
+            if (newConfig[row.kpi as KpiType]) {
+              newConfig[row.kpi as KpiType].targets = {
+                green: row.verde,
+                yellow: row.amarillo,
+                reverse: row.kpi === 'reiteros'
+              };
+            }
+          });
+          
+          // Force 4.5 if DB has 4 (user request fix)
+          if (newConfig.reiteros.targets.green === 4) {
+             newConfig.reiteros.targets.green = 4.5;
+          }
+
+          setKpiConfig(newConfig);
         }
 
         // Fetch District KPIs (most recent row)
@@ -666,7 +675,7 @@ export default function Home() {
       const Monday = getMondayOfNextWeek(currentYear, currentMonthIdx, i);
       const day = Monday.getDate().toString().padStart(2, '0');
       const month = (Monday.getMonth() + 1).toString().padStart(2, '0');
-      return `Semana ${i + 1} - Lun ${day}/${month}`;
+      return `SEMANA ${i + 1} - LUN ${day}/${month}`;
   });
 
   return (
@@ -691,7 +700,7 @@ export default function Home() {
 
       <section style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          {MONTHS.map(month => (
+          {MONTHS.filter(m => m === 'Marzo').map(month => (
             <button key={month} onClick={() => setSelectedMonth(month)} style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: selectedMonth === month ? '900' : '700', backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', color: selectedMonth === month ? 'white' : '#666', transition: 'all 0.2s', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(1, 157, 244, 0.2)' : 'none' }}>{month}</button>
           ))}
         </div>
@@ -724,7 +733,7 @@ export default function Home() {
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
-                            <th style={{ padding: '0 20px 12px 20px', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', letterSpacing: '1px' }}>Estructura Organizacional</th>
+                            <th style={{ padding: '0 20px 12px 20px' }}></th>
                             {weekLabels.map(label => (
                                 <th key={label} style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{label}</th>
                             ))}

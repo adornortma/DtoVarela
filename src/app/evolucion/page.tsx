@@ -51,6 +51,19 @@ const getWeekOfDate = (date: Date): 's1' | 's2' | 's3' | 's4' => {
   return 's4';
 };
 
+const getMondayOfNextWeek = (year: number, monthIndex: number, weekIndex: number) => {
+    // Find the first Monday of the month
+    const firstDayOfMonth = new Date(year, monthIndex, 1);
+    let firstMonday = new Date(year, monthIndex, 1);
+    const dayOfWeek = firstMonday.getDay();
+    const diff = (dayOfWeek === 1 ? 0 : (dayOfWeek === 0 ? 1 : 8 - dayOfWeek));
+    firstMonday.setDate(firstMonday.getDate() + diff);
+    
+    const result = new Date(firstMonday);
+    result.setDate(firstMonday.getDate() + (weekIndex * 7));
+    return result;
+};
+
 const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
   if (value === null) return { bg: '#f1f5f9', text: '#666' };
   const { targets } = config[kpi];
@@ -93,7 +106,7 @@ const DistrictOverview = ({ config }: { config: Record<KpiType, KpiConfigItem> }
         return (
           <div key={stat.kpi} style={{
             backgroundColor: 'white',
-            padding: '24px',
+            padding: '28px 32px',
             borderRadius: '24px',
             border: '1px solid #e2e8f0',
             boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
@@ -102,8 +115,8 @@ const DistrictOverview = ({ config }: { config: Record<KpiType, KpiConfigItem> }
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <p style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
-                <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8' }}>Objetivo: {targets.green}{unit}</p>
+                <p style={{ fontSize: '11px', fontWeight: '900', color: '#334155', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
+                <p style={{ fontSize: '10px', fontWeight: '700', color: '#475569' }}>Objetivo: {targets.green}{unit}</p>
               </div>
               <div style={{ 
                 backgroundColor: `${colors.bg}44`, 
@@ -314,22 +327,30 @@ export default function EvolucionPage() {
   const [loading, setLoading] = useState(true);
   const [kpiConfig, setKpiConfig] = useState<Record<KpiType, KpiConfigItem>>(DEFAULT_KPI_CONFIG);
 
+  const currentYear = new Date().getFullYear();
+  const currentMonthIdx = MONTHS.indexOf(selectedMonth);
+
   useEffect(() => {
     const fetchConfig = async () => {
         const { data: dbConfig } = await supabase.from('kpi_thresholds').select('*');
         if (dbConfig) {
-            const newConfig = { ...DEFAULT_KPI_CONFIG };
-            dbConfig.forEach(item => {
-                const kpi = item.kpi_name as KpiType;
-                if (newConfig[kpi]) {
-                    newConfig[kpi].targets = {
-                        green: Number(item.green_val),
-                        yellow: Number(item.yellow_val),
-                        reverse: kpi === 'reiteros'
-                    };
-                }
-            });
-            setKpiConfig(newConfig);
+          const newConfig = { ...DEFAULT_KPI_CONFIG };
+          dbConfig.forEach((row: any) => {
+            if (newConfig[row.kpi as KpiType]) {
+              newConfig[row.kpi as KpiType].targets = {
+                green: Number(row.verde),
+                yellow: Number(row.amarillo),
+                reverse: row.kpi === 'reiteros'
+              };
+            }
+          });
+          
+          // Force 4.5 if DB has 4 (fix for user request)
+          if (newConfig.reiteros.targets.green === 4) {
+             newConfig.reiteros.targets.green = 4.5;
+          }
+
+          setKpiConfig(newConfig);
         }
     };
     fetchConfig();
@@ -558,7 +579,7 @@ export default function EvolucionPage() {
       {/* 1. FILTRO DE MES */}
       <section style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          {MONTHS.map(month => (
+          {MONTHS.filter(m => m === 'Marzo').map(month => (
             <button
               key={month}
               onClick={() => setSelectedMonth(month)}
@@ -629,10 +650,16 @@ export default function EvolucionPage() {
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
-                            <th style={{ padding: '0 20px 12px 20px', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', letterSpacing: '1px' }}>Estructura Organizacional</th>
-                            {['S1', 'S2', 'S3', 'S4'].map(s => (
-                                <th key={s} style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{s}</th>
-                            ))}
+                            <th style={{ padding: '0 20px 12px 20px' }}></th>
+                            {[0, 1, 2, 3].map(i => {
+                                const Monday = getMondayOfNextWeek(currentYear, currentMonthIdx, i);
+                                const day = Monday.getDate().toString().padStart(2, '0');
+                                const month = (Monday.getMonth() + 1).toString().padStart(2, '0');
+                                const label = `SEMANA ${i + 1} - LUN ${day}/${month}`;
+                                return (
+                                    <th key={label} style={{ padding: '0 0 12px 0', fontSize: '10px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{label}</th>
+                                );
+                            })}
                             <th style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#019df4', textTransform: 'uppercase', textAlign: 'center' }}>CONSOLIDADO</th>
                         </tr>
                     </thead>
