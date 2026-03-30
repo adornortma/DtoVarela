@@ -28,8 +28,10 @@ const Sidebar = () => {
       position: 'fixed',
       left: 0,
       top: 0,
+      bottom: 0,
       borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-      zIndex: 10
+      zIndex: 50,
+      overflowY: 'auto'
     }}>
       <div style={{
        display: 'flex',

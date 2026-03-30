@@ -323,12 +323,124 @@ export default function CargaAdminPage() {
     }
   };
 
+  const [distritoKPIs, setDistritoKPIs] = useState({
+    resolucion: '',
+    reiteros: '',
+    puntualidad: '',
+    productividad: ''
+  });
+  const [distritoLoading, setDistritoLoading] = useState(false);
+  const [distritoStatus, setDistritoStatus] = useState<string | null>(null);
+
+  const handleUpdateDistrito = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDistritoLoading(true);
+    setDistritoStatus(null);
+
+    const { error } = await supabase
+      .from('indicadores_distrito')
+      .insert({
+        resolucion: parsePercent(distritoKPIs.resolucion),
+        reiteros: parsePercent(distritoKPIs.reiteros),
+        puntualidad: parsePercent(distritoKPIs.puntualidad),
+        productividad: parsePercent(distritoKPIs.productividad),
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      setDistritoStatus("Error: No se pudieron guardar los indicadores.");
+    } else {
+      setDistritoStatus("Éxito: Indicadores del distrito actualizados.");
+    }
+    setDistritoLoading(false);
+  };
+
   return (
     <div style={{ padding: '40px', maxWidth: '900px', margin: '0 auto', fontFamily: 'var(--font-manrope)' }}>
       <header style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>Sincronización Cloud</h1>
         <p style={{ color: '#666', fontWeight: '600' }}>Carga de KPIs mediante pegado directo desde Excel.</p>
       </header>
+
+      {/* NUEVA SECCIÓN: KPIs DEL DISTRITO */}
+      <div style={{ 
+          backgroundColor: 'white', 
+          padding: '32px', 
+          borderRadius: '24px', 
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)',
+          border: '1px solid #eef2f6',
+          marginBottom: '32px'
+      }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#1a1a1a', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ClipboardCopy size={20} color="var(--movistar-blue)" />
+            KPIs del Distrito
+        </h2>
+        <form onSubmit={handleUpdateDistrito} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b' }}>RESOLUCIÓN (%)</label>
+                <input 
+                    type="text" 
+                    value={distritoKPIs.resolucion}
+                    onChange={(e) => setDistritoKPIs({...distritoKPIs, resolucion: e.target.value})}
+                    placeholder="76,21"
+                    style={{ padding: '12px', borderRadius: '10px', border: '2px solid #eef2f6', fontWeight: '700' }}
+                />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b' }}>REITEROS (%)</label>
+                <input 
+                    type="text" 
+                    value={distritoKPIs.reiteros}
+                    onChange={(e) => setDistritoKPIs({...distritoKPIs, reiteros: e.target.value})}
+                    placeholder="5,21"
+                    style={{ padding: '12px', borderRadius: '10px', border: '2px solid #eef2f6', fontWeight: '700' }}
+                />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b' }}>PUNTUALIDAD (%)</label>
+                <input 
+                    type="text" 
+                    value={distritoKPIs.puntualidad}
+                    onChange={(e) => setDistritoKPIs({...distritoKPIs, puntualidad: e.target.value})}
+                    placeholder="84,4"
+                    style={{ padding: '12px', borderRadius: '10px', border: '2px solid #eef2f6', fontWeight: '700' }}
+                />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b' }}>PRODUCTIVIDAD</label>
+                <input 
+                    type="text" 
+                    value={distritoKPIs.productividad}
+                    onChange={(e) => setDistritoKPIs({...distritoKPIs, productividad: e.target.value})}
+                    placeholder="5,51"
+                    style={{ padding: '12px', borderRadius: '10px', border: '2px solid #eef2f6', fontWeight: '700' }}
+                />
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+                <button 
+                    type="submit" 
+                    disabled={distritoLoading}
+                    style={{ 
+                        width: '100%', 
+                        backgroundColor: distritoLoading ? '#e2e8f0' : '#1a1a1a', 
+                        color: 'white', 
+                        padding: '14px', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        fontWeight: '900', 
+                        cursor: 'pointer' 
+                    }}
+                >
+                    {distritoLoading ? "Actualizando..." : "Actualizar Indicadores del Distrito"}
+                </button>
+                {distritoStatus && (
+                    <p style={{ marginTop: '12px', textAlign: 'center', fontSize: '13px', fontWeight: '800', color: distritoStatus.includes('Error') ? '#ef4444' : '#16a34a' }}>
+                        {distritoStatus}
+                    </p>
+                )}
+            </div>
+        </form>
+      </div>
 
       <div style={{ 
           backgroundColor: 'white', 
