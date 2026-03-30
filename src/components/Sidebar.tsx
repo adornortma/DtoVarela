@@ -125,19 +125,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
             position: 'fixed',
             top: 0,
             left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 51, 102, 0.4)',
-            backdropFilter: 'blur(4px)',
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 51, 102, 0.6)',
+            backdropFilter: 'blur(8px)',
             zIndex: 2000,
             display: 'flex',
-            animation: 'fadeIn 0.3s ease'
+            animation: 'fadeIn 0.2s ease-out'
           }} 
         >
           <div 
             onClick={(e) => e.stopPropagation()}
             style={{ 
-              animation: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              animation: 'slideIn 0.3s cubic-bezier(0, 0, 0.2, 1)',
+              height: '100%'
             }}
           >
             {sidebarContent}
@@ -156,10 +157,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
         }
         .desktop-sidebar {
           display: block;
+          position: sticky;
+          top: 0;
+          flex-shrink: 0;
         }
         @media (max-width: 767px) {
           .desktop-sidebar {
             display: none !important;
+          }
+          body.sidebar-open {
+            overflow: hidden;
           }
         }
       `}</style>

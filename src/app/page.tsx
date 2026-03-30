@@ -124,7 +124,7 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
           <div style={{ width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%' }} />
           Indicadores del distrito (última actualización: {formattedDate})
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
         {stats.map((stat) => {
           const colors = getStatusColors(stat.value, stat.kpi, config);
           const { label, unit, targets } = config[stat.kpi];
@@ -731,19 +731,21 @@ export default function Home() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+      <section style={{ marginBottom: '24px' }}>
+        <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
           {(Object.keys(kpiConfig) as KpiType[]).map(kpi => {
             const isActive = selectedKpi === kpi;
             return (
-                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: '160px', flex: '1 1 200px', padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `2px solid ${isActive ? 'var(--movistar-blue)' : 'transparent'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                  <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={18} /></div>
-                  <span style={{ fontSize: '14px', fontWeight: '900', color: isActive ? '#1a1a1a' : '#666' }}>{kpiConfig[kpi].label}</span>
+                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: '180px', flexShrink: 0, padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? 'var(--card-shadow-hover)' : 'var(--card-shadow)' }}>
+                  <div style={{ color: isActive ? 'var(--movistar-blue)' : '#64748b' }}><BarChart3 size={18} /></div>
+                  <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1a1a1a' : '#64748b' }}>{kpiConfig[kpi].label}</span>
                 </button>
             )
           })}
+        </div>
       </section>
 
-      <div style={{ width: '100%', overflowX: 'auto', backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: 'var(--card-shadow)', border: '1px solid #e2e8f0' }}>
+      <div style={{ width: '100%', overflowX: 'auto', backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: 'var(--card-shadow)', border: '1px solid #cbd5e1' }}>
           <div style={{ minWidth: '950px' }}>
               {!loading && data.length > 0 && (
                 <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginBottom: '8px' }}>
@@ -786,10 +788,16 @@ export default function Home() {
       </div>
 
       <style jsx global>{`
-        ::-webkit-scrollbar { height: 4px; width: 4px; }
+        ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .filter-tabs::-webkit-scrollbar { height: 0px; }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .kpi-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+        @media (min-width: 768px) {
+          .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important; gap: 24px !important; }
+        }
       `}</style>
     </div>
   );
