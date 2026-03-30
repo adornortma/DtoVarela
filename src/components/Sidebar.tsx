@@ -2,111 +2,169 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FileText, Settings, Cloud } from 'lucide-react';
+import { LayoutDashboard, Home, Database, Briefcase, X, Menu } from 'lucide-react';
+import React from 'react';
 
-const Sidebar = () => {
+interface SidebarProps {
+  isMobileOpen?: boolean;
+  onClose?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
 
   const navItems = [
-    { label: 'Evolución Semanal', icon: FileText, href: '/' },
+    { name: 'DASHBOARD DISTRITO', icon: <Home size={20} />, path: '/' },
+    { name: 'MATRIZ DE EVOLUCIÓN', icon: <LayoutDashboard size={20} />, path: '/evolucion' },
+    { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
   ];
 
-  const adminItems = [
-    { label: 'Carga de Datos', icon: Cloud, href: '/admin/carga' },
-  ];
-
-  return (
-    <aside style={{
-      width: '280px',
-      minHeight: '100vh',
+  const sidebarContent = (
+    <div style={{
+      width: '260px',
+      height: '100vh',
       backgroundColor: 'var(--movistar-blue)',
-      padding: '40px 24px',
+      color: 'white',
       display: 'flex',
       flexDirection: 'column',
-      gap: '48px',
-      borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-      zIndex: 50,
-      overflowY: 'auto'
+      padding: '32px 20px',
+      boxShadow: '4px 0 20px rgba(0, 51, 102, 0.1)',
+      zIndex: 1000,
+      position: 'relative'
     }}>
-      <div style={{
-       display: 'flex',
-       alignItems: 'center',
-       gap: '12px'
-      }}>
-        <div style={{
-          width: '32px',
-          height: '32px',
-          backgroundColor: 'white',
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--movistar-blue)',
-          fontWeight: '900',
-          fontSize: '20px'
-        }}>M</div>
-        <span style={{
-          fontFamily: 'var(--font-primary)',
-          fontSize: '18px',
-          fontWeight: '800',
-          color: 'white',
-          letterSpacing: '-0.5px'
-        }}>
-          KPI VARELA
-        </span>
+      {/* Drawer Close Button (Only Mobile) */}
+      {isMobileOpen && (
+        <button 
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            right: '16px',
+            top: '24px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: 'none',
+            color: 'white',
+            padding: '8px',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <X size={20} />
+        </button>
+      )}
+
+      <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ backgroundColor: 'white', padding: '8px', borderRadius: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+          <Briefcase size={24} color="var(--movistar-blue)" strokeWidth={2.5} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontWeight: '950', fontSize: '19px', letterSpacing: '0.5px', lineHeight: '1.1' }}>DISTRITO</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', opacity: '0.8', letterSpacing: '2px', color: '#e0f2fe' }}>F. VARELA</span>
+        </div>
       </div>
 
-      <nav style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
-      }}>
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.path;
           return (
-            <Link key={item.href} href={item.href} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-              color: 'white',
-              fontWeight: isActive ? '700' : '500',
-              transition: 'all 0.2s',
-              opacity: isActive ? 1 : 0.8
-            }}>
-              <item.icon size={20} />
-              <span style={{ fontSize: '14px' }}>{item.label}</span>
+            <Link 
+              key={item.path} 
+              href={item.path}
+              onClick={onClose}
+              style={{
+                textDecoration: 'none',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                padding: '16px 18px',
+                borderRadius: '16px',
+                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                fontWeight: isActive ? '900' : '600',
+                fontSize: '13px',
+                border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent'
+              }}
+            >
+              {item.icon}
+              {item.name}
             </Link>
           );
         })}
       </nav>
 
-      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', marginBottom: '16px' }} />
-        {adminItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link key={item.href} href={item.href} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-              color: 'white',
-              fontWeight: isActive ? '700' : '500',
-              transition: 'all 0.2s',
-              opacity: isActive ? 1 : 0.8
-            }}>
-              <item.icon size={20} />
-              <span style={{ fontSize: '14px' }}>{item.label}</span>
-            </Link>
-          );
-        })}
+      <div style={{ 
+        padding: '20px', 
+        backgroundColor: 'rgba(255, 255, 255, 0.08)', 
+        borderRadius: '20px',
+        marginTop: 'auto',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#4ade80', boxShadow: '0 0 10px #4ade80' }}></div>
+          <span style={{ fontSize: '11px', fontWeight: '900', opacity: '0.9', letterSpacing: '0.5px' }}>SISTEMA ACTIVO</span>
+        </div>
+        <p style={{ fontSize: '11px', opacity: '0.6', fontWeight: '600' }}>v1.5.0 • Producción</p>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <div className="desktop-sidebar">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile Drawer (Overlay) */}
+      {isMobileOpen && (
+        <div 
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 51, 102, 0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 2000,
+            display: 'flex',
+            animation: 'fadeIn 0.3s ease'
+          }} 
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{ 
+              animation: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+        .desktop-sidebar {
+          display: block;
+        }
+        @media (max-width: 767px) {
+          .desktop-sidebar {
+            display: none !important;
+          }
+        }
+      `}</style>
+    </>
   );
 };
 

@@ -403,12 +403,18 @@ const CellGroup = ({
             <tbody>
                 <tr 
                     onClick={() => row.isCell && setIsExpanded(!isExpanded)}
+                    className="table-row-hover"
                     style={{ 
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         backgroundColor: isExpanded ? '#f8fafc' : 'transparent',
                     }}
                 >
+                    <style jsx>{`
+                      .table-row-hover:hover {
+                        background-color: #f1f5f9 !important;
+                      }
+                    `}</style>
                     <td style={{ 
                         padding: '12px 20px', 
                         display: 'flex', 
@@ -716,7 +722,7 @@ export default function Home() {
       <section style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
           {MONTHS.filter(m => m === 'Marzo').map(month => (
-            <button key={month} onClick={() => setSelectedMonth(month)} style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: selectedMonth === month ? '900' : '700', backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', color: selectedMonth === month ? 'white' : '#666', transition: 'all 0.2s', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(1, 157, 244, 0.2)' : 'none' }}>{month}</button>
+            <button key={month} onClick={() => setSelectedMonth(month)} style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: selectedMonth === month ? '900' : '700', backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', color: selectedMonth === month ? 'white' : '#666', transition: 'all 0.2s', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(1, 157, 244, 0.2)' : '0 1px 3px rgba(0,0,0,0.05)' }}>{month}</button>
           ))}
         </div>
       </section>
@@ -726,7 +732,7 @@ export default function Home() {
           {(Object.keys(kpiConfig) as KpiType[]).map(kpi => {
             const isActive = selectedKpi === kpi;
             return (
-                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ flex: 1, padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `2px solid ${isActive ? 'var(--movistar-blue)' : 'transparent'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ flex: 1, padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `2px solid ${isActive ? 'var(--movistar-blue)' : 'transparent'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={18} /></div>
                   <span style={{ fontSize: '14px', fontWeight: '900', color: isActive ? '#1a1a1a' : '#666' }}>{kpiConfig[kpi].label}</span>
                 </button>

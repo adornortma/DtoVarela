@@ -263,13 +263,19 @@ const CellGroup = ({ row, kpi, config }: { row: ItemRow, kpi: KpiType, config: R
             <tbody>
                 <tr 
                     onClick={() => row.isCell && setIsExpanded(!isExpanded)}
+                    className="table-row-hover"
                     style={{ 
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         backgroundColor: isExpanded ? '#f8fafc' : 'transparent',
                     }}
                 >
-                    <td style={{ 
+                    <style jsx>{`
+                      .table-row-hover:hover {
+                        background-color: #f1f5f9 !important;
+                      }
+                    `}</style>
+                      <td style={{ 
                         padding: '12px 20px', 
                         display: 'flex', 
                         alignItems: 'center', 
