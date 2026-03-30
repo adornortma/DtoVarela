@@ -18,7 +18,11 @@ export default function CargaAdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authError, setAuthError] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+
+  React.useEffect(() => {
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+  }, []);
   const [pastedData, setPastedData] = useState<string>('');
   const [pastedCellData, setPastedCellData] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -656,16 +660,6 @@ export default function CargaAdminPage() {
               )}
           </div>
       )}
-
-      <style jsx global>{`
-          .animate-spin {
-              animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-          }
-      `}</style>
     </div>
   );
 }

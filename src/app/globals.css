@@ -26,6 +26,20 @@
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  /* Botones y UI */
+  .btn-primary {
+    background-color: var(--movistar-blue);
+    color: white;
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 }
 
 body {
