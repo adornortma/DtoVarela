@@ -103,6 +103,14 @@ const DistrictOverview = ({ config }: { config: Record<KpiType, KpiConfigItem> }
       {stats.map((stat) => {
         const colors = getStatusColors(stat.value, stat.kpi, config);
         const { label, unit, targets } = config[stat.kpi];
+        
+        const labelStyles: Record<KpiType, { color: string }> = {
+          resolucion: { color: '#059669' },
+          reiteros: { color: '#d97706' },
+          puntualidad: { color: '#dc2626' },
+          productividad: { color: '#a16207' }
+        };
+
         return (
           <div key={stat.kpi} style={{
             backgroundColor: 'white',
@@ -113,10 +121,17 @@ const DistrictOverview = ({ config }: { config: Record<KpiType, KpiConfigItem> }
             position: 'relative',
             overflow: 'hidden'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div>
-                <p style={{ fontSize: '11px', fontWeight: '900', color: '#334155', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
-                <p style={{ fontSize: '10px', fontWeight: '700', color: '#475569' }}>Objetivo: {targets.green}{unit}</p>
+                <p style={{ 
+                  fontSize: '15px', 
+                  fontWeight: '950', 
+                  color: labelStyles[stat.kpi].color, 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.5px', 
+                  marginBottom: '8px' 
+                }}>{label}</p>
+                <p style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>Objetivo: {targets.green}{unit}</p>
               </div>
               <div style={{ 
                 backgroundColor: `${colors.bg}44`, 
