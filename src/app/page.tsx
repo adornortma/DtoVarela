@@ -95,6 +95,13 @@ const getMondayOfNextWeek = (year: number, monthIndex: number, weekIndex: number
     return date;
 };
 
+const calculateAverage = (metrics: MetricData): number | null => {
+  if (!metrics) return null;
+  const values = [metrics.s1.value, metrics.s2.value, metrics.s3.value, metrics.s4.value].filter(v => v !== null) as number[];
+  if (values.length === 0) return null;
+  return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
+};
+
 // --- UI Components ---
 
 const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: any, lastUpdate: string | null }) => {
