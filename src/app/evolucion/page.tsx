@@ -36,7 +36,7 @@ interface KpiConfigItem {
 
 // Default config (updated from DB later)
 const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
-  reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4, yellow: 4.49, reverse: true } },
+  reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4.5, yellow: 5, reverse: true } },
   resolucion: { label: 'Resolución', unit: '%', targets: { green: 75, yellow: 70 } },
   puntualidad: { label: 'Puntualidad', unit: '%', targets: { green: 80, yellow: 70 } },
   productividad: { label: 'Productividad', unit: '', targets: { green: 6, yellow: 5 } },

@@ -16,12 +16,10 @@ export default function RootLayout({
     <html lang="es">
       <body>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
-          <div style={{ width: '280px', flexShrink: 0 }}>
-             <Sidebar />
-          </div>
-          <main style={{ flex: 1, backgroundColor: 'var(--background)' }}>
-             {children}
-          </main>
+           <Sidebar />
+           <main style={{ flex: 1, backgroundColor: 'var(--background)' }}>
+              {children}
+           </main>
         </div>
       </body>
     </html>

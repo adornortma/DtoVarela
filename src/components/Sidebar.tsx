@@ -12,23 +12,18 @@ const Sidebar = () => {
   ];
 
   const adminItems = [
-    { label: 'Umbrales', icon: Settings, href: '/umbrales' },
     { label: 'Carga de Datos', icon: Cloud, href: '/admin/carga' },
   ];
 
   return (
     <aside style={{
       width: '280px',
-      height: '100vh',
+      minHeight: '100vh',
       backgroundColor: 'var(--movistar-blue)',
       padding: '40px 24px',
       display: 'flex',
       flexDirection: 'column',
       gap: '48px',
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      bottom: 0,
       borderRight: '1px solid rgba(255, 255, 255, 0.1)',
       zIndex: 50,
       overflowY: 'auto'
