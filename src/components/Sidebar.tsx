@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Home, Database, Briefcase, X, Menu } from 'lucide-react';
+import { TrendingUp, Home, Database, Briefcase, X, Menu } from 'lucide-react';
 import React from 'react';
 
 interface SidebarProps {
@@ -14,7 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'DASHBOARD DISTRITO', icon: <Home size={20} />, path: '/' },
+    { name: 'Evolución Semanal', icon: <TrendingUp size={20} />, path: '/' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
   ];
 

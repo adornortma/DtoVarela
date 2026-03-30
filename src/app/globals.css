@@ -8,12 +8,12 @@
   --tertiary-foreground: #718096;
   --border: rgba(1, 157, 244, 0.1);
   
-  --movistar-blue: #019df4;
+  --movistar-blue: #019DF4;
   --movistar-green: #5bc500;
   --movistar-tint: rgba(255, 255, 255, 0.2);
   
-  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+  --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 20px 35px -12px rgba(1, 157, 244, 0.1);
 
   --success: #5bc500; 
   --error: #f87171;

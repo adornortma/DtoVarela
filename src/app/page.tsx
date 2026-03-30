@@ -41,10 +41,7 @@ interface ItemRow {
   technicians?: ItemRow[];
 }
 
-const MONTHS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 interface KpiConfigItem {
     label: string;
@@ -52,6 +49,7 @@ interface KpiConfigItem {
     targets: { green: number; yellow: number; reverse?: boolean };
 }
 
+// --- Constants ---
 const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
   resolucion: { label: 'Resolución', unit: '%', targets: { green: 75, yellow: 70 } },
   reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4.5, yellow: 5, reverse: true } },
@@ -108,15 +106,28 @@ const calculateAverage = (metrics: MetricData): number | null => {
 
 // --- UI Components ---
 
-const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: any, lastUpdate: string | null }) => {
-  const stats = [
-    { kpi: 'resolucion' as KpiType, value: districtData?.resolucion ?? 0, icon: CheckCircle2 },
-    { kpi: 'reiteros' as KpiType, value: districtData?.reiteros ?? 0, icon: BarChart3 },
-    { kpi: 'puntualidad' as KpiType, value: districtData?.puntualidad ?? 0, icon: Clock },
-    { kpi: 'productividad' as KpiType, value: districtData?.productividad ?? 0, icon: Zap },
-  ];
+const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number>, lastUpdate: string | null }) => {
+  const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
 
-  const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleDateString('es-AR') : '--/--/----';
+  const getStatusColor = (value: number, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
+    const { targets } = config[kpi];
+    if (kpi === 'reiteros') {
+      if (value <= targets.green) return '#10b981';
+      if (value <= targets.yellow) return '#f59e0b';
+      return '#ef4444';
+    }
+    // For others (higher is better)
+    if (value >= targets.green) return '#10b981';
+    if (value >= targets.yellow) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  const stats: { kpi: KpiType, value: number }[] = [
+    { kpi: 'resolucion', value: districtData.resolucion || 0 },
+    { kpi: 'reiteros', value: districtData.reiteros || 0 },
+    { kpi: 'puntualidad', value: districtData.puntualidad || 0 },
+    { kpi: 'productividad', value: districtData.productividad || 0 },
+  ];
 
   return (
     <div style={{ marginBottom: '40px' }}>
@@ -124,73 +135,37 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
           <div style={{ width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%' }} />
           Indicadores del distrito (última actualización: {formattedDate})
       </p>
-      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
         {stats.map((stat) => {
-          const colors = getStatusColors(stat.value, stat.kpi, config);
+          const statusColor = getStatusColor(stat.value, stat.kpi, config);
           const { label, unit, targets } = config[stat.kpi];
-          
-          const labelStyles: Record<KpiType, { color: string }> = {
-            resolucion: { color: '#059669' },
-            reiteros: { color: '#d97706' },
-            puntualidad: { color: '#dc2626' },
-            productividad: { color: '#a16207' }
-          };
 
           return (
-            <div key={stat.kpi} style={{
+            <div key={stat.kpi} className="kpi-card" style={{
               backgroundColor: 'white',
               padding: '28px 32px',
               borderRadius: '24px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
-              position: 'relative',
-              overflow: 'hidden'
+              border: `4px solid ${statusColor}`,
+              boxShadow: 'var(--card-shadow)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                <div>
-                  <p style={{ 
-                    fontSize: '15px', 
-                    fontWeight: '950', 
-                    color: labelStyles[stat.kpi].color, 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.5px', 
-                    marginBottom: '8px' 
-                  }}>{label}</p>
-                  <p style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>Objetivo: {targets.green}{unit}</p>
-                </div>
-                <div style={{ 
-                  backgroundColor: `${colors.bg}44`, 
-                  padding: '8px', 
-                  borderRadius: '12px',
-                  color: colors.bg === '#f1f5f9' ? '#64748b' : colors.bg === '#86efac' ? '#059669' : colors.bg === '#fde047' ? '#d97706' : '#dc2626'
-                }}>
-                  <stat.icon size={20} />
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: statusColor, boxShadow: `0 0 10px ${statusColor}44` }} />
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <span style={{ fontSize: '30px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>
-                  {stat.value}{unit}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
+                <span style={{ fontSize: '42px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-2px' }}>
+                  {stat.kpi === 'productividad' ? stat.value.toFixed(2) : stat.value}
                 </span>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: '#64748b' }}>{unit}</span>
               </div>
 
-              <div style={{ 
-                  width: '100%', 
-                  height: '4px', 
-                  backgroundColor: '#f1f5f9', 
-                  borderRadius: '2px', 
-                  marginTop: '16px',
-                  overflow: 'hidden'
-              }}>
-                  <div style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      backgroundColor: colors.bg === '#f1f5f9' ? '#e2e8f0' : colors.bg,
-                      borderRadius: '2px'
-                  }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </div>
