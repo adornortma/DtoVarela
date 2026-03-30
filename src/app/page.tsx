@@ -120,11 +120,11 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
 
   return (
     <div style={{ marginBottom: '40px' }}>
-      <p style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <p style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%' }} />
           Indicadores del distrito (última actualización: {formattedDate})
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
         {stats.map((stat) => {
           const colors = getStatusColors(stat.value, stat.kpi, config);
           const { label, unit, targets } = config[stat.kpi];
@@ -731,22 +731,20 @@ export default function Home() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
+      <section style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
           {(Object.keys(kpiConfig) as KpiType[]).map(kpi => {
             const isActive = selectedKpi === kpi;
             return (
-                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ flex: 1, padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `2px solid ${isActive ? 'var(--movistar-blue)' : 'transparent'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: '160px', flex: '1 1 200px', padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `2px solid ${isActive ? 'var(--movistar-blue)' : 'transparent'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={18} /></div>
                   <span style={{ fontSize: '14px', fontWeight: '900', color: isActive ? '#1a1a1a' : '#666' }}>{kpiConfig[kpi].label}</span>
                 </button>
             )
           })}
-        </div>
       </section>
 
-      <div style={{ overflowX: 'auto', paddingBottom: '20px' }}>
-          <div style={{ minWidth: '900px' }}>
+      <div style={{ width: '100%', overflowX: 'auto', backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: 'var(--card-shadow)', border: '1px solid #e2e8f0' }}>
+          <div style={{ minWidth: '950px' }}>
               {!loading && data.length > 0 && (
                 <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginBottom: '8px' }}>
                     <colgroup>
