@@ -106,7 +106,7 @@ const calculateAverage = (metrics: MetricData): number | null => {
 
 // --- UI Components ---
 
-const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number>, lastUpdate: string | null }) => {
+const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null }) => {
   const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
 
   const getStatusColor = (value: number, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
@@ -122,11 +122,12 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
     return '#ef4444';
   };
 
+  const safeData = districtData || { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
   const stats: { kpi: KpiType, value: number }[] = [
-    { kpi: 'resolucion', value: districtData.resolucion || 0 },
-    { kpi: 'reiteros', value: districtData.reiteros || 0 },
-    { kpi: 'puntualidad', value: districtData.puntualidad || 0 },
-    { kpi: 'productividad', value: districtData.productividad || 0 },
+    { kpi: 'resolucion', value: safeData.resolucion || 0 },
+    { kpi: 'reiteros', value: safeData.reiteros || 0 },
+    { kpi: 'puntualidad', value: safeData.puntualidad || 0 },
+    { kpi: 'productividad', value: safeData.productividad || 0 },
   ];
 
   return (
