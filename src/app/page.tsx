@@ -105,7 +105,6 @@ const calculateAverage = (metrics: MetricData): number | null => {
 };
 
 // --- UI Components ---
-
 const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null }) => {
   const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
 
@@ -133,7 +132,6 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
   return (
     <div style={{ marginBottom: '40px' }}>
       <p style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%' }} />
           Indicadores del distrito (última actualización: {formattedDate})
       </p>
       <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
@@ -144,26 +142,22 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
           return (
             <div key={stat.kpi} className="kpi-card" style={{
               backgroundColor: 'white',
-              padding: '28px 32px',
-              borderRadius: '24px',
-              border: `4px solid ${statusColor}`,
+              padding: '24px 28px',
+              borderRadius: '20px',
+              borderLeft: `2px solid ${statusColor}`,
               boxShadow: 'var(--card-shadow)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: statusColor, boxShadow: `0 0 10px ${statusColor}44` }} />
+              <div style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
-                <span style={{ fontSize: '42px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-2px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontSize: '48px', fontWeight: '950', color: '#0f172a', letterSpacing: '-2px' }}>
                   {stat.kpi === 'productividad' ? stat.value.toFixed(2) : stat.value}
                 </span>
-                <span style={{ fontSize: '18px', fontWeight: '800', color: '#64748b' }}>{unit}</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Objetivo: {targets.green}{unit}</div>
+                <span style={{ fontSize: '20px', fontWeight: '800', color: '#94a3b8' }}>{unit}</span>
               </div>
             </div>
           );
@@ -459,12 +453,24 @@ const CellGroup = ({
 
 export default function Home() {
   const [selectedMonth, setSelectedMonth] = useState('Marzo');
+  const [visibleMonths, setVisibleMonths] = useState(['Enero', 'Febrero', 'Marzo', 'Abril']);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
   const [data, setData] = useState<ItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [kpiConfig, setKpiConfig] = useState<Record<KpiType, KpiConfigItem>>(DEFAULT_KPI_CONFIG);
   const [districtKPIs, setDistrictKPIs] = useState<any>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+
+  const handleMonthSelect = (month: string) => {
+    setSelectedMonth(month);
+    setIsDropdownOpen(false);
+    if (!visibleMonths.includes(month)) {
+      const newVisible = [...visibleMonths];
+      newVisible[3] = month; // Swap the last one
+      setVisibleMonths(newVisible);
+    }
+  };
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -675,6 +681,8 @@ export default function Home() {
       return `SEMANA ${i + 1} - LUN ${day}/${month}`;
   });
 
+  const hiddenMonths = MONTHS.filter(m => !visibleMonths.includes(m));
+
   return (
     <div style={{ padding: '32px 20px 60px 0', width: '100%', minHeight: '100vh' }}>
       <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
@@ -699,11 +707,91 @@ export default function Home() {
 
       <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} />
 
-      <section style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          {MONTHS.filter(m => m === 'Marzo').map(month => (
-            <button key={month} onClick={() => setSelectedMonth(month)} style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: selectedMonth === month ? '900' : '700', backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', color: selectedMonth === month ? 'white' : '#666', transition: 'all 0.2s', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(1, 157, 244, 0.2)' : '0 1px 3px rgba(0,0,0,0.05)' }}>{month}</button>
+      <section style={{ marginBottom: '32px', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {visibleMonths.map(month => (
+            <button 
+              key={month} 
+              onClick={() => handleMonthSelect(month)} 
+              style={{ 
+                padding: '10px 20px', 
+                borderRadius: '12px', 
+                fontSize: '13px', 
+                fontWeight: selectedMonth === month ? '950' : '700', 
+                backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', 
+                color: selectedMonth === month ? 'white' : '#64748b', 
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
+                border: '1px solid #e2e8f0', 
+                cursor: 'pointer', 
+                boxShadow: selectedMonth === month ? '0 4px 12px rgba(1, 157, 244, 0.2)' : '0 1px 2px rgba(0,0,0,0.05)',
+                transform: selectedMonth === month ? 'translateY(-1px)' : 'none'
+              }}
+            >
+              {month}
+            </button>
           ))}
+          
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              style={{ 
+                padding: '10px 14px', 
+                borderRadius: '12px', 
+                fontSize: '13px', 
+                fontWeight: '950', 
+                backgroundColor: 'white', 
+                color: '#64748b', 
+                border: '1px solid #e2e8f0', 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <span style={{ fontSize: '16px', lineHeight: 0, marginBottom: '6px' }}>...</span>
+            </button>
+            
+            {isDropdownOpen && (
+              <div style={{ 
+                position: 'absolute', 
+                top: 'calc(100% + 8px)', 
+                left: 0, 
+                backgroundColor: 'white', 
+                borderRadius: '16px', 
+                boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
+                border: '1px solid #e2e8f0', 
+                zIndex: 100, 
+                minWidth: '160px',
+                padding: '8px',
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '2px'
+              }}>
+                {hiddenMonths.map(month => (
+                  <button
+                    key={month}
+                    onClick={() => handleMonthSelect(month)}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: '#64748b',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    {month}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -712,9 +800,9 @@ export default function Home() {
           {(Object.keys(kpiConfig) as KpiType[]).map(kpi => {
             const isActive = selectedKpi === kpi;
             return (
-                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: '180px', flexShrink: 0, padding: '12px 16px', borderRadius: '14px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: isActive ? 'var(--card-shadow-hover)' : 'var(--card-shadow)' }}>
-                  <div style={{ color: isActive ? 'var(--movistar-blue)' : '#64748b' }}><BarChart3 size={18} /></div>
-                  <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1a1a1a' : '#64748b' }}>{kpiConfig[kpi].label}</span>
+                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: isActive ? '200px' : '180px', flexShrink: 0, padding: '14px 20px', borderRadius: '16px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: isActive ? '0 8px 20px rgba(1, 157, 244, 0.12)' : 'var(--card-shadow)', transform: isActive ? 'scale(1.02)' : 'none' }}>
+                  <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={20} /></div>
+                  <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{kpiConfig[kpi].label}</span>
                 </button>
             )
           })}
