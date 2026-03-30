@@ -144,7 +144,7 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
               backgroundColor: 'white',
               padding: '24px 28px',
               borderRadius: '20px',
-              borderLeft: `2px solid ${statusColor}`,
+              border: `3px solid ${statusColor}`,
               boxShadow: 'var(--card-shadow)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
@@ -453,7 +453,7 @@ const CellGroup = ({
 
 export default function Home() {
   const [selectedMonth, setSelectedMonth] = useState('Marzo');
-  const [visibleMonths, setVisibleMonths] = useState(['Enero', 'Febrero', 'Marzo', 'Abril']);
+  const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
   const [data, setData] = useState<ItemRow[]>([]);
@@ -796,7 +796,7 @@ export default function Home() {
       </section>
 
       <section style={{ marginBottom: '24px' }}>
-        <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+        <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
           {(Object.keys(kpiConfig) as KpiType[]).map(kpi => {
             const isActive = selectedKpi === kpi;
             return (
