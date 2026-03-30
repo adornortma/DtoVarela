@@ -169,9 +169,9 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
               </div>
               
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <h3 style={{ fontSize: '32px', fontWeight: '950', color: '#003366', letterSpacing: '-1px' }}>
-                    {stat.kpi === 'productividad' ? `${stat.value} / 6` : `${stat.value}${unit}`}
-                </h3>
+                <span style={{ fontSize: '30px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>
+                  {stat.value}{unit}
+                </span>
               </div>
 
               <div style={{ 
@@ -700,20 +700,24 @@ export default function Home() {
   });
 
   return (
-    <div style={{ padding: '24px', width: '100%', maxWidth: 'none', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+    <div style={{ padding: '32px 20px 60px 0', width: '100%', minHeight: '100vh' }}>
+      <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ backgroundColor: 'var(--movistar-blue)', padding: '10px', borderRadius: '12px', color: 'white', boxShadow: '0 4px 6px -1px rgba(1, 157, 244, 0.2)' }}>
+            <div style={{ backgroundColor: 'white', padding: '12px', borderRadius: '16px', color: 'var(--movistar-blue)', boxShadow: 'var(--card-shadow)', border: '1px solid #e2e8f0' }}>
                 <TrendingUp size={24} strokeWidth={3} />
             </div>
             <div>
-                <h1 style={{ fontSize: '28px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px', lineHeight: '1' }}>Dashboard Operativo</h1>
-                <p style={{ color: '#666', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>Evolución Semanal del Distrito Varela</p>
+                <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px', lineHeight: '1' }}>Dashboard Operativo</h1>
+                <p style={{ color: '#64748b', fontSize: '15px', fontWeight: '600', marginTop: '6px' }}>Gestión centralizada del Distrito Varela</p>
             </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', backgroundColor: 'white', padding: '6px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <span style={{ backgroundColor: 'var(--movistar-blue)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '900' }}>{selectedMonth}</span>
-            <span style={{ backgroundColor: '#1a1a1a', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '900' }}>{kpiConfig[selectedKpi].label}</span>
+        <div style={{ display: 'flex', gap: '12px', padding: '8px 16px', backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: 'var(--card-shadow)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--movistar-blue)' }}></div>
+              <span style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b' }}>{selectedMonth}</span>
+            </div>
+            <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0' }}></div>
+            <span style={{ fontSize: '13px', fontWeight: '900', color: 'var(--movistar-blue)' }}>{kpiConfig[selectedKpi].label}</span>
         </div>
       </header>
 

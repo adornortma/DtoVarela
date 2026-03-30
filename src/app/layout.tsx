@@ -62,8 +62,21 @@ export default function RootLayout({
                 </button>
               </header>
 
-              <main style={{ flex: 1, backgroundColor: 'var(--background)', width: '100%' }}>
-                 {children}
+              <main style={{ 
+                flex: 1, 
+                backgroundColor: 'var(--background)', 
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}>
+                 <div style={{ 
+                   width: '100%', 
+                   maxWidth: '1400px', 
+                   paddingRight: '40px'
+                 }}>
+                    {children}
+                 </div>
               </main>
            </div>
         </div>

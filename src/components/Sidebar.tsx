@@ -15,7 +15,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
 
   const navItems = [
     { name: 'DASHBOARD DISTRITO', icon: <Home size={20} />, path: '/' },
-    { name: 'MATRIZ DE EVOLUCIÓN', icon: <LayoutDashboard size={20} />, path: '/evolucion' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
   ];
 
