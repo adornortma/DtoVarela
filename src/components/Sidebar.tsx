@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TrendingUp, Home, Database, Briefcase, X, Menu } from 'lucide-react';
+import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck } from 'lucide-react';
 import React from 'react';
 
 interface SidebarProps {
@@ -14,7 +14,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Evolución Semanal', icon: <TrendingUp size={20} />, path: '/' },
+    { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: '/' },
+    { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
   ];
 
