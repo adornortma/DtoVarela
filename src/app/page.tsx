@@ -740,171 +740,219 @@ export default function Home() {
 
       <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} />
 
-      <section style={{ marginBottom: '32px', position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {visibleMonths.map(month => (
-            <button 
-              key={month} 
-              onClick={() => handleMonthSelect(month)} 
-              style={{ 
-                padding: '10px 20px', 
-                borderRadius: '12px', 
-                fontSize: '13px', 
-                fontWeight: selectedMonth === month ? '950' : '700', 
-                backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', 
-                color: selectedMonth === month ? 'white' : '#64748b', 
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
-                border: '1px solid #e2e8f0', 
-                cursor: 'pointer', 
-                boxShadow: selectedMonth === month ? '0 4px 12px rgba(1, 157, 244, 0.2)' : '0 1px 2px rgba(0,0,0,0.05)',
-                transform: selectedMonth === month ? 'translateY(-1px)' : 'none'
-              }}
-            >
-              {month}
-            </button>
-          ))}
-          
-          <div style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              style={{ 
-                padding: '10px 14px', 
-                borderRadius: '12px', 
-                fontSize: '13px', 
-                fontWeight: '950', 
-                backgroundColor: 'white', 
-                color: '#64748b', 
-                border: '1px solid #e2e8f0', 
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              <span style={{ fontSize: '16px', lineHeight: 0, marginBottom: '6px' }}>...</span>
-            </button>
-            
-            {isDropdownOpen && (
-              <div style={{ 
-                position: 'absolute', 
-                top: 'calc(100% + 8px)', 
-                left: 0, 
-                backgroundColor: 'white', 
-                borderRadius: '16px', 
-                boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
-                border: '1px solid #e2e8f0', 
-                zIndex: 100, 
-                minWidth: '160px',
-                padding: '8px',
-                display: 'grid',
-                gridTemplateColumns: '1fr',
-                gap: '2px'
-              }}>
-                {hiddenMonths.map(month => (
-                  <button
-                    key={month}
-                    onClick={() => handleMonthSelect(month)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: '#64748b',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    {month}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div style={{ width: '2px', height: '24px', backgroundColor: '#e2e8f0', margin: '0 8px' }}></div>
 
-          {/* View Toggle */}
-          <div style={{ 
-            display: 'flex', 
-            backgroundColor: '#f1f5f9', 
-            borderRadius: '14px', 
-            padding: '4px', 
-            gap: '2px',
-            border: '1px solid #e2e8f0',
-          }}>
-            <button 
-              onClick={() => setViewMode('semanal')}
-              style={{ 
-                padding: '8px 16px', 
-                borderRadius: '10px', 
-                fontSize: '12px', 
-                fontWeight: '900', 
-                backgroundColor: viewMode === 'semanal' ? 'white' : 'transparent', 
-                color: viewMode === 'semanal' ? 'var(--movistar-blue)' : '#64748b', 
-                boxShadow: viewMode === 'semanal' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <BarChart3 size={14} />
-              Semanal
-            </button>
-            <button 
-              onClick={() => setViewMode('indicador')}
-              style={{ 
-                padding: '8px 16px', 
-                borderRadius: '10px', 
-                fontSize: '12px', 
-                fontWeight: '900', 
-                backgroundColor: viewMode === 'indicador' ? 'white' : 'transparent', 
-                color: viewMode === 'indicador' ? 'var(--movistar-blue)' : '#64748b', 
-                boxShadow: viewMode === 'indicador' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <Zap size={14} />
-              Indicador
-            </button>
+      <section style={{ marginBottom: '40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* 🟦 BLOQUE 1: MESES (FILTRO PRINCIPAL) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {visibleMonths.map(month => (
+              <button 
+                key={month} 
+                onClick={() => handleMonthSelect(month)} 
+                style={{ 
+                  padding: '12px 24px', 
+                  borderRadius: '14px', 
+                  fontSize: '14px', 
+                  fontWeight: selectedMonth === month ? '950' : '700', 
+                  backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', 
+                  color: selectedMonth === month ? 'white' : '#64748b', 
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
+                  border: selectedMonth === month ? 'none' : '1px solid #e2e8f0', 
+                  cursor: 'pointer', 
+                  boxShadow: selectedMonth === month ? '0 6px 16px rgba(1, 157, 244, 0.3)' : '0 2px 4px rgba(0,0,0,0.02)',
+                  transform: selectedMonth === month ? 'translateY(-2px)' : 'none'
+                }}
+              >
+                {month}
+              </button>
+            ))}
+            
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                style={{ 
+                  padding: '12px 16px', 
+                  borderRadius: '14px', 
+                  fontSize: '14px', 
+                  fontWeight: '950', 
+                  backgroundColor: 'white', 
+                  color: '#64748b', 
+                  border: '1px solid #e2e8f0', 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span style={{ fontSize: '18px', lineHeight: 0, marginBottom: '6px' }}>...</span>
+              </button>
+              
+              {isDropdownOpen && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 'calc(100% + 8px)', 
+                  left: 0, 
+                  backgroundColor: 'white', 
+                  borderRadius: '16px', 
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.12)', 
+                  border: '1px solid #e2e8f0', 
+                  zIndex: 100, 
+                  minWidth: '180px',
+                  padding: '10px',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: '4px'
+                }}>
+                  {hiddenMonths.map(month => (
+                    <button
+                      key={month}
+                      onClick={() => handleMonthSelect(month)}
+                      style={{
+                        padding: '12px 18px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        color: '#64748b',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f1f5f9';
+                        e.currentTarget.style.color = 'var(--movistar-blue)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#64748b';
+                      }}
+                    >
+                      {month}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 🟪 BLOQUE 2: MODO (SWITCH CONFIG) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '1px' }}>Vista:</span>
+            <div style={{ 
+              display: 'flex', 
+              backgroundColor: '#f1f5f9', 
+              borderRadius: '16px', 
+              padding: '4px', 
+              gap: '2px',
+              border: '1px solid #e2e8f0',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)'
+            }}>
+              <button 
+                onClick={() => setViewMode('semanal')}
+                style={{ 
+                  padding: '8px 20px', 
+                  borderRadius: '12px', 
+                  fontSize: '12px', 
+                  fontWeight: '900', 
+                  backgroundColor: viewMode === 'semanal' ? 'white' : 'transparent', 
+                  color: viewMode === 'semanal' ? 'var(--movistar-blue)' : '#94a3b8', 
+                  boxShadow: viewMode === 'semanal' ? '0 4px 10px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: 'none'
+                }}
+              >
+                <BarChart3 size={15} />
+                Semanal
+              </button>
+              <button 
+                onClick={() => setViewMode('indicador')}
+                style={{ 
+                  padding: '8px 20px', 
+                  borderRadius: '12px', 
+                  fontSize: '12px', 
+                  fontWeight: '900', 
+                  backgroundColor: viewMode === 'indicador' ? 'white' : 'transparent', 
+                  color: viewMode === 'indicador' ? 'var(--movistar-blue)' : '#94a3b8', 
+                  boxShadow: viewMode === 'indicador' ? '0 4px 10px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: 'none'
+                }}
+              >
+                <Zap size={15} />
+                Indicador
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      <section style={{ marginBottom: '24px' }}>
+      <section style={{ marginBottom: '32px' }}>
         <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
           {viewMode === 'semanal' ? (
             (Object.keys(kpiConfig) as KpiType[]).map(kpi => {
               const isActive = selectedKpi === kpi;
               return (
-                  <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: isActive ? '200px' : '180px', flexShrink: 0, padding: '14px 20px', borderRadius: '16px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: isActive ? '0 8px 20px rgba(1, 157, 244, 0.12)' : 'var(--card-shadow)', transform: isActive ? 'scale(1.02)' : 'none' }}>
-                    <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={20} /></div>
-                    <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{kpiConfig[kpi].label}</span>
+                  <button 
+                    key={kpi} 
+                    onClick={() => setSelectedKpi(kpi)} 
+                    style={{ 
+                      minWidth: '180px', 
+                      flexShrink: 0, 
+                      padding: '12px 20px', 
+                      borderRadius: '16px', 
+                      backgroundColor: isActive ? '#f8fbfc' : 'white', 
+                      border: isActive ? '2px solid var(--movistar-blue)' : '1px solid #eef2f6', 
+                      transition: 'all 0.2s ease', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '12px', 
+                      cursor: 'pointer', 
+                      boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.08)' : '0 2px 4px rgba(0,0,0,0.01)', 
+                      transform: isActive ? 'translateY(-1px)' : 'none' 
+                    }}
+                  >
+                    <div style={{ color: isActive ? 'var(--movistar-blue)' : '#cbd5e1' }}><BarChart3 size={18} /></div>
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? 'var(--movistar-blue)' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{kpiConfig[kpi].label}</span>
                   </button>
               )
             })
           ) : (
             (['s1', 's2', 's3', 's4'] as WeekKey[]).map((week, idx) => {
               const isActive = selectedWeek === week;
-              const label = weekLabels[idx].split(' - ')[0]; // Just "SEMANA 1" etc
-              const subLabel = weekLabels[idx].split(' - ')[1]; // "LUN 01/03"
+              const label = weekLabels[idx].split(' - ')[0]; 
+              const subLabel = weekLabels[idx].split(' - ')[1]; 
               return (
-                  <button key={week} onClick={() => setSelectedWeek(week)} style={{ minWidth: isActive ? '220px' : '200px', flexShrink: 0, padding: '14px 20px', borderRadius: '16px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', boxShadow: isActive ? '0 8px 20px rgba(1, 157, 244, 0.12)' : 'var(--card-shadow)', transform: isActive ? 'scale(1.02)' : 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><Clock size={20} /></div>
-                      <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</span>
-                    </div>
-                    {subLabel && <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', marginTop: '2px' }}>{subLabel}</span>}
+                  <button 
+                    key={week} 
+                    onClick={() => setSelectedWeek(week)} 
+                    style={{ 
+                      minWidth: '180px', 
+                      flexShrink: 0, 
+                      padding: '12px 20px', 
+                      borderRadius: '16px', 
+                      backgroundColor: isActive ? '#f8fbfc' : 'white', 
+                      border: isActive ? '2px solid var(--movistar-blue)' : '1px solid #eef2f6', 
+                      transition: 'all 0.2s ease', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'flex-start', 
+                      gap: '2px', 
+                      cursor: 'pointer', 
+                      boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.08)' : '0 2px 4px rgba(0,0,0,0.01)', 
+                      transform: isActive ? 'translateY(-1px)' : 'none' 
+                    }}
+                  >
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? 'var(--movistar-blue)' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</span>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: isActive ? '#38bdf8' : '#94a3b8', textTransform: 'uppercase' }}>{subLabel}</span>
                   </button>
               )
             })
