@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ClipboardCopy, Calendar, CheckCircle2, AlertCircle, Loader2, Info } from 'lucide-react';
+import { normalizeName, parseTechnicianInput } from '@/lib/utils';
 
 interface ProcessingSummary {
   total: number;
@@ -13,7 +14,7 @@ interface ProcessingSummary {
 }
 
 export default function CargaAdminPage() {
-  // 1. Hooks (MUST BE AT THE TOP)
+  // 1. Hooks
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -23,6 +24,7 @@ export default function CargaAdminPage() {
   const [pastedCellData, setPastedCellData] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<ProcessingSummary | null>(null);
+  const [unidentified, setUnidentified] = useState<string[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearStatus, setClearStatus] = useState<string | null>(null);
   const [distritoKPIs, setDistritoKPIs] = useState({
@@ -34,7 +36,6 @@ export default function CargaAdminPage() {
   const [distritoLoading, setDistritoLoading] = useState(false);
   const [distritoStatus, setDistritoStatus] = useState<string | null>(null);
 
-  // Initial date setup to avoid hydration error
   useEffect(() => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
   }, []);
@@ -52,16 +53,6 @@ export default function CargaAdminPage() {
     }
   };
 
-  const parseTechnician = (input: string) => {
-    const dniRegex = /^([^,]+),\s*([^(]+?)\s*\(DNI-([0-9]+)\)$/;
-    const dniMatch = input.match(dniRegex);
-    if (dniMatch) return { apellido: dniMatch[1].trim(), nombre: dniMatch[2].trim(), dni: dniMatch[3].trim() };
-    const nameRegex = /^([^,]+),\s*(.+)$/;
-    const nameMatch = input.match(nameRegex);
-    if (nameMatch) return { apellido: nameMatch[1].trim(), nombre: nameMatch[2].trim(), dni: null };
-    return null;
-  };
-
   const parsePercent = (val: string): number | null => {
     if (!val || val === "") return 0;
     const clean = val.replace('%', '').replace(',', '.').trim();
@@ -74,9 +65,10 @@ export default function CargaAdminPage() {
     if ((!pastedData.trim() && !pastedCellData.trim()) || !selectedDate) return;
     setLoading(true);
     setSummary(null);
+    setUnidentified([]);
     const errors: string[] = [];
+    const missingTechs: string[] = [];
     let processedCount = 0;
-    let newTechsCount = 0;
     let cellTotalsCount = 0;
 
     try {
@@ -115,20 +107,57 @@ export default function CargaAdminPage() {
               await supabase.from('metricas_celula').upsert({ celula: celulaName, fecha: selectedDate, reitero, resolucion, puntualidad, productividad }, { onConflict: 'celula, fecha' });
               cellTotalsCount++; processedCount++; continue;
             }
-            const techInfo = parseTechnician(rawTecnico);
-            if (!techInfo) continue;
-            let tecnicoId = "";
-            let query = supabase.from('tecnicos').select('id');
-            if (techInfo.dni) query = query.eq('dni', techInfo.dni);
-            else query = query.eq('nombre', techInfo.nombre).eq('apellido', techInfo.apellido);
-            const { data: existingTech } = await query.maybeSingle();
-            if (existingTech) tecnicoId = existingTech.id;
-            else {
-              const { data: newTech } = await supabase.from('tecnicos').insert({ nombre: techInfo.nombre, apellido: techInfo.apellido, dni: techInfo.dni }).select().single();
-              if (newTech) { tecnicoId = newTech.id; newTechsCount++; } else continue;
+
+            const techInput = parseTechnicianInput(rawTecnico);
+            let tecnicoId = null;
+
+            // ESTRATEGIA DE IDENTIFICACIÓN
+            // 1. Prioridad: DNI (si existe)
+            if (techInput.dni) {
+              const { data: t } = await supabase.from('tecnicos').select('id, nombre_normalizado').eq('dni', techInput.dni).maybeSingle();
+              if (t) {
+                tecnicoId = t.id;
+                // Auto-curación: Si no tiene nombre normalizado (registros viejos), lo actualizamos
+                if (!t.nombre_normalizado) {
+                  await supabase.from('tecnicos').update({ nombre_normalizado: techInput.normalized }).eq('id', t.id);
+                }
+              }
             }
-            await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, reitero, resolucion, puntualidad, productividad, celula: rawCelula });
-            processedCount++;
+
+            // 2. Si no se encontró por DNI: Nombre Normalizado
+            if (!tecnicoId) {
+              const { data: t } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).maybeSingle();
+              if (t) tecnicoId = t.id;
+            }
+
+            // 3. Fallback: Buscar en historial de Alias
+            if (!tecnicoId) {
+              const { data: a } = await supabase.from('tecnico_alias').select('tecnico_id').eq('valor_original', rawTecnico).maybeSingle();
+              if (a) tecnicoId = a.tecnico_id;
+            }
+
+            if (tecnicoId) {
+              // Registro de Alias (para aprendizaje del sistema)
+              await supabase.from('tecnico_alias').upsert({ 
+                tecnico_id: tecnicoId, 
+                valor_original: rawTecnico, 
+                tipo: techInput.dni ? 'dni_nombre' : 'nombre' 
+              }, { onConflict: 'tecnico_id, valor_original' });
+              
+              await supabase.from('metricas').insert({ 
+                tecnico_id: tecnicoId, 
+                fecha: selectedDate, 
+                reitero, 
+                resolucion, 
+                puntualidad, 
+                productividad, 
+                celula: rawCelula 
+              });
+              processedCount++;
+            } else {
+              // REGISTRO PARA REVISIÓN MANUAL
+              if (!missingTechs.includes(rawTecnico)) missingTechs.push(rawTecnico);
+            }
           }
         }
       }
@@ -142,7 +171,8 @@ export default function CargaAdminPage() {
            cellTotalsCount++; processedCount++;
         }
       }
-      setSummary({ total: 2, processed: processedCount, errors, techniciansCreated: newTechsCount, cellTotalsProcessed: cellTotalsCount });
+      setSummary({ total: 0, processed: processedCount, errors, techniciansCreated: 0, cellTotalsProcessed: cellTotalsCount });
+      setUnidentified(missingTechs);
     } catch (err) {
       console.error(err);
     } finally {
@@ -180,7 +210,6 @@ export default function CargaAdminPage() {
     setDistritoLoading(false);
   };
 
-  // 3. Conditional Rendering (AFTER HOOKS)
   if (!isLoggedIn) {
      return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '20px' }}>
@@ -202,14 +231,6 @@ export default function CargaAdminPage() {
      );
   }
 
-  if (!isSupabaseConfigured) {
-    return (
-      <div style={{ padding: '60px 40px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '900' }}>Falta Configuración de Supabase</h1>
-      </div>
-    );
-  }
-
   return (
     <div style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
       <header style={{ marginBottom: '40px' }}>
@@ -217,7 +238,6 @@ export default function CargaAdminPage() {
         <p style={{ color: '#666', fontWeight: '600' }}>Carga de KPIs districtuales y técnicos.</p>
       </header>
 
-      {/* KPIs DEL DISTRITO */}
       <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)', marginBottom: '32px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '900', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ClipboardCopy size={20} color="var(--movistar-blue)" /> KPIs del Distrito
@@ -248,7 +268,6 @@ export default function CargaAdminPage() {
         </form>
       </div>
 
-      {/* CARGA MASIVA */}
       <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
         <form onSubmit={handleProcessData}>
             <div style={{ marginBottom: '24px' }}>
@@ -275,10 +294,30 @@ export default function CargaAdminPage() {
                 </div>
             )}
         </form>
+
+        {unidentified.length > 0 && (
+            <div style={{ marginTop: '32px', padding: '24px', backgroundColor: '#fff7ed', borderRadius: '16px', border: '1px solid #ffedd5' }}>
+                <h3 style={{ fontWeight: '900', color: '#9a3412', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={20} /> Intervención Requerida
+                </h3>
+                <p style={{ fontSize: '14px', color: '#c2410c', marginBottom: '16px', fontWeight: '600' }}>
+                    Los siguientes técnicos no pudieron ser identificados automáticamente. Por favor, verifique si su DNI o nombre normalizado existen en el sistema.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {unidentified.map((tech, idx) => (
+                        <span key={idx} style={{ backgroundColor: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '800', border: '1px solid #fed7aa', color: '#9a3412' }}>
+                            {tech}
+                        </span>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {summary && (
             <div style={{ marginTop: '32px', padding: '20px', backgroundColor: '#f0fdf4', borderRadius: '16px' }}>
                 <h3 style={{ fontWeight: '900' }}>Éxito: Datos Procesados</h3>
-                <p>Técnicos/Totales: {summary.processed}</p>
+                <p>Registros correctamente vinculados: {summary.processed}</p>
+                {clearStatus && <p style={{ fontSize: '12px', color: '#666' }}>{clearStatus}</p>}
             </div>
         )}
       </div>

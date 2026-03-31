@@ -19,6 +19,8 @@ import { supabase } from '@/lib/supabase';
 
 // --- Types ---
 type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
+type ViewMode = 'semanal' | 'indicador';
+type WeekKey = 's1' | 's2' | 's3' | 's4';
 
 interface MetricEntry {
   value: number | null;
@@ -322,34 +324,38 @@ const MetricCard = ({
 const CellGroup = ({ 
   row, 
   kpi, 
+  viewMode,
+  selectedWeek,
   config, 
   onUpdateMetric 
 }: { 
   row: ItemRow, 
   kpi: KpiType, 
+  viewMode: ViewMode,
+  selectedWeek: WeekKey,
   config: Record<KpiType, KpiConfigItem>,
   onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const metrics = row.metrics[kpi];
   const unit = config[kpi].unit;
+  
+  // Weekly mode sorting (same as before)
   const average = calculateAverage(metrics);
+  
+  const sortedTechnicians = [...(row.technicians || [])].sort((a, b) => {
+    if (viewMode === 'semanal') {
+      const valA = calculateAverage(a.metrics[kpi]) ?? -Infinity;
+      const valB = calculateAverage(b.metrics[kpi]) ?? -Infinity;
+      if (config[kpi].targets.reverse) {
+          return (valA === -Infinity ? 1 : (valB === -Infinity ? -1 : valA - valB));
+      }
+      return valB - valA;
+    }
+    return a.name.localeCompare(b.name);
+  });
 
   const borderColor = isExpanded ? 'var(--movistar-blue)' : 'rgba(1, 157, 244, 0.15)';
-
-  // Sort technicians descending by the selected KPI value (most recent available value, or average?)
-  // The user says "descendente según el KPI seleccionado". I'll use the latest non-null week value if possible, or average.
-  // Actually, let's use the average of the selected KPI for the sorting.
-  const sortedTechnicians = [...(row.technicians || [])].sort((a, b) => {
-    const valA = calculateAverage(a.metrics[kpi]) ?? -Infinity;
-    const valB = calculateAverage(b.metrics[kpi]) ?? -Infinity;
-    
-    // For reiterated, lower is better, but he asked "mejor rendimiento arriba"
-    if (config[kpi].targets.reverse) {
-        return (valA === -Infinity ? 1 : (valB === -Infinity ? -1 : valA - valB));
-    }
-    return valB - valA;
-  });
 
   return (
     <div style={{
@@ -412,10 +418,21 @@ const CellGroup = ({
                             </span>
                         </div>
                     </td>
-                    <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
-                    <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
-                    <MetricCard entry={metrics.s3} prevValue={metrics.s2.value} kpi={kpi} unit={unit} config={config} />
-                    <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
+                    {viewMode === 'semanal' ? (
+                      <>
+                        <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s3} prevValue={metrics.s2.value} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
+                      </>
+                    ) : (
+                      <>
+                        <MetricCard entry={row.metrics.resolucion[selectedWeek]} kpi="resolucion" unit={config.resolucion.unit} config={config} />
+                        <MetricCard entry={row.metrics.reiteros[selectedWeek]} kpi="reiteros" unit={config.reiteros.unit} config={config} />
+                        <MetricCard entry={row.metrics.puntualidad[selectedWeek]} kpi="puntualidad" unit={config.puntualidad.unit} config={config} />
+                        <MetricCard entry={row.metrics.productividad[selectedWeek]} kpi="productividad" unit={config.productividad.unit} config={config} />
+                      </>
+                    )}
                 </tr>
 
                 {isExpanded && sortedTechnicians.map((tech) => (
@@ -428,21 +445,35 @@ const CellGroup = ({
                                 <span style={{ fontSize: '13px', color: '#333', fontWeight: '700' }}>{tech.name}</span>
                             </div>
                         </td>
-                        {(['s1', 's2', 's3', 's4'] as const).map((s, idx) => {
-                           const prevS = idx > 0 ? (['s1', 's2', 's3', 's4'] as const)[idx-1] : null;
-                           return (
+                        {viewMode === 'semanal' ? (
+                          (['s1', 's2', 's3', 's4'] as const).map((s, idx) => {
+                             const prevS = idx > 0 ? (['s1', 's2', 's3', 's4'] as const)[idx-1] : null;
+                             return (
+                               <MetricCard 
+                                 key={s}
+                                 entry={tech.metrics[kpi][s]} 
+                                 prevValue={prevS ? tech.metrics[kpi][prevS].value : null} 
+                                 kpi={kpi} 
+                                 unit={unit} 
+                                 config={config} 
+                                 isEditable={kpi === 'puntualidad' && tech.id !== undefined}
+                                 onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[kpi][s].date, val, row.name)}
+                               />
+                             );
+                          })
+                        ) : (
+                          (['resolucion', 'reiteros', 'puntualidad', 'productividad'] as const).map((k) => (
                              <MetricCard 
-                               key={s}
-                               entry={tech.metrics[kpi][s]} 
-                               prevValue={prevS ? tech.metrics[kpi][prevS].value : null} 
-                               kpi={kpi} 
-                               unit={unit} 
+                               key={k}
+                               entry={tech.metrics[k][selectedWeek]} 
+                               kpi={k} 
+                               unit={config[k].unit} 
                                config={config} 
-                               isEditable={kpi === 'puntualidad' && tech.id !== undefined}
-                               onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[kpi][s].date, val, row.name)}
+                               isEditable={k === 'puntualidad' && tech.id !== undefined}
+                               onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[k][selectedWeek].date, val, row.name)}
                              />
-                           );
-                        })}
+                          ))
+                        )}
                     </tr>
                 ))}
             </tbody>
@@ -452,6 +483,8 @@ const CellGroup = ({
 };
 
 export default function Home() {
+  const [viewMode, setViewMode] = useState<ViewMode>('semanal');
+  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState('Marzo');
   const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -792,20 +825,90 @@ export default function Home() {
               </div>
             )}
           </div>
+          
+          <div style={{ width: '2px', height: '24px', backgroundColor: '#e2e8f0', margin: '0 8px' }}></div>
+
+          {/* View Toggle */}
+          <div style={{ 
+            display: 'flex', 
+            backgroundColor: '#f1f5f9', 
+            borderRadius: '14px', 
+            padding: '4px', 
+            gap: '2px',
+            border: '1px solid #e2e8f0',
+          }}>
+            <button 
+              onClick={() => setViewMode('semanal')}
+              style={{ 
+                padding: '8px 16px', 
+                borderRadius: '10px', 
+                fontSize: '12px', 
+                fontWeight: '900', 
+                backgroundColor: viewMode === 'semanal' ? 'white' : 'transparent', 
+                color: viewMode === 'semanal' ? 'var(--movistar-blue)' : '#64748b', 
+                boxShadow: viewMode === 'semanal' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <BarChart3 size={14} />
+              Semanal
+            </button>
+            <button 
+              onClick={() => setViewMode('indicador')}
+              style={{ 
+                padding: '8px 16px', 
+                borderRadius: '10px', 
+                fontSize: '12px', 
+                fontWeight: '900', 
+                backgroundColor: viewMode === 'indicador' ? 'white' : 'transparent', 
+                color: viewMode === 'indicador' ? 'var(--movistar-blue)' : '#64748b', 
+                boxShadow: viewMode === 'indicador' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Zap size={14} />
+              Indicador
+            </button>
+          </div>
         </div>
       </section>
 
       <section style={{ marginBottom: '24px' }}>
         <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
-          {(Object.keys(kpiConfig) as KpiType[]).map(kpi => {
-            const isActive = selectedKpi === kpi;
-            return (
-                <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: isActive ? '200px' : '180px', flexShrink: 0, padding: '14px 20px', borderRadius: '16px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: isActive ? '0 8px 20px rgba(1, 157, 244, 0.12)' : 'var(--card-shadow)', transform: isActive ? 'scale(1.02)' : 'none' }}>
-                  <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={20} /></div>
-                  <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{kpiConfig[kpi].label}</span>
-                </button>
-            )
-          })}
+          {viewMode === 'semanal' ? (
+            (Object.keys(kpiConfig) as KpiType[]).map(kpi => {
+              const isActive = selectedKpi === kpi;
+              return (
+                  <button key={kpi} onClick={() => setSelectedKpi(kpi)} style={{ minWidth: isActive ? '200px' : '180px', flexShrink: 0, padding: '14px 20px', borderRadius: '16px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: isActive ? '0 8px 20px rgba(1, 157, 244, 0.12)' : 'var(--card-shadow)', transform: isActive ? 'scale(1.02)' : 'none' }}>
+                    <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><BarChart3 size={20} /></div>
+                    <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{kpiConfig[kpi].label}</span>
+                  </button>
+              )
+            })
+          ) : (
+            (['s1', 's2', 's3', 's4'] as WeekKey[]).map((week, idx) => {
+              const isActive = selectedWeek === week;
+              const label = weekLabels[idx].split(' - ')[0]; // Just "SEMANA 1" etc
+              const subLabel = weekLabels[idx].split(' - ')[1]; // "LUN 01/03"
+              return (
+                  <button key={week} onClick={() => setSelectedWeek(week)} style={{ minWidth: isActive ? '220px' : '200px', flexShrink: 0, padding: '14px 20px', borderRadius: '16px', backgroundColor: 'white', border: `1px solid ${isActive ? 'var(--movistar-blue)' : '#e2e8f0'}`, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', boxShadow: isActive ? '0 8px 20px rgba(1, 157, 244, 0.12)' : 'var(--card-shadow)', transform: isActive ? 'scale(1.02)' : 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ color: isActive ? 'var(--movistar-blue)' : '#94a3b8' }}><Clock size={20} /></div>
+                      <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</span>
+                    </div>
+                    {subLabel && <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', marginTop: '2px' }}>{subLabel}</span>}
+                  </button>
+              )
+            })
+          )}
         </div>
       </section>
 
@@ -823,9 +926,15 @@ export default function Home() {
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
                             <th style={{ padding: '0 20px 12px 20px' }}></th>
-                            {weekLabels.map(label => (
+                            {viewMode === 'semanal' ? (
+                              weekLabels.map(label => (
                                 <th key={label} style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{label}</th>
-                            ))}
+                              ))
+                            ) : (
+                              (Object.keys(kpiConfig) as KpiType[]).map(k => (
+                                <th key={k} style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{kpiConfig[k].label}</th>
+                              ))
+                            )}
                         </tr>
                     </thead>
                 </table>
@@ -839,19 +948,31 @@ export default function Home() {
                   <div style={{ padding: '100px', textAlign: 'center', backgroundColor: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
                       <p style={{ fontWeight: '700', color: '#94a3b8' }}>No hay datos registrados para este mes.</p>
                   </div>
-              ) : data.map((row) => (
-                  <CellGroup 
-                    key={row.name} 
-                    row={row} 
-                    kpi={selectedKpi} 
-                    config={kpiConfig} 
-                    onUpdateMetric={updatePuntualidad}
-                  />
-              ))}
+              ) : (
+                <div style={{ 
+                  animation: 'fadeIn 0.4s ease-out'
+                }}>
+                  {data.map((row) => (
+                    <CellGroup 
+                      key={row.name} 
+                      row={row} 
+                      kpi={selectedKpi} 
+                      viewMode={viewMode}
+                      selectedWeek={selectedWeek}
+                      config={kpiConfig} 
+                      onUpdateMetric={updatePuntualidad}
+                    />
+                  ))}
+                </div>
+              )}
           </div>
       </div>
 
       <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .filter-tabs::-webkit-scrollbar { height: 0px; }

@@ -1,0 +1,39 @@
+export const normalizeName = (name: string): string => {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Eliminar acentos
+    .replace(/[^a-z0-9\s]/g, "")    // Eliminar caracteres especiales (excepto espacios)
+    .replace(/\s+/g, " ")           // Colapsar múltiples espacios
+    .trim();
+};
+
+export const parseTechnicianInput = (input: string) => {
+  // Ejemplos de entrada:
+  // "GOMEZ, RAUL (DNI-12345678)"
+  // "12345678 GOMEZ RAUL"
+  // "GOMEZ RAUL 12345678"
+  // "GOMEZ RAUL"
+
+  const cleanInput = input.trim();
+  
+  // Caso 1: Formato con DNI explícito "(DNI-12345678)"
+  const dniMatch = cleanInput.match(/\(DNI-([0-9]+)\)/i);
+  if (dniMatch) {
+    const dni = dniMatch[1];
+    const namePart = cleanInput.replace(/\(DNI-[0-9]+\)/i, "").trim();
+    return { name: namePart, dni, normalized: normalizeName(namePart) };
+  }
+
+  // Caso 2: El DNI está al principio o al final (8 dígitos seguidos)
+  const numericMatch = cleanInput.match(/(\d{7,8})/);
+  if (numericMatch) {
+    const dni = numericMatch[1];
+    const namePart = cleanInput.replace(dni, "").trim();
+    return { name: namePart, dni, normalized: normalizeName(namePart) };
+  }
+
+  // Caso 3: Solo nombre
+  return { name: cleanInput, dni: null, normalized: normalizeName(cleanInput) };
+};
