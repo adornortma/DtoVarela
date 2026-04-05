@@ -37,6 +37,14 @@ export interface TechnicianStats {
   reiteros: number;
   puntualidad: number;
   productividad: number;
+  
+  // KPIs Operativos (TOA) - Opcionales
+  inicio?: number;
+  ok1?: number;
+  cierres?: number;
+  completadas?: number;
+  no_encontrados?: number;
+  deriva_bajadas?: number;
 }
 
 export const classifyTechnician = (stats: TechnicianStats, thresholds: KPIThresholds = defaultThresholds) => {
