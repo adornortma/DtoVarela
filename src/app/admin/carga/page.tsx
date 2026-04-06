@@ -217,10 +217,6 @@ export default function CargaAdminPage() {
             tipo: techInput.dni ? 'dni_nombre' : 'nombre' 
           }, { onConflict: 'tecnico_id, valor_original' });
           
-          // La célula de la métrica será: 
-          // 1. La que viene en el excel (si existe)
-          // 2. La que tiene el técnico fijada en la tabla 'tecnicos'
-          // 3. "DISTRITO" como último recurso
           const finalCelula = rawCelula || dbCelula || "DISTRITO";
           const finalPayload = { ...updatePayload, celula: finalCelula };
 
@@ -232,6 +228,28 @@ export default function CargaAdminPage() {
           }, { onConflict: 'tecnico_id, fecha' });
           
           processedCount++;
+        } else if (techInput.dni) {
+          // AUTO-CREACIÓN: Si trae DNI pero no existe en la DB, lo creamos ahora mismo
+          const { data: newTech } = await supabase.from('tecnicos').insert({
+            dni: techInput.dni,
+            nombre_normalizado: techInput.normalized,
+            apellido: techInput.name.split(',')[0].trim(),
+            nombre: techInput.name.split(',')[1]?.trim() || "",
+            celula: rawCelula || "DISTRITO"
+          }).select('id').single();
+
+          if (newTech) {
+            tecnicoId = newTech.id;
+            // Proceder a insertar la métrica para el nuevo técnico
+            const finalCelula = rawCelula || "DISTRITO";
+            await supabase.from('metricas').upsert({ 
+              tecnico_id: tecnicoId, 
+              fecha: selectedDate, 
+              celula: finalCelula,
+              ...updatePayload
+            }, { onConflict: 'tecnico_id, fecha' });
+            processedCount++;
+          }
         } else {
           if (!missingTechs.includes(rawTecnico)) missingTechs.push(rawTecnico);
         }
