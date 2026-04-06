@@ -1003,7 +1003,7 @@ export default function Home() {
                 <div style={{ 
                   animation: 'fadeIn 0.4s ease-out'
                 }}>
-                  {data.map((row) => (
+                  {data.filter(row => row.name !== 'DISTRITO').map((row) => (
                     <CellGroup 
                       key={row.name} 
                       row={row} 

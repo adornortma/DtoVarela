@@ -583,7 +583,6 @@ export default function ActividadesToaPage() {
         </div>
       </header>
 
-      <DistrictOverview config={TOA_KPI_CONFIG} districtData={districtKPIs} />
 
       <section style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
