@@ -214,22 +214,6 @@ const MetricCard = ({
         border: '2px solid rgba(0,0,0,0.05)',
         transition: 'all 0.2s',
       }}>
-        {showActivityBadge && entry.value !== null && (
-          <div style={{ 
-            position: 'absolute', 
-            top: '-5px', 
-            right: '-5px', 
-            backgroundColor: '#1e293b', 
-            color: 'white', 
-            fontSize: '7px', 
-            fontWeight: '900', 
-            padding: '2px 5px', 
-            borderRadius: '4px',
-            letterSpacing: '0.5px'
-          }}>
-            ACTIVIDAD
-          </div>
-        )}
 
         <span style={{ 
             fontSize: '18px', 
@@ -305,11 +289,11 @@ const CellGroup = ({
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
                 <col style={{ width: '280px' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
+                {viewMode === 'semanal' ? (
+                  [1, 2, 3, 4, 5].map(i => <col key={i} style={{ width: '14%' }} />)
+                ) : (
+                  [1, 2, 3, 4, 5, 6].map(i => <col key={i} style={{ width: '11%' }} />)
+                )}
             </colgroup>
             <tbody>
                 <tr 
@@ -349,15 +333,15 @@ const CellGroup = ({
                     </td>
                     {viewMode === 'semanal' ? (
                       <>
-                        <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} showActivityBadge />
-                        <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} showActivityBadge />
-                        <MetricCard entry={metrics.s3} prevValue={metrics.s2.value} kpi={kpi} unit={unit} config={config} showActivityBadge />
-                        <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} showActivityBadge />
-                        <MetricCard entry={metrics.s5} prevValue={metrics.s4.value} kpi={kpi} unit={unit} config={config} showActivityBadge />
+                        <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s3} prevValue={metrics.s2.value} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s5} prevValue={metrics.s4.value} kpi={kpi} unit={unit} config={config} />
                       </>
                     ) : (
-                      (['inicio', 'ok1', 'cierres', 'completadas'] as const).map(k => (
-                        <MetricCard key={k} entry={row.metrics[k][selectedWeek]} kpi={k} unit={config[k].unit} config={config} showActivityBadge />
+                      (Object.keys(config) as ToaKpiType[]).map(k => (
+                        <MetricCard key={k} entry={row.metrics[k][selectedWeek]} kpi={k} unit={config[k].unit} config={config} />
                       ))
                     )}
                 </tr>
@@ -383,19 +367,17 @@ const CellGroup = ({
                                  kpi={kpi} 
                                  unit={unit} 
                                  config={config} 
-                                 showActivityBadge
                                />
                              );
                           })
                         ) : (
-                          (['inicio', 'ok1', 'cierres', 'completadas'] as const).map((k) => (
+                          (Object.keys(config) as ToaKpiType[]).map((k) => (
                              <MetricCard 
                                key={k}
                                entry={tech.metrics[k][selectedWeek]} 
                                kpi={k} 
                                unit={config[k].unit} 
                                config={config} 
-                               showActivityBadge
                              />
                           ))
                         )}
@@ -746,11 +728,11 @@ export default function ActividadesToaPage() {
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginBottom: '16px' }}>
                 <colgroup>
                     <col style={{ width: '280px' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
+                    {viewMode === 'semanal' ? (
+                      [1, 2, 3, 4, 5].map(i => <col key={i} style={{ width: '14%' }} />)
+                    ) : (
+                      [1, 2, 3, 4, 5, 6].map(i => <col key={i} style={{ width: '11%' }} />)
+                    )}
                 </colgroup>
                 <thead>
                     <tr style={{ textAlign: 'left' }}>
@@ -760,7 +742,7 @@ export default function ActividadesToaPage() {
                             <th key={label} style={{ padding: '0 0 12px 0', fontSize: '12px', fontWeight: '950', color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>{label}</th>
                           ))
                         ) : (
-                          (['inicio', 'ok1', 'cierres', 'completadas'] as const).map(k => (
+                          (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).map(k => (
                             <th key={k} style={{ padding: '0 0 12px 0', fontSize: '12px', fontWeight: '950', color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>{TOA_KPI_CONFIG[k].label}</th>
                           ))
                         )}
@@ -780,7 +762,7 @@ export default function ActividadesToaPage() {
               </div>
           ) : (
             <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
-              {data.map((row) => (
+              {data.filter(row => row.name !== 'DISTRITO').map((row) => (
                 <CellGroup 
                   key={row.name} 
                   row={row} 
