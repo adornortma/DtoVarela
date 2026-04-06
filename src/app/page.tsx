@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase';
 // --- Types ---
 type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
 type ViewMode = 'semanal' | 'indicador';
-type WeekKey = 's1' | 's2' | 's3' | 's4';
+type WeekKey = 's1' | 's2' | 's3' | 's4' | 's5';
 
 interface MetricEntry {
   value: number | null;
@@ -33,6 +33,7 @@ interface MetricData {
   s2: MetricEntry;
   s3: MetricEntry;
   s4: MetricEntry;
+  s5: MetricEntry;
 }
 
 interface ItemRow {
@@ -60,12 +61,13 @@ const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
 };
 
 // --- Helper Functions ---
-const getWeekOfDate = (date: Date): 's1' | 's2' | 's3' | 's4' => {
+const getWeekOfDate = (date: Date): WeekKey => {
   const day = date.getUTCDate();
   if (day <= 7) return 's1';
   if (day <= 14) return 's2';
   if (day <= 21) return 's3';
-  return 's4';
+  if (day <= 28) return 's4';
+  return 's5';
 };
 
 const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
@@ -101,7 +103,7 @@ const getMondayOfNextWeek = (year: number, monthIndex: number, weekIndex: number
 
 const calculateAverage = (metrics: MetricData): number | null => {
   if (!metrics) return null;
-  const values = [metrics.s1.value, metrics.s2.value, metrics.s3.value, metrics.s4.value].filter(v => v !== null) as number[];
+  const values = [metrics.s1.value, metrics.s2.value, metrics.s3.value, metrics.s4.value, metrics.s5.value].filter(v => v !== null) as number[];
   if (values.length === 0) return null;
   return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
 };
@@ -370,11 +372,12 @@ const CellGroup = ({
     }}>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
-                <col style={{ width: '280px' }} />
-                <col style={{ width: '18%' }} />
-                <col style={{ width: '18%' }} />
-                <col style={{ width: '18%' }} />
-                <col style={{ width: '18%' }} />
+                <col style={{ width: '30%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '14%' }} />
             </colgroup>
             <tbody>
                 <tr 
@@ -424,6 +427,7 @@ const CellGroup = ({
                         <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
                         <MetricCard entry={metrics.s3} prevValue={metrics.s2.value} kpi={kpi} unit={unit} config={config} />
                         <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
+                        <MetricCard entry={metrics.s5} prevValue={metrics.s4.value} kpi={kpi} unit={unit} config={config} />
                       </>
                     ) : (
                       <>
@@ -446,8 +450,8 @@ const CellGroup = ({
                             </div>
                         </td>
                         {viewMode === 'semanal' ? (
-                          (['s1', 's2', 's3', 's4'] as const).map((s, idx) => {
-                             const prevS = idx > 0 ? (['s1', 's2', 's3', 's4'] as const)[idx-1] : null;
+                          (['s1', 's2', 's3', 's4', 's5'] as const).map((s, idx) => {
+                             const prevS = idx > 0 ? (['s1', 's2', 's3', 's4', 's5'] as const)[idx-1] : null;
                              return (
                                <MetricCard 
                                  key={s}
@@ -606,6 +610,7 @@ export default function Home() {
         s2: { value: null, date: new Date(Date.UTC(y, m, 8)).toISOString().split('T')[0] },
         s3: { value: null, date: new Date(Date.UTC(y, m, 15)).toISOString().split('T')[0] },
         s4: { value: null, date: new Date(Date.UTC(y, m, 22)).toISOString().split('T')[0] },
+        s5: { value: null, date: new Date(Date.UTC(y, m, 29)).toISOString().split('T')[0] },
       };
     };
 
@@ -679,7 +684,7 @@ export default function Home() {
 
     Object.values(cellMap).forEach(cell => {
         (['reiteros', 'resolucion', 'puntualidad', 'productividad'] as KpiType[]).forEach(kpi => {
-            (['s1', 's2', 's3', 's4'] as const).forEach(week => {
+            (['s1', 's2', 's3', 's4', 's5'] as const).forEach(week => {
                 if (cell.metrics[kpi][week].value === null) {
                   const techValues = cell.technicians?.map(t => t.metrics[kpi][week].value).filter(v => v !== null) as number[];
                   if (techValues.length > 0) {
@@ -710,7 +715,7 @@ export default function Home() {
 
   const currentYear = new Date().getFullYear();
   const currentMonthIdx = MONTHS.indexOf(selectedMonth);
-  const weekLabels = [0, 1, 2, 3].map(i => {
+  const weekLabels = [0, 1, 2, 3, 4].map(i => {
       const Monday = getMondayOfNextWeek(currentYear, currentMonthIdx, i);
       const day = Monday.getDate().toString().padStart(2, '0');
       const month = (Monday.getMonth() + 1).toString().padStart(2, '0');
@@ -929,7 +934,7 @@ export default function Home() {
               )
             })
           ) : (
-            (['s1', 's2', 's3', 's4'] as WeekKey[]).map((week, idx) => {
+            (['s1', 's2', 's3', 's4', 's5'] as WeekKey[]).map((week, idx) => {
               const isActive = selectedWeek === week;
               const label = weekLabels[idx].split(' - ')[0]; 
               const subLabel = weekLabels[idx].split(' - ')[1]; 
@@ -968,11 +973,12 @@ export default function Home() {
               {!loading && data.length > 0 && (
                 <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginBottom: '8px' }}>
                     <colgroup>
-                        <col style={{ width: '280px' }} />
-                        <col style={{ width: '18%' }} />
-                        <col style={{ width: '18%' }} />
-                        <col style={{ width: '18%' }} />
-                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '30%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
