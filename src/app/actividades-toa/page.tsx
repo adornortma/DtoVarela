@@ -185,20 +185,6 @@ const MetricCard = ({
 }) => {
   const colors = getStatusColors(entry.value, kpi, config);
 
-  let trend = null;
-  if (entry.value !== null && prevValue != null) {
-      const diff = entry.value - prevValue;
-      const isBetter = config[kpi].targets.reverse ? diff < 0 : diff > 0;
-      const Icon = isBetter ? ArrowUpRight : ArrowDownRight;
-      if (Math.abs(diff) > 0.05) {
-        trend = {
-            icon: Icon,
-            diff: Math.abs(diff).toFixed(1),
-            color: 'rgba(0,0,0,0.3)'
-        }
-      }
-  }
-
   return (
     <td style={{ padding: '6px' }}>
       <div style={{
@@ -214,7 +200,6 @@ const MetricCard = ({
         border: '2px solid rgba(0,0,0,0.05)',
         transition: 'all 0.2s',
       }}>
-
         <span style={{ 
             fontSize: '18px', 
             fontWeight: '900', 
@@ -224,21 +209,6 @@ const MetricCard = ({
         }}>
           {entry.value !== null ? `${entry.value}${unit}` : '-'}
         </span>
-        
-        {trend && (
-            <div style={{ 
-                fontSize: '10px', 
-                fontWeight: '800', 
-                color: trend.color,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1px',
-                marginTop: '1px'
-            }}>
-                <trend.icon size={10} strokeWidth={2.5} />
-                {trend.diff}
-            </div>
-        )}
       </div>
     </td>
   );
