@@ -213,44 +213,33 @@ export default function CargaAdminPage() {
           // Identificación del técnico
           const techInput = parseTechnicianInput(rawTecnico);
           let tecnicoId = null;
-          let dbCelula = null;
 
           // Search by DNI
           if (techInput.dni) {
-            const { data: t, error: e1 } = await supabase.from('tecnicos').select('id, celula').eq('dni', techInput.dni).maybeSingle();
+            const { data: t, error: e1 } = await supabase.from('tecnicos').select('id').eq('dni', techInput.dni).maybeSingle();
             if (e1) console.error("Error DNI lookup", e1);
-            if (t) {
-              tecnicoId = t.id;
-              dbCelula = t.celula;
-            }
+            if (t) tecnicoId = t.id;
           }
 
           // Search by Name if not found
           if (!tecnicoId) {
-            const { data: t, error: e2 } = await supabase.from('tecnicos').select('id, celula').eq('nombre_normalizado', techInput.normalized).maybeSingle();
+            const { data: t, error: e2 } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).maybeSingle();
             if (e2) console.error("Error Name lookup", e2);
-            if (t) {
-              tecnicoId = t.id;
-              dbCelula = t.celula;
-            }
+            if (t) tecnicoId = t.id;
           }
 
           // Search by Alias
           if (!tecnicoId) {
             const { data: a } = await supabase.from('tecnico_alias').select('tecnico_id').eq('valor_original', rawTecnico).maybeSingle();
-            if (a) {
-              tecnicoId = a.tecnico_id;
-              const { data: t } = await supabase.from('tecnicos').select('celula').eq('id', tecnicoId).maybeSingle();
-              if (t) dbCelula = t.celula;
-            }
+            if (a) tecnicoId = a.tecnico_id;
           }
 
           // FINAL LOGIC
           if (tecnicoId) {
-            // Found: Update everything
+            // Found: Update Alias
             await supabase.from('tecnico_alias').upsert({ tecnico_id: tecnicoId, valor_original: rawTecnico, tipo: techInput.dni ? 'dni_nombre' : 'nombre' }, { onConflict: 'tecnico_id, valor_original' });
             
-            const cellToSave = rawCelula || dbCelula || "DISTRITO";
+            const cellToSave = rawCelula || "DISTRITO";
             const { error: mErr } = await supabase.from('metricas').upsert({
               tecnico_id: tecnicoId,
               fecha: selectedDate,
@@ -264,13 +253,12 @@ export default function CargaAdminPage() {
               processedCount++;
             }
           } else if (techInput.dni) {
-            // Auto-create
+            // Auto-create WITHOUT 'celula' column in 'tecnicos' table
             const { data: n, error: iErr } = await supabase.from('tecnicos').insert({
               dni: techInput.dni,
               nombre_normalizado: techInput.normalized,
               apellido: techInput.name.split(',')[0].trim(),
-              nombre: techInput.name.split(',')[1]?.trim() || "",
-              celula: rawCelula || "DISTRITO"
+              nombre: techInput.name.split(',')[1]?.trim() || ""
             }).select('id').single();
 
             if (iErr) {
