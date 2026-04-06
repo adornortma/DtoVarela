@@ -41,12 +41,12 @@ const KPI_CONFIG: KpiMappingConfig[] = [
   { key: 'reitero', label: 'Reiteros', names: ['reitero', 'reiteros', 'rtr', 'ret', 'rtr%', '% reitero'], type: 'percentage' },
   { key: 'puntualidad', label: 'Puntualidad', names: ['puntualidad', 'punt', 'pnt', 'pnt%', '% puntualidad'], type: 'percentage' },
   { key: 'productividad', label: 'Productividad', names: ['productividad', 'prod', 'prd', 'prd%'], type: 'number' },
-  { key: 'inicio', label: 'Inicio', names: ['inicio', 'ini', 'start', '%cump', 'cump'], type: 'number' },
+  { key: 'inicio', label: 'Inicio', names: ['inicio', 'ini', 'start', '% cump', '%cump', 'cump'], type: 'number' },
   { key: 'ok1', label: '1er OK', names: ['ok1', '1er ok', 'ok', 'ok1er', 'ok_1', 'calidad franqueo'], type: 'number' },
-  { key: 'cierres', label: 'Cierres', names: ['cierre', 'cierres', 'cant cierres', 'can cierres', 'closing', 'q_franqeo'], type: 'number' },
-  { key: 'completadas', label: 'Completadas', names: ['completada', 'completadas', 'comp', 'comp%', 'compl', '%completadas'], type: 'number' },
-  { key: 'no_encontrados', label: 'No Enc.', names: ['no encontrado', 'no encontrados', 'ne', 'n_e', '%no_encontradas'], type: 'number' },
-  { key: 'deriva_bajadas', label: 'Deriva Bajadas', names: ['deriva', 'bajadas', 'deriva bajadas', 'db', '%camb_bajada'], type: 'number' },
+  { key: 'cierres', label: 'Cierres', names: ['cierre', 'cierres', 'cant cierres', 'can cierres', 'closing', 'q_franqueos', 'q_franqeo'], type: 'number' },
+  { key: 'completadas', label: 'Completadas', names: ['completada', 'completadas', 'comp', 'comp%', 'compl', '% completadas', '%completadas'], type: 'number' },
+  { key: 'no_encontrados', label: 'No Enc.', names: ['no encontrado', 'no encontrados', 'ne', 'n_e', '%no_encontrado', '%no_encontradas'], type: 'number' },
+  { key: 'deriva_bajadas', label: 'Deriva Bajadas', names: ['deriva', 'bajadas', 'deriva bajadas', 'db', '% camb_bajada', '%camb_bajada'], type: 'number' },
 ];
 
 export default function CargaAdminPage() {
@@ -249,7 +249,20 @@ export default function CargaAdminPage() {
               await supabase.from('tecnico_alias').insert({ tecnico_id: tecnicoId, valor_original: rawTecnico, tipo: techInput.dni ? 'dni_nombre' : 'nombre' });
             }
             
-            const cellToSave = rawCelula || "DISTRITO";
+            // INTENTO DE RECUPERAR CÉLULA SI NO VIENE EN EL EXCEL
+            let cellToSave = rawCelula;
+            if (!cellToSave) {
+              const { data: lastMetric } = await supabase
+                .from('metricas')
+                .select('celula')
+                .eq('tecnico_id', tecnicoId)
+                .not('celula', 'eq', 'DISTRITO')
+                .order('fecha', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              
+              cellToSave = lastMetric?.celula || "DISTRITO";
+            }
 
             // Manual Upsert for Metricas
             const { data: existingMetric } = await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).maybeSingle();
