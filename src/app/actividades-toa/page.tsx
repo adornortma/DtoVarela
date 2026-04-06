@@ -566,11 +566,11 @@ export default function ActividadesToaPage() {
                   borderRadius: '16px', 
                   fontSize: '15px', 
                   fontWeight: selectedMonth === month ? '950' : '800', 
-                  backgroundColor: selectedMonth === month ? '#1e293b' : 'white', 
-                  color: selectedMonth === month ? 'white' : '#64748b', 
+                  backgroundColor: selectedMonth === month ? '#1e293b' : '#f1f5f9', 
+                  color: selectedMonth === month ? 'white' : '#475569', 
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
                   border: '2px solid',
-                  borderColor: selectedMonth === month ? '#1e293b' : '#e2e8f0', 
+                  borderColor: selectedMonth === month ? '#1e293b' : '#cbd5e1', 
                   cursor: 'pointer', 
                   boxShadow: selectedMonth === month ? '0 10px 15px -3px rgba(0,0,0,0.2)' : 'none',
                 }}
@@ -583,11 +583,11 @@ export default function ActividadesToaPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ 
               display: 'flex', 
-              backgroundColor: '#e2e8f0', 
+              backgroundColor: '#94a3b8', 
               borderRadius: '18px', 
               padding: '5px', 
               gap: '4px',
-              border: '1px solid #cbd5e1',
+              border: 'none',
             }}>
               <button 
                 onClick={() => setViewMode('semanal')}
@@ -635,23 +635,22 @@ export default function ActividadesToaPage() {
               const isActive = selectedKpi === kpi;
               const Icon = TOA_KPI_CONFIG[kpi].icon;
               return (
-                  <button 
-                    key={kpi} 
-                    onClick={() => setSelectedKpi(kpi)} 
-                    style={{ 
-                      minWidth: '200px', 
-                      padding: '16px 24px', 
-                      borderRadius: '20px', 
-                      backgroundColor: isActive ? '#f8fafc' : 'white', 
-                      border: '3px solid',
-                      borderColor: isActive ? '#1e293b' : '#e2e8f0', 
-                      transition: 'all 0.2s ease', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '14px', 
-                      cursor: 'pointer', 
-                      boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
-                    }}
+                    <button 
+                      key={kpi} 
+                      onClick={() => setSelectedKpi(kpi)} 
+                      style={{ 
+                        minWidth: '200px', 
+                        padding: '16px 24px', 
+                        borderRadius: '20px', 
+                        backgroundColor: isActive ? '#f8fafc' : '#f1f5f9', 
+                        border: isActive ? '3px solid #1e293b' : '3px solid #cbd5e1',
+                        transition: 'all 0.2s ease', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '14px', 
+                        cursor: 'pointer', 
+                        boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
+                      }}
                   >
                     <div style={{ color: isActive ? '#1e293b' : '#cbd5e1' }}><Icon size={20} strokeWidth={3} /></div>
                     <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1e293b' : '#64748b', textTransform: 'uppercase' }}>{TOA_KPI_CONFIG[kpi].label}</span>
@@ -664,24 +663,23 @@ export default function ActividadesToaPage() {
               const label = weekLabels[idx].split(' - ')[0]; 
               const subLabel = weekLabels[idx].split(' - ')[1]; 
               return (
-                  <button 
-                    key={week} 
-                    onClick={() => setSelectedWeek(week)} 
-                    style={{ 
-                      minWidth: '200px', 
-                      padding: '16px 24px', 
-                      borderRadius: '20px', 
-                      backgroundColor: isActive ? '#f8fafc' : 'white', 
-                      border: '3px solid',
-                      borderColor: isActive ? '#1e293b' : '#e2e8f0', 
-                      transition: 'all 0.2s ease', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'flex-start', 
-                      gap: '4px', 
-                      cursor: 'pointer', 
-                      boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
-                    }}
+                    <button 
+                      key={week} 
+                      onClick={() => setSelectedWeek(week)} 
+                      style={{ 
+                        minWidth: '200px', 
+                        padding: '16px 24px', 
+                        borderRadius: '20px', 
+                        backgroundColor: isActive ? '#f8fafc' : '#f1f5f9', 
+                        border: isActive ? '3px solid #1e293b' : '3px solid #cbd5e1',
+                        transition: 'all 0.2s ease', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'flex-start', 
+                        gap: '4px', 
+                        cursor: 'pointer', 
+                        boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
+                      }}
                   >
                     <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1e293b' : '#64748b', textTransform: 'uppercase' }}>{label}</span>
                     <span style={{ fontSize: '11px', fontWeight: '800', color: isActive ? '#64748b' : '#94a3b8' }}>{subLabel}</span>
