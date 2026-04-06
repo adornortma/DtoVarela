@@ -26,14 +26,22 @@ export const parseTechnicianInput = (input: string) => {
     return { name: namePart, dni, normalized: normalizeName(namePart) };
   }
 
-  // Caso 2: El DNI está al principio o al final (8 dígitos seguidos)
-  const numericMatch = cleanInput.match(/(\d{7,8})/);
-  if (numericMatch) {
-    const dni = numericMatch[1];
-    const namePart = cleanInput.replace(dni, "").trim();
+  // Caso 2: Formato TOA: "DNI-XXXXXXXX - NOMBRE"
+  const toaMatch = cleanInput.match(/DNI-?(\d+)\s*[-:]?\s*(.*)/i);
+  if (toaMatch) {
+    const dni = toaMatch[1];
+    const namePart = toaMatch[2].trim();
     return { name: namePart, dni, normalized: normalizeName(namePart) };
   }
 
-  // Caso 3: Solo nombre
+  // Caso 3: El DNI está al principio o al final (8 dígitos seguidos)
+  const numericMatch = cleanInput.match(/(\d{7,8})/);
+  if (numericMatch) {
+    const dni = numericMatch[1];
+    const namePart = cleanInput.replace(dni, "").replace(/^[-\s]+|[-\s]+$/g, "").trim();
+    return { name: namePart, dni, normalized: normalizeName(namePart) };
+  }
+
+  // Caso 4: Solo nombre
   return { name: cleanInput, dni: null, normalized: normalizeName(cleanInput) };
 };
