@@ -117,22 +117,42 @@ export default function CargaAdminPage() {
     const detectedKpis: string[] = [];
 
     try {
-      const rawLines = pastedData.split('\n').map(line => line.split('\t').map(c => c.trim()));
+      // Intentar detectar el mejor separador
+      const firstLines = pastedData.split('\n').filter(l => l.trim()).slice(0, 3);
+      let separator = '\t';
+      const separators = ['\t', ';', ','];
+      let maxCols = 0;
       
-      // Encontrar fila de encabezado
+      separators.forEach(s => {
+        const cols = firstLines[0]?.split(s).length || 0;
+        if (cols > maxCols) {
+          maxCols = cols;
+          separator = s;
+        }
+      });
+
+      const rawLines = pastedData.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => line.split(separator).map(c => c.trim()));
+      
+      // Encontrar fila de encabezado de forma más flexible
       const headerIndex = rawLines.findIndex(row => row.some(cell => {
            const v = cell.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-           return v.includes('tecnico') || v === 'agente' || v === 'nombre';
+           return v === 'tecnico' || v === 'agente' || v === 'nombre' || v.includes('tecnico') || v.includes('agente');
       }));
 
       if (headerIndex === -1) {
-        errors.push("No se encontró la columna 'Técnico'. Verifique que los datos incluyan encabezados.");
+        errors.push(`No se detectó la cabecera. (Separador detectado: ${separator === '\t' ? 'Tabulador' : separator})`);
         setLoading(false);
         return;
       }
 
       const headers = rawLines[headerIndex];
-      const tecnicoIdx = headers.findIndex(h => ['tecnico', 'nombre', 'agente'].some(v => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(v)));
+      const tecnicoIdx = headers.findIndex(h => {
+        const v = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return v === 'tecnico' || v === 'agente' || v === 'nombre' || v.includes('tecnico') || v.includes('agente');
+      });
       const celulaIdx = headers.findIndex(h => ['celula', 'sector', 'grupo', 'unidad'].some(v => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(v)));
       
       // Mapear KPIs dinámicamente
@@ -147,7 +167,20 @@ export default function CargaAdminPage() {
 
       setDetectedColumns(detectedKpis);
 
-      const rowsToProcess = rawLines.slice(headerIndex + 1).filter(row => row.length > 1 && row[tecnicoIdx]);
+      // Si no encontramos columna de Técnico, no podemos seguir
+      if (tecnicoIdx === -1) {
+        errors.push("Columna de identificador (Técnico/Agente) no encontrada en la fila de cabecera.");
+        setLoading(false);
+        return;
+      }
+
+      const rowsToProcess = rawLines.slice(headerIndex + 1).filter(row => row[tecnicoIdx]);
+      
+      if (rowsToProcess.length === 0) {
+        errors.push("Se detectó la cabecera pero no hay filas de datos debajo.");
+        setLoading(false);
+        return;
+      }
 
       for (const row of rowsToProcess) {
         const rawTecnico = row[tecnicoIdx] || "";
