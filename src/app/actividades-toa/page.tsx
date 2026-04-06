@@ -57,12 +57,12 @@ interface KpiConfigItem {
 
 // --- Constants ---
 const TOA_KPI_CONFIG: Record<ToaKpiType, KpiConfigItem> = {
-  inicio: { label: 'Inicio', unit: '', targets: { green: 10, yellow: 8 }, icon: Activity },
-  ok1: { label: '1er OK', unit: '', targets: { green: 8, yellow: 6 }, icon: CheckCircle2 },
-  cierres: { label: 'Cant. Cierres', unit: '', targets: { green: 12, yellow: 10 }, icon: ClipboardCheck },
-  completadas: { label: 'Completadas', unit: '', targets: { green: 10, yellow: 8 }, icon: ListChecks },
-  no_encontrados: { label: 'No encontrados', unit: '', targets: { green: 1, yellow: 3, reverse: true }, icon: Search },
-  deriva_bajadas: { label: 'Deriva Bajadas', unit: '', targets: { green: 0, yellow: 2, reverse: true }, icon: ArrowRightLeft },
+  inicio: { label: 'Inicio', unit: '%', targets: { green: 80, yellow: 71 }, icon: Activity },
+  ok1: { label: '1er OK', unit: '%', targets: { green: 80, yellow: 71 }, icon: CheckCircle2 },
+  cierres: { label: 'Cant. Cierres', unit: '', targets: { green: 0, yellow: 0 }, icon: ClipboardCheck },
+  completadas: { label: 'Completadas', unit: '%', targets: { green: 80, yellow: 71 }, icon: ListChecks },
+  no_encontrados: { label: 'No encontrados', unit: '%', targets: { green: 4.9, yellow: 7.49, reverse: true }, icon: Search },
+  deriva_bajadas: { label: 'Deriva Bajadas', unit: '%', targets: { green: 4.9, yellow: 7.49, reverse: true }, icon: ArrowRightLeft },
 };
 
 // --- Helper Functions ---
