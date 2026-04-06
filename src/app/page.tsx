@@ -485,8 +485,8 @@ const CellGroup = ({
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('semanal');
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
-  const [selectedMonth, setSelectedMonth] = useState('Marzo');
-  const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
+  const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
+  const [visibleMonths, setVisibleMonths] = useState(MONTHS.slice(new Date().getMonth(), new Date().getMonth() + 4));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
   const [data, setData] = useState<ItemRow[]>([]);
