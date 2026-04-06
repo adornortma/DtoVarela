@@ -181,7 +181,8 @@ export default function CargaAdminPage() {
           const rawTecnico = row[tecnicoIdx] || "";
           if (!rawTecnico) continue;
 
-          const rawCelula = celulaIdx !== -1 ? (row[celulaIdx] || null) : null;
+          let rawCelula = celulaIdx !== -1 ? (row[celulaIdx] || null) : null;
+          if (rawCelula) rawCelula = rawCelula.toUpperCase().replace(/_/g, ' ').trim();
           
           // Extraer valores de KPIs detectados
           const kpiValues: Record<string, number> = {};

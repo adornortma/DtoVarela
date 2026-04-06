@@ -486,7 +486,9 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('semanal');
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
-  const [visibleMonths, setVisibleMonths] = useState(MONTHS.slice(new Date().getMonth(), new Date().getMonth() + 4));
+  const [visibleMonths, setVisibleMonths] = useState(
+    MONTHS.slice(Math.max(0, new Date().getMonth() - 1), Math.max(0, new Date().getMonth() - 1) + 4)
+  );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
   const [data, setData] = useState<ItemRow[]>([]);
@@ -608,7 +610,7 @@ export default function Home() {
     };
 
     metrics.forEach(m => {
-      const cellName = m.celula;
+      const cellName = (m.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
       const week = getWeekOfDate(new Date(m.fecha));
@@ -652,10 +654,11 @@ export default function Home() {
     });
 
     cellTotals.forEach(ct => {
+      const cellName = (ct.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const week = getWeekOfDate(new Date(ct.fecha));
-      if (!cellMap[ct.celula]) {
-        cellMap[ct.celula] = {
-          name: ct.celula,
+      if (!cellMap[cellName]) {
+        cellMap[cellName] = {
+          name: cellName,
           isCell: true,
           metrics: {
             reiteros: createEmptyMetricData(month, year),
@@ -667,7 +670,7 @@ export default function Home() {
         };
       }
       
-      const cell = cellMap[ct.celula];
+      const cell = cellMap[cellName];
       cell.metrics.reiteros[week] = { value: ct.reitero, id: ct.id, date: ct.fecha };
       cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
       cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
