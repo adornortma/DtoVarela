@@ -727,8 +727,8 @@ export default function Home() {
                 <TrendingUp size={24} strokeWidth={3} />
             </div>
             <div>
-                <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px', lineHeight: '1' }}>Dashboard Operativo</h1>
-                <p style={{ color: '#64748b', fontSize: '15px', fontWeight: '600', marginTop: '6px' }}>Gestión centralizada del Distrito Varela</p>
+                <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px', lineHeight: '1' }}>KPIs Resolución</h1>
+                <p style={{ color: '#64748b', fontSize: '15px', fontWeight: '600', marginTop: '6px' }}>Fuente: Persa/incentivos - PBI Productividad</p>
             </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', padding: '8px 16px', backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: 'var(--card-shadow)' }}>
