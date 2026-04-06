@@ -757,12 +757,12 @@ export default function Home() {
                   borderRadius: '14px', 
                   fontSize: '14px', 
                   fontWeight: selectedMonth === month ? '950' : '700', 
-                  backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : 'white', 
-                  color: selectedMonth === month ? 'white' : '#64748b', 
+                  backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : '#f1f5f9', 
+                  color: selectedMonth === month ? 'white' : '#475569', 
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
-                  border: selectedMonth === month ? 'none' : '1px solid #e2e8f0', 
+                  border: selectedMonth === month ? 'none' : '2px solid #cbd5e1', 
                   cursor: 'pointer', 
-                  boxShadow: selectedMonth === month ? '0 6px 16px rgba(1, 157, 244, 0.3)' : '0 2px 4px rgba(0,0,0,0.02)',
+                  boxShadow: selectedMonth === month ? '0 6px 16px rgba(1, 157, 244, 0.3)' : 'none',
                   transform: selectedMonth === month ? 'translateY(-2px)' : 'none'
                 }}
               >
@@ -844,12 +844,12 @@ export default function Home() {
             <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '1px' }}>Vista:</span>
             <div style={{ 
               display: 'flex', 
-              backgroundColor: '#f1f5f9', 
+              backgroundColor: '#94a3b8', 
               borderRadius: '16px', 
               padding: '4px', 
               gap: '2px',
-              border: '1px solid #e2e8f0',
-              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)'
+              border: 'none',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)'
             }}>
               <button 
                 onClick={() => setViewMode('semanal')}
@@ -859,8 +859,8 @@ export default function Home() {
                   fontSize: '12px', 
                   fontWeight: '900', 
                   backgroundColor: viewMode === 'semanal' ? 'white' : 'transparent', 
-                  color: viewMode === 'semanal' ? 'var(--movistar-blue)' : '#94a3b8', 
-                  boxShadow: viewMode === 'semanal' ? '0 4px 10px rgba(0,0,0,0.08)' : 'none',
+                  color: viewMode === 'semanal' ? '#0f172a' : '#f1f5f9', 
+                  boxShadow: viewMode === 'semanal' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -880,8 +880,8 @@ export default function Home() {
                   fontSize: '12px', 
                   fontWeight: '900', 
                   backgroundColor: viewMode === 'indicador' ? 'white' : 'transparent', 
-                  color: viewMode === 'indicador' ? 'var(--movistar-blue)' : '#94a3b8', 
-                  boxShadow: viewMode === 'indicador' ? '0 4px 10px rgba(0,0,0,0.08)' : 'none',
+                  color: viewMode === 'indicador' ? '#0f172a' : '#f1f5f9', 
+                  boxShadow: viewMode === 'indicador' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -912,8 +912,8 @@ export default function Home() {
                       flexShrink: 0, 
                       padding: '12px 20px', 
                       borderRadius: '16px', 
-                      backgroundColor: isActive ? '#f8fbfc' : 'white', 
-                      border: isActive ? '2px solid var(--movistar-blue)' : '1px solid #eef2f6', 
+                      backgroundColor: isActive ? '#f8fbfc' : '#f1f5f9', 
+                      border: isActive ? '3px solid #1e293b' : '2px solid #cbd5e1', 
                       transition: 'all 0.2s ease', 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -923,8 +923,8 @@ export default function Home() {
                       transform: isActive ? 'translateY(-1px)' : 'none' 
                     }}
                   >
-                    <div style={{ color: isActive ? 'var(--movistar-blue)' : '#cbd5e1' }}><BarChart3 size={18} /></div>
-                    <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? 'var(--movistar-blue)' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{kpiConfig[kpi].label}</span>
+                    <div style={{ color: isActive ? '#1e293b' : '#64748b' }}><BarChart3 size={18} /></div>
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? '#1e293b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{kpiConfig[kpi].label}</span>
                   </button>
               )
             })
@@ -942,8 +942,8 @@ export default function Home() {
                       flexShrink: 0, 
                       padding: '12px 20px', 
                       borderRadius: '16px', 
-                      backgroundColor: isActive ? '#f8fbfc' : 'white', 
-                      border: isActive ? '2px solid var(--movistar-blue)' : '1px solid #eef2f6', 
+                      backgroundColor: isActive ? '#f8fbfc' : '#f1f5f9', 
+                      border: isActive ? '3px solid #1e293b' : '2px solid #cbd5e1', 
                       transition: 'all 0.2s ease', 
                       display: 'flex', 
                       flexDirection: 'column', 
@@ -954,8 +954,8 @@ export default function Home() {
                       transform: isActive ? 'translateY(-1px)' : 'none' 
                     }}
                   >
-                    <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? 'var(--movistar-blue)' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</span>
-                    <span style={{ fontSize: '10px', fontWeight: '700', color: isActive ? '#38bdf8' : '#94a3b8', textTransform: 'uppercase' }}>{subLabel}</span>
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? '#1e293b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</span>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: isActive ? '#475569' : '#94a3b8', textTransform: 'uppercase' }}>{subLabel}</span>
                   </button>
               )
             })
