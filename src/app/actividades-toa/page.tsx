@@ -436,23 +436,25 @@ export default function ActividadesToaPage() {
     const startDate = new Date(year, monthIndex, 1).toISOString();
     const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59).toISOString();
 
-    const { data: dbMetrics, error } = await supabase
-      .from('metricas')
-      .select(`
-        *,
-        tecnicos ( id, nombre, apellido )
-      `)
-      .gte('fecha', startDate)
-      .lte('fecha', endDate);
+    const [metricsRes, cellTotalsRes] = await Promise.all([
+      supabase.from('metricas').select('*, tecnicos(id, nombre, apellido)').gte('fecha', startDate).lte('fecha', endDate),
+      supabase.from('metricas_celula').select('*').gte('fecha', startDate).lte('fecha', endDate)
+    ]);
 
-    if (error) {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-      return;
-    }
+    if (metricsRes.error) console.error('Error metrics:', metricsRes.error);
+    if (cellTotalsRes.error) console.error('Error cell totals:', cellTotalsRes.error);
     
-    // Process data specifically for TOA metrics
-    setData(processToaData(dbMetrics || [], monthIndex, year));
+    // Calcular promedios del distrito (basado en tecnicos individuales)
+    const districtStats: any = {};
+    (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).forEach(k => {
+      const allValues = metricsRes.data?.map((m: any) => m[k]).filter((v: any) => v != null) || [];
+      if (allValues.length > 0) {
+          districtStats[k] = Math.round(allValues.reduce((a: any, b: any) => a + b, 0) / allValues.length);
+      }
+    });
+    setDistrictKPIs(districtStats);
+
+    setData(processToaData(metricsRes.data || [], cellTotalsRes.data || [], monthIndex, year));
     setLoading(false);
   };
 
@@ -460,7 +462,7 @@ export default function ActividadesToaPage() {
     fetchData();
   }, [selectedMonth]);
 
-  const processToaData = (metrics: any[], month: number, year: number) => {
+  const processToaData = (metrics: any[], cellTotals: any[], month: number, year: number) => {
     const cellMap: Record<string, ItemRow> = {};
 
     const createEmptyMetricData = (m: number, y: number): MetricData => ({
@@ -472,7 +474,7 @@ export default function ActividadesToaPage() {
     });
 
     metrics.forEach(m => {
-      const cellName = m.celula || 'DISTRITO';
+      const cellName = (m.celula || 'DISTRITO').toUpperCase().replace(/_/g, ' ').trim();
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
       const week = getWeekOfDate(new Date(m.fecha));
@@ -525,7 +527,7 @@ export default function ActividadesToaPage() {
     // Calculate cell averages/sums
     Object.values(cellMap).forEach(cell => {
         (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).forEach(kpi => {
-            (['s1', 's2', 's3', 's4'] as const).forEach(week => {
+            (['s1', 's2', 's3', 's4', 's5'] as const).forEach(week => {
                 if (cell.metrics[kpi][week].value === null) {
                   const techValues = cell.technicians?.map(t => t.metrics[kpi][week].value).filter(v => v !== null) as number[];
                   if (techValues.length > 0) {
@@ -534,6 +536,36 @@ export default function ActividadesToaPage() {
                 }
             });
         });
+    });
+
+    // POS-PROCESAMIENTO: Integrar totales cargados manualmente (Sobrescriben promedios)
+    cellTotals.forEach(ct => {
+      const cellName = (ct.celula || 'DISTRITO').toUpperCase().replace(/_/g, ' ').trim();
+      const week = getWeekOfDate(new Date(ct.fecha));
+      
+      if (!cellMap[cellName]) {
+        cellMap[cellName] = {
+           name: cellName,
+           isCell: true,
+           metrics: {
+             inicio: createEmptyMetricData(month, year),
+             ok1: createEmptyMetricData(month, year),
+             cierres: createEmptyMetricData(month, year),
+             completadas: createEmptyMetricData(month, year),
+             no_encontrados: createEmptyMetricData(month, year),
+             deriva_bajadas: createEmptyMetricData(month, year),
+           },
+           technicians: []
+        };
+      }
+      
+      const cell = cellMap[cellName];
+      if (ct.inicio != null) cell.metrics.inicio[week] = { value: ct.inicio, id: ct.id, date: ct.fecha };
+      if (ct.ok1 != null) cell.metrics.ok1[week] = { value: ct.ok1, id: ct.id, date: ct.fecha };
+      if (ct.cierres != null) cell.metrics.cierres[week] = { value: ct.cierres, id: ct.id, date: ct.fecha };
+      if (ct.completadas != null) cell.metrics.completadas[week] = { value: ct.completadas, id: ct.id, date: ct.fecha };
+      if (ct.no_encontrados != null) cell.metrics.no_encontrados[week] = { value: ct.no_encontrados, id: ct.id, date: ct.fecha };
+      if (ct.deriva_bajadas != null) cell.metrics.deriva_bajadas[week] = { value: ct.deriva_bajadas, id: ct.id, date: ct.fecha };
     });
 
     return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
