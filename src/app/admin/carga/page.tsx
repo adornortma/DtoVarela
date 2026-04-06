@@ -195,14 +195,20 @@ export default function CargaAdminPage() {
           // Caso: Fila de Totales de Célula
           if (rawTecnico.toUpperCase().includes('TOTAL')) {
             const celulaName = rawCelula || rawTecnico.replace(/TOTAL\s+/i, '').trim();
-            const { error: cellError } = await supabase.from('metricas_celula').upsert({ 
-              celula: celulaName, 
-              fecha: selectedDate, 
-              ...updatePayload 
-            }, { onConflict: 'celula, fecha' });
             
-            if (cellError) {
-              errors.push(`Error celda ${celulaName}: ${cellError.message}`);
+            const { data: existingCell } = await supabase.from('metricas_celula').select('id').eq('celula', celulaName).eq('fecha', selectedDate).maybeSingle();
+            
+            let cellErr;
+            if (existingCell) {
+              const { error } = await supabase.from('metricas_celula').update(updatePayload).eq('id', existingCell.id);
+              cellErr = error;
+            } else {
+              const { error } = await supabase.from('metricas_celula').insert({ celula: celulaName, fecha: selectedDate, ...updatePayload });
+              cellErr = error;
+            }
+
+            if (cellErr) {
+              errors.push(`Error celda ${celulaName}: ${cellErr.message}`);
               continue;
             }
             cellTotalsCount++;
@@ -236,16 +242,25 @@ export default function CargaAdminPage() {
 
           // FINAL LOGIC
           if (tecnicoId) {
-            // Found: Update Alias
-            await supabase.from('tecnico_alias').upsert({ tecnico_id: tecnicoId, valor_original: rawTecnico, tipo: techInput.dni ? 'dni_nombre' : 'nombre' }, { onConflict: 'tecnico_id, valor_original' });
+            // Manual Upsert for Alias
+            const { data: existingAlias } = await supabase.from('tecnico_alias').select('id').eq('tecnico_id', tecnicoId).eq('valor_original', rawTecnico).maybeSingle();
+            if (!existingAlias) {
+              await supabase.from('tecnico_alias').insert({ tecnico_id: tecnicoId, valor_original: rawTecnico, tipo: techInput.dni ? 'dni_nombre' : 'nombre' });
+            }
             
             const cellToSave = rawCelula || "DISTRITO";
-            const { error: mErr } = await supabase.from('metricas').upsert({
-              tecnico_id: tecnicoId,
-              fecha: selectedDate,
-              celula: cellToSave,
-              ...updatePayload
-            }, { onConflict: 'tecnico_id, fecha' });
+
+            // Manual Upsert for Metricas
+            const { data: existingMetric } = await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).maybeSingle();
+            
+            let mErr;
+            if (existingMetric) {
+               const { error } = await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
+               mErr = error;
+            } else {
+               const { error } = await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
+               mErr = error;
+            }
 
             if (mErr) {
               errors.push(`Error DB (${rawTecnico}): ${mErr.message}`);
@@ -265,12 +280,13 @@ export default function CargaAdminPage() {
               errors.push(`Error creacion technical (${techInput.dni}): ${iErr.message}`);
             } else if (n) {
               autoCreatedCount++;
-              const { error: mErr } = await supabase.from('metricas').upsert({
+              // Insert directly (newly created)
+              const { error: mErr } = await supabase.from('metricas').insert({
                 tecnico_id: n.id,
                 fecha: selectedDate,
                 celula: rawCelula || "DISTRITO",
                 ...updatePayload
-              }, { onConflict: 'tecnico_id, fecha' });
+              });
               
               if (mErr) errors.push(`Error metrica (${rawTecnico}): ${mErr.message}`);
               else processedCount++;
