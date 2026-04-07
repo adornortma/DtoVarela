@@ -1,3 +1,7 @@
+/**
+ * Dashboard de Carga de Datos Admin
+ * Actualizado con Sincronización de Técnicos y Smart Matching.
+ */
 'use client';
 
 import React, { useState, useEffect } from 'react';
