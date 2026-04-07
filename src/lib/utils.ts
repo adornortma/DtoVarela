@@ -4,8 +4,8 @@ export const normalizeName = (name: string): string => {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Eliminar acentos
-    .replace(/[^a-z0-9\s]/g, "")    // Eliminar caracteres especiales (excepto espacios)
-    .replace(/\s+/g, " ")           // Colapsar múltiples espacios
+    .replace(/[^\w\s]/g, " ")         // Reemplazar caracteres especiales (incluyendo comas) por espacios
+    .replace(/\s+/g, " ")           // Colapsar múltiples espacios (incluye NBSP \u00A0)
     .trim();
 };
 

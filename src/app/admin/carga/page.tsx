@@ -116,39 +116,52 @@ export default function CargaAdminPage() {
     const detectedKpis: string[] = [];
 
     try {
-      // Intentar detectar el mejor separador
-      const firstLines = pastedData.split('\n').filter(l => l.trim()).slice(0, 3);
+      const initialRows = pastedData.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      
+      // Encontrar fila de encabezado
+      const headerIndex = initialRows.findIndex(row => {
+           const v = row.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+           return v.includes('tecnico') || v.includes('agente') || v.includes('nombre');
+      });
+
+      if (headerIndex === -1) {
+        errors.push("No se detectó la cabecera. Asegúrate de copiar los títulos de las columnas (Técnico, Productividad, etc).");
+        setLoading(false);
+        setSummary({ total: 0, processed: 0, errors, techniciansCreated: 0, cellTotalsProcessed: 0, kpisDetected: [] });
+        return;
+      }
+
+      // Detectar el mejor separador de la cabecera
+      const headerText = initialRows[headerIndex];
       let separator = '\t';
-      const separators = ['\t', ';', ','];
+      const separators = ['\t', ';', ',', '  ']; 
       let maxCols = 0;
       
       separators.forEach(s => {
-        const cols = firstLines[0]?.split(s).length || 0;
+        const cols = headerText.split(s).length;
         if (cols > maxCols) {
           maxCols = cols;
           separator = s;
         }
       });
 
-      const rawLines = pastedData.split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(line => line.split(separator).map(c => c.trim()));
-      
-      // Encontrar fila de encabezado
-      const headerIndex = rawLines.findIndex(row => row.some(cell => {
-           const v = cell.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-           return v === 'tecnico' || v === 'agente' || v === 'nombre' || v.includes('tecnico') || v.includes('agente');
-      }));
-
-      if (headerIndex === -1) {
-        errors.push(`No se detectó la cabecera. Asegúrate de copiar los títulos de las columnas. (Separador detectado: ${separator === '\t' ? 'Tabulador' : separator})`);
-        setLoading(false);
-        setSummary({ total: 0, processed: 0, errors, techniciansCreated: 0, cellTotalsProcessed: 0, kpisDetected: [] });
-        return;
-      }
-
-      const headers = rawLines[headerIndex];
+      const headers = headerText.split(separator).map(c => c.trim());
+      const rawLines = initialRows.map(line => {
+        // Para cada fila, si el separador principal falla (da 1 columna pero esperamos más), try others
+        let parts = line.split(separator).map(c => c.trim());
+        if (parts.length < 2 && headers.length >= 2) {
+            for (const s of separators) {
+                const tryParts = line.split(s).map(c => c.trim());
+                if (tryParts.length >= 2) {
+                    parts = tryParts;
+                    break;
+                }
+            }
+        }
+        return parts;
+      });
       const tecnicoIdx = headers.findIndex(h => {
         const v = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         return v === 'tecnico' || v === 'agente' || v === 'nombre' || v.includes('tecnico') || v.includes('agente');
@@ -224,18 +237,40 @@ export default function CargaAdminPage() {
           // Search by DNI
           if (techInput.dni) {
             const { data: t, error: e1 } = await supabase.from('tecnicos').select('id').eq('dni', techInput.dni).maybeSingle();
-            if (e1) console.error("Error DNI lookup", e1);
             if (t) tecnicoId = t.id;
           }
 
           // Search by Name if not found
           if (!tecnicoId) {
-            const { data: t, error: e2 } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).maybeSingle();
-            if (e2) console.error("Error Name lookup", e2);
-            if (t) tecnicoId = t.id;
+            const { data: t } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).maybeSingle();
+            if (t) {
+              tecnicoId = t.id;
+            } else {
+              // Intento fallido con nombre original. 
+              // Si tiene múltiples palabras, intentar swap (ej: "Apellido Nombre" <-> "Nombre Apellido")
+              const words = techInput.normalized.split(' ').filter(w => w.length > 0);
+              if (words.length >= 2) {
+                // Rotar: el primer nombre al final (ej: "Algue Jonathan" -> "Jonathan Algue")
+                const rotated = [...words.slice(1), words[0]].join(' ');
+                const { data: t2 } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', rotated).maybeSingle();
+                
+                if (t2) {
+                   tecnicoId = t2.id;
+                   console.log(`Smart matched (rotated): ${rawTecnico} -> ${rotated}`);
+                } else if (words.length > 2) {
+                   // Si hay 3+ palabras, probar también moviendo la última al principio
+                   const lastToFront = [words[words.length-1], ...words.slice(0, -1)].join(' ');
+                   const { data: t3 } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', lastToFront).maybeSingle();
+                   if (t3) {
+                      tecnicoId = t3.id;
+                      console.log(`Smart matched (lastToFront): ${rawTecnico} -> ${lastToFront}`);
+                   }
+                }
+              }
+            }
           }
 
-          // Search by Alias
+          // Search by Alias (as a last resort)
           if (!tecnicoId) {
             const { data: a } = await supabase.from('tecnico_alias').select('tecnico_id').eq('valor_original', rawTecnico).maybeSingle();
             if (a) tecnicoId = a.tecnico_id;
