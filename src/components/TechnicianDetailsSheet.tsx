@@ -283,8 +283,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     no_encontrados: false
   });
 
-  if (!isOpen || !technician || !technician.metrics) return null;
-  const teacherMetrics = technician.metrics;
+  const teacherMetrics = technician?.metrics || {};
 
   const kpiConfigs: Record<string, { color: string, target: number, unit: string, reverse?: boolean }> = {
     resolucion: { color: '#019df4', target: 75, unit: '%' },
@@ -293,109 +292,102 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     no_encontrados: { color: '#64748b', target: 4.9, unit: '%', reverse: true },
   };
 
-  const getAvg = (kpi: string) => {
-    try {
-      const kpiData = teacherMetrics[kpi];
-      if (!kpiData) return null;
-      const values = ['s1', 's2', 's3', 's4', 's5']
-        .map(s => kpiData[s]?.value)
-        .filter(v => typeof v === 'number' && v !== null) as number[];
-      if (values.length === 0) return null;
-      return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
-    } catch (e) {
-      return null;
-    }
-  };
+  const scores = useMemo(() => {
+    if (!technician) return {} as any;
+    
+    const getAvg = (kpi: string) => {
+      try {
+        const kpiData = teacherMetrics[kpi];
+        if (!kpiData) return null;
+        const values = ['s1', 's2', 's3', 's4', 's5']
+          .map(s => kpiData[s]?.value)
+          .filter(v => typeof v === 'number' && v !== null) as number[];
+        if (values.length === 0) return null;
+        return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
+      } catch (e) { return null; }
+    };
 
-  const getLatest = (kpi: string) => {
-    try {
-      const kpiData = teacherMetrics[kpi];
-      if (!kpiData) return null;
-      const weeksOrder = ['s5', 's4', 's3', 's2', 's1'];
-      for (const w of weeksOrder) {
-        const val = kpiData[w]?.value;
-        if (typeof val === 'number' && val !== null) return val;
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  };
+    return {
+      resolucion: getAvg('resolucion'),
+      productividad: getAvg('productividad'),
+      reiteros: getAvg('reiteros'),
+      puntualidad: getAvg('puntualidad'),
+      inicio: getAvg('inicio'),
+      ok1: getAvg('ok1'),
+      completadas: getAvg('completadas'),
+      no_encontrados: getAvg('no_encontrados'),
+      deriva_bajadas: getAvg('deriva_bajadas'),
+      cierres: getAvg('cierres'),
+    };
+  }, [teacherMetrics, technician]);
 
-  const scores = useMemo(() => ({
-    resolucion: getAvg('resolucion'),
-    productividad: getAvg('productividad'),
-    reiteros: getAvg('reiteros'),
-    puntualidad: getAvg('puntualidad'),
-    inicio: getAvg('inicio'),
-    ok1: getAvg('ok1'),
-    completadas: getAvg('completadas'),
-    no_encontrados: getAvg('no_encontrados'),
-    deriva_bajadas: getAvg('deriva_bajadas'),
-    cierres: getAvg('cierres'),
-  }), [teacherMetrics]);
+  const latest = useMemo(() => {
+    if (!technician) return {} as any;
+    
+    const getLatest = (kpi: string) => {
+      try {
+        const kpiData = teacherMetrics[kpi];
+        if (!kpiData) return null;
+        const weeksOrder = ['s5', 's4', 's3', 's2', 's1'];
+        for (const w of weeksOrder) {
+          const val = kpiData[w]?.value;
+          if (typeof val === 'number' && val !== null) return val;
+        }
+        return null;
+      } catch (e) { return null; }
+    };
 
-  const latest = useMemo(() => ({
-    resolucion: getLatest('resolucion'),
-    productividad: getLatest('productividad'),
-    ok1: getLatest('ok1'),
-    no_encontrados: getLatest('no_encontrados'),
-  }), [teacherMetrics]);
+    return {
+      resolucion: getLatest('resolucion'),
+      productividad: getLatest('productividad'),
+      ok1: getLatest('ok1'),
+      no_encontrados: getLatest('no_encontrados'),
+    };
+  }, [teacherMetrics, technician]);
 
-  // Classification & Insights Logic
   const performanceInfo = useMemo(() => {
     const list: string[] = [];
-    let status = 'estable'; // default
+    let status = 'estable';
     
+    if (!technician) return { insights: [], status };
+
     try {
-      // 1. Classification Logic (Status)
-      const resolucionVal = scores.resolucion || 0;
-      const productivityVal = scores.productividad || 0;
-      const reiterosVal = scores.reiteros || 0;
+      const resVal = scores.resolucion || 0;
+      const prodVal = scores.productividad || 0;
+      const reitVal = scores.reiteros || 0;
 
-      const isHighPerf = resolucionVal >= 78 && productivityVal >= 6.5;
-      const isAtRisk = resolucionVal < 70 || reiterosVal > 5.5;
+      if (resVal >= 78 && prodVal >= 6.5) status = 'high';
+      else if (resVal < 70 || reitVal > 5.5) status = 'risk';
 
-      if (isHighPerf) status = 'high';
-      else if (isAtRisk) status = 'risk';
-
-      // 2. Trend & Operational Insights
-      // Multi-week trend check
       ['resolucion', 'productividad', 'ok1', 'reiteros'].forEach(kpi => {
-          const kpiData = teacherMetrics[kpi];
-          if (!kpiData) return;
-
-          const weeks = ['s1', 's2', 's3', 's4', 's5'];
-          const values = weeks.map(w => kpiData[w]?.value).filter(v => typeof v === 'number' && v !== null) as number[];
-          
-          if (values.length >= 2) {
-              const last = values[values.length - 1];
-              const prev = values[values.length - 2];
-              
-              // Goals / Alert checks
-              if (kpi === 'resolucion' && last < 75) list.push("Resolución debajo del objetivo semanal");
-              if (kpi === 'reiteros' && last > 5) list.push("Alerta de reiteros en última semana");
-              if (kpi === 'productividad' && last > prev) list.push("Mejora en productividad detectada");
-              if (kpi === 'resolucion' && last > prev) list.push("Tendencia creciente en resolución");
-          }
+        const kpiData = teacherMetrics[kpi];
+        if (!kpiData) return;
+        const weeks = ['s1', 's2', 's3', 's4', 's5'];
+        const values = weeks.map(w => kpiData[w]?.value).filter(v => typeof v === 'number' && v !== null) as number[];
+        if (values.length >= 2) {
+          const last = values[values.length - 1];
+          const prev = values[values.length - 2];
+          if (kpi === 'resolucion' && last < 75) list.push("Resolución debajo del objetivo semanal");
+          if (kpi === 'reiteros' && last > 5) list.push("Alerta de reiteros en última semana");
+          if (kpi === 'productividad' && last > prev) list.push("Mejora en productividad detectada");
+          if (kpi === 'resolucion' && last > prev) list.push("Tendencia creciente en resolución");
+        }
       });
+    } catch (e) { console.error(e); }
 
-      // Activity checks
-      if ((scores.no_encontrados || 0) > 6.9) list.push("Nivel crítico de No Encontrados");
-      if ((scores.deriva_bajadas || 0) > 6.9) list.push("Deriva de bajadas fuera de rango");
-      if ((scores.ok1 || 0) < 71) list.push("Bajo rendimiento en 1er OK");
-    } catch (e) {
-      console.error("Error calculating performance info", e);
-    }
+    return { insights: list.slice(0, 3), status };
+  }, [teacherMetrics, scores, technician]);
 
-    return { insights: list.slice(0, 3) || [], status };
-  }, [teacherMetrics, scores]);
+  const statusConfig = (function() {
+    const configs: any = {
+      high: { label: 'Alto Rendimiento', color: '#10b981', bg: '#ecfdf5' },
+      risk: { label: 'En Riesgo', color: '#ef4444', bg: '#fef2f2' },
+      estable: { label: 'Rendimiento Estable', color: '#64748b', bg: '#f1f5f9' }
+    };
+    return configs[performanceInfo.status] || configs.estable;
+  })();
 
-  const statusConfig = {
-    high: { label: 'Alto Rendimiento', color: '#10b981', bg: '#ecfdf5' },
-    risk: { label: 'En Riesgo', color: '#ef4444', bg: '#fef2f2' },
-    estable: { label: 'Rendimiento Estable', color: '#64748b', bg: '#f1f5f9' }
-  }[performanceInfo.status as 'high' | 'risk' | 'estable'] || { label: 'Normal', color: '#64748b', bg: '#f1f5f9' };
+  if (!isOpen || !technician) return null;
 
   return (
     <>
