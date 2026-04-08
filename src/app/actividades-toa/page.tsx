@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
+import TechnicianDetailsSheet from '@/components/TechnicianDetailsSheet';
 
 // --- Types ---
 type ToaKpiType = 'inicio' | 'ok1' | 'cierres' | 'completadas' | 'no_encontrados' | 'deriva_bajadas';
@@ -43,6 +44,7 @@ interface ItemRow {
   name: string;
   metrics: Record<ToaKpiType, MetricData>;
   isCell: boolean;
+  celula?: string;
   technicians?: ItemRow[];
 }
 
@@ -219,13 +221,15 @@ const CellGroup = ({
   kpi, 
   viewMode,
   selectedWeek,
-  config 
+  config,
+  onTechnicianClick
 }: { 
   row: ItemRow, 
   kpi: ToaKpiType, 
   viewMode: ViewMode,
   selectedWeek: WeekKey,
-  config: Record<ToaKpiType, KpiConfigItem>
+  config: Record<ToaKpiType, KpiConfigItem>,
+  onTechnicianClick: (tech: ItemRow) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const metrics = row.metrics[kpi];
@@ -318,8 +322,11 @@ const CellGroup = ({
 
                 {isExpanded && sortedTechnicians.map((tech) => (
                     <tr key={tech.name} style={{ backgroundColor: '#ffffff', borderTop: '2px solid #f1f5f9' }}>
-                        <td style={{ 
+                        <td 
+                          onClick={() => onTechnicianClick({ ...tech, celula: row.name })}
+                          style={{ 
                             padding: '12px 24px 12px 72px', 
+                            cursor: 'pointer'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <div style={{ width: '3px', height: '16px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
@@ -369,6 +376,8 @@ export default function ActividadesToaPage() {
   const [data, setData] = useState<ItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [districtKPIs, setDistrictKPIs] = useState<any>(null);
+  const [selectedTechnician, setSelectedTechnician] = useState<ItemRow | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const handleMonthSelect = (month: string) => {
     setSelectedMonth(month);
@@ -737,11 +746,21 @@ export default function ActividadesToaPage() {
                   viewMode={viewMode}
                   selectedWeek={selectedWeek}
                   config={TOA_KPI_CONFIG} 
+                  onTechnicianClick={(tech) => {
+                    setSelectedTechnician(tech);
+                    setShowDetails(true);
+                  }}
                 />
               ))}
             </div>
           )}
       </div>
+
+      <TechnicianDetailsSheet
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        technician={selectedTechnician}
+      />
 
       <style jsx global>{`
         @keyframes fadeIn {
