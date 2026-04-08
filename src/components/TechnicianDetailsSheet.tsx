@@ -55,8 +55,7 @@ const MetricCard = ({ label, value, unit, statusStyle, icon: Icon }: any) => (
     flex: 1,
     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
     border: '1px solid rgba(0,0,0,0.05)',
-    position: 'relative',
-    overflow: 'hidden'
+    position: 'relative'
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: statusStyle.color }}>
       <Icon size={14} strokeWidth={3} />
@@ -110,9 +109,8 @@ const LineChart = ({
   const [hoveredPoint, setHoveredPoint] = useState<any>(null);
   const width = 600;
   const height = 240;
-  const padding = 40;
+  const padding = 50;
 
-  // Dynamic rolling window: find all available week keys in data
   const weeks = useMemo(() => {
     const allKeys = new Set<string>();
     Object.values(data || {}).forEach((kpiData: any) => {
@@ -125,7 +123,6 @@ const LineChart = ({
       const numB = parseInt(b.slice(1));
       return numA - numB;
     });
-    // Fallback to s1-s5 if empty
     return sorted.length > 0 ? sorted : ['s1', 's2', 's3', 's4', 's5'];
   }, [data]);
   
@@ -138,7 +135,7 @@ const LineChart = ({
     try {
       const isPercent = configs[kpi]?.unit === '%';
       const kpiData = data?.[kpi];
-      if (!kpiData) return weeks.map(() => null);
+      if (!kpiData) return [];
 
       return weeks.map((w, i) => {
         const val = kpiData[w]?.value;
@@ -152,27 +149,25 @@ const LineChart = ({
         };
       });
     } catch (e) {
-      return weeks.map(() => null);
+      return [];
     }
   };
 
   return (
     <div style={{ width: '100%', height: height + 60, position: 'relative' }}>
       <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
-        {/* Grid Lines */}
-        {[0, 25, 50, 75, 100].map(v => (
-          <line 
-            key={v} 
-            x1={padding} 
-            y1={getScaleY(v, true)} 
-            x2={width - padding} 
-            y2={getScaleY(v, true)} 
-            stroke="#f1f5f9" 
-            strokeWidth="1" 
-          />
-        ))}
+        {/* Y-Axis Labels */}
+        {[0, 25, 50, 75, 100].map(v => {
+          const y = getScaleY(v, true);
+          return (
+            <g key={v}>
+              <text x={padding - 10} y={y + 4} textAnchor="end" fontSize="10" fontWeight="700" fill="#94a3b8">{v}%</text>
+              <line x1={padding} y1={y} x2={width - (padding / 2)} y2={y} stroke="#f1f5f9" strokeWidth="1" />
+            </g>
+          );
+        })}
 
-        {/* X Axis Labels */}
+        {/* X-Axis Labels */}
         {weeks.map((w, i) => (
           <text 
             key={w} 
@@ -191,23 +186,41 @@ const LineChart = ({
         {Object.entries(configs).map(([kpi, config]) => {
           if (!activeKPIs[kpi]) return null;
           const points = getPoints(kpi);
+          const validPoints = points.filter(p => p !== null);
+          
+          if (validPoints.length < 3) {
+            return (
+              <text 
+                key={`${kpi}-insufficient`}
+                x={width / 2} 
+                y={height / 2} 
+                textAnchor="middle" 
+                fontSize="12" 
+                fontWeight="800" 
+                fill={config.color} 
+                opacity="0.5"
+              >
+                {config.unit === '%' ? (kpi === 'ok1' ? '1er OK' : kpi.split('_').join(' ')) : kpi} : Datos insuficientes para análisis
+              </text>
+            );
+          }
+
           const isPercent = config.unit === '%';
           const targetY = getScaleY(config.target, isPercent);
 
-          // Target Line
           return (
             <g key={kpi}>
               <line 
                 x1={padding} 
                 y1={targetY} 
-                x2={width - padding} 
+                x2={width - (padding / 2)} 
                 y2={targetY} 
-                stroke="#cbd5e1" 
+                stroke={config.color} 
                 strokeWidth="1" 
                 strokeDasharray="4 4" 
+                opacity="0.4"
               />
               
-              {/* Actual Line */}
               {(() => {
                 let paths: string[] = [];
                 let currentPath = "";
@@ -236,7 +249,6 @@ const LineChart = ({
                 ));
               })()}
 
-              {/* Interaction points */}
               {points.map((p, i) => p && (
                 <circle 
                   key={i} 
@@ -255,7 +267,7 @@ const LineChart = ({
           );
         })}
 
-        {/* Tooltip Overlay */}
+        {/* Tooltip */}
         {hoveredPoint && (() => {
           const config = configs[hoveredPoint.kpi];
           const diff = hoveredPoint.val - config.target;
@@ -281,13 +293,6 @@ const LineChart = ({
 };
 
 // --- Helper Functions ---
-
-const normalize = (value: number | null, min: number, max: number, inverted = false) => {
-  if (value === null) return 0;
-  let score = ((value - min) / (max - min)) * 100;
-  if (inverted) score = 100 - score;
-  return Math.min(Math.max(score, 0), 100);
-};
 
 const getStatusColor = (value: number | null, green: number, yellow: number, reverse = false) => {
   if (value === null) return { bg: '#f1f5f9', color: '#64748b' };
@@ -327,7 +332,8 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
       try {
         const kpiData = teacherMetrics[kpi];
         if (!kpiData) return null;
-        const values = ['s1', 's2', 's3', 's4', 's5']
+        const allWeekKeys = Object.keys(kpiData).filter(k => /^s\d+$/.test(k));
+        const values = allWeekKeys
           .map(s => kpiData[s]?.value)
           .filter(v => typeof v === 'number' && v !== null) as number[];
         if (values.length === 0) return null;
@@ -356,7 +362,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
       try {
         const kpiData = teacherMetrics[kpi];
         if (!kpiData) return null;
-        const weeksOrder = ['s5', 's4', 's3', 's2', 's1'];
+        const weeksOrder = ['s8', 's7', 's6', 's5', 's4', 's3', 's2', 's1'];
         for (const w of weeksOrder) {
           const val = kpiData[w]?.value;
           if (typeof val === 'number' && val !== null) return val;
@@ -368,48 +374,10 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     return {
       resolucion: getLatest('resolucion'),
       productividad: getLatest('productividad'),
-      ok1: getLatest('ok1'),
+      reiteros: getLatest('reiteros'),
       no_encontrados: getLatest('no_encontrados'),
     };
   }, [teacherMetrics, technician]);
-
-  const performanceInfo = useMemo(() => {
-    const list: string[] = [];
-    let status = 'estable';
-    
-    if (!technician) return { insights: [], status };
-
-    try {
-      const resVal = scores.resolucion || 0;
-      const prodVal = scores.productividad || 0;
-      const okVal = scores.ok1 || 0;
-
-      if (resVal >= 78 && prodVal >= 6.5) status = 'high';
-      else if (resVal < 70 || scores.reiteros > 5.5) status = 'risk';
-
-      // Advanced insights logic
-      if (resVal > 75) list.push("Resolución por encima del objetivo");
-      else if (resVal < 70) list.push("Alerta: Resolución crítica");
-
-      if (prodVal >= 6) list.push("Productividad en objetivo");
-      else list.push("Productividad debajo del objetivo");
-
-      if (okVal > 80) list.push("Excelente rendimiento en 1er OK");
-      
-      if ((scores.no_encontrados || 0) > 6) list.push("No encontrados en aumento");
-    } catch (e) { console.error(e); }
-
-    return { insights: list.slice(0, 2), status };
-  }, [teacherMetrics, scores, technician]);
-
-  const statusConfig = (function() {
-    const configs: any = {
-      high: { label: 'Alto Rendimiento', color: '#10b981', bg: '#ecfdf5' },
-      risk: { label: 'En Riesgo', color: '#ef4444', bg: '#fef2f2' },
-      estable: { label: 'Rendimiento Estable', color: '#64748b', bg: '#f1f5f9' }
-    };
-    return configs[performanceInfo.status] || configs.estable;
-  })();
 
   if (!isOpen || !technician) return null;
 
@@ -451,25 +419,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: 1 }}>{technician.name}</h2>
-                  <div style={{ 
-                    padding: '6px 12px',
-                    backgroundColor: statusConfig.bg,
-                    borderRadius: '10px',
-                    color: statusConfig.color,
-                    fontSize: '11px',
-                    fontWeight: '900',
-                    textTransform: 'uppercase',
-                    border: `1px solid ${statusConfig.color}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: statusConfig.color }} />
-                    {statusConfig.label}
-                  </div>
-                </div>
+                <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: 1, marginBottom: '12px' }}>{technician.name}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
                   <Briefcase size={16} />
                   <span style={{ fontSize: '15px', fontWeight: '700' }}>Célula: <span style={{ color: '#0f172a' }}>{technician.celula}</span></span>
@@ -491,7 +441,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <MetricCard label="Resolución" value={latest.resolucion} unit="%" icon={TrendingUp} statusStyle={getStatusColor(latest.resolucion, 75, 70)} />
                   <MetricCard label="Productividad" value={latest.productividad} unit="" icon={Zap} statusStyle={getStatusColor(latest.productividad, 6, 5)} />
-                  <MetricCard label="1er OK" value={latest.ok1} unit="%" icon={CheckCircle2} statusStyle={getStatusColor(latest.ok1, 80, 71)} />
+                  <MetricCard label="Reiteros" value={latest.reiteros} unit="%" icon={ArrowRightLeft} statusStyle={getStatusColor(latest.reiteros, 4.5, 5, true)} />
                   <MetricCard label="No encontrados" value={latest.no_encontrados} unit="%" icon={Search} statusStyle={getStatusColor(latest.no_encontrados, 4.9, 6.9, true)} />
                 </div>
               </div>
@@ -504,29 +454,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
                 border: '2px solid #f1f5f9',
                 marginBottom: '40px'
               }}>
-                {/* Insights Banner */}
-                {performanceInfo.insights.length > 0 && (
-                  <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
-                    {performanceInfo.insights.map((insight: string, idx: number) => (
-                      <div key={idx} style={{ 
-                        flex: 1, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        padding: '12px 16px', 
-                        backgroundColor: '#f0f9ff', 
-                        borderRadius: '16px', 
-                        borderLeft: '4px solid #0ea5e9',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                      }}>
-                        <Zap size={14} color="#0ea5e9" />
-                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#0369a1' }}>{insight}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: '950', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Semanal</h3>
                   
                   <div style={{ display: 'flex', gap: '8px' }}>
