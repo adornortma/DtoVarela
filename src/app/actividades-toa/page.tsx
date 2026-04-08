@@ -552,7 +552,7 @@ export default function ActividadesToaPage() {
             </div>
             <div>
                 <h1 style={{ fontSize: '36px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: '1' }}>Actividades TOA</h1>
-                <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', marginTop: '8px' }}>Seguimiento de actividad técnica operativa</p>
+                <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', marginTop: '8px' }}>Fuente: Mail Alarmas actividades TOA</p>
             </div>
         </div>
         
