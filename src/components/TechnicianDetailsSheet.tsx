@@ -111,46 +111,63 @@ const LineChart = ({
   const height = 240;
   const padding = 50;
 
-  const weeks = useMemo(() => {
-    const allKeys = new Set<string>();
+  // Extract real dates and week keys from data
+  const weekInfo = useMemo(() => {
+    const keys = new Set<string>();
+    const keyToDate: Record<string, string> = {};
+    
     Object.values(data || {}).forEach((kpiData: any) => {
-      Object.keys(kpiData || {}).forEach(k => {
-        if (/^s\d+$/.test(k)) allKeys.add(k);
+      Object.entries(kpiData || {}).forEach(([k, entry]: [string, any]) => {
+        if (/^s\d+$/.test(k)) {
+          keys.add(k);
+          if (entry.date) keyToDate[k] = entry.date;
+        }
       });
     });
-    const sorted = Array.from(allKeys).sort((a, b) => {
-      const numA = parseInt(a.slice(1));
-      const numB = parseInt(b.slice(1));
-      return numA - numB;
+
+    const sortedIds = Array.from(keys).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
+    
+    return sortedIds.map(id => {
+      let label = id.toUpperCase();
+      if (keyToDate[id]) {
+        try {
+          const d = new Date(keyToDate[id]);
+          const day = d.getUTCDate().toString().padStart(2, '0');
+          const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+          label = `${day} ${months[d.getUTCMonth()]}`;
+        } catch (e) { /* fallback */ }
+      }
+      return { id, label };
     });
-    return sorted.length > 0 ? sorted : ['s1', 's2', 's3', 's4', 's5'];
   }, [data]);
   
-  const getScaleY = (val: number, isPercent: boolean) => {
-    const max = isPercent ? 100 : 10;
-    return height - padding - (val / max) * (height - 2 * padding);
+  const getScaleY = (val: number, kpi: string) => {
+    const config = configs[kpi];
+    // UNIFIED NORMALIZATION: Align target value to 75% mark on Y-axis
+    // Formula: (value / target) * 75
+    // This allows visual comparison: if a line is >= 75%, it's hitting the goal.
+    const normalizedVal = config ? (val / config.target) * 75 : val;
+    const clampedVal = Math.min(Math.max(normalizedVal, 0), 120); // allow some overflow
+    return height - padding - (clampedVal / 100) * (height - 2 * padding);
   };
 
   const getPoints = (kpi: string) => {
     try {
-      const isPercent = configs[kpi]?.unit === '%';
       const kpiData = data?.[kpi];
       if (!kpiData) return [];
 
-      return weeks.map((w, i) => {
-        const val = kpiData[w]?.value;
+      return weekInfo.map((w, i) => {
+        const val = kpiData[w.id]?.value;
         if (typeof val !== 'number' || val === null) return null;
         return {
-          x: padding + i * ((width - 2 * padding) / (weeks.length - 1)),
-          y: getScaleY(val, isPercent),
+          x: padding + i * ((width - 2 * padding) / (weekInfo.length - 1)),
+          y: getScaleY(val, kpi),
           val,
-          week: w.toUpperCase(),
+          dateLabel: w.label,
           kpi
         };
       });
-    } catch (e) {
-      return [];
-    }
+    } catch (e) { return []; }
   };
 
   return (
@@ -158,7 +175,7 @@ const LineChart = ({
       <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
         {/* Y-Axis Labels */}
         {[0, 25, 50, 75, 100].map(v => {
-          const y = getScaleY(v, true);
+          const y = height - padding - (v / 100) * (height - 2 * padding);
           return (
             <g key={v}>
               <text x={padding - 10} y={y + 4} textAnchor="end" fontSize="10" fontWeight="700" fill="#94a3b8">{v}%</text>
@@ -168,17 +185,17 @@ const LineChart = ({
         })}
 
         {/* X-Axis Labels */}
-        {weeks.map((w, i) => (
+        {weekInfo.map((w, i) => (
           <text 
-            key={w} 
-            x={padding + i * ((width - 2 * padding) / (weeks.length - 1))} 
+            key={w.id} 
+            x={padding + i * ((width - 2 * padding) / (weekInfo.length - 1))} 
             y={height - 10} 
             textAnchor="middle" 
             fontSize="10" 
             fontWeight="700" 
             fill="#94a3b8"
           >
-            {w.toUpperCase()}
+            {w.label}
           </text>
         ))}
 
@@ -188,25 +205,10 @@ const LineChart = ({
           const points = getPoints(kpi);
           const validPoints = points.filter(p => p !== null);
           
-          if (validPoints.length < 3) {
-            return (
-              <text 
-                key={`${kpi}-insufficient`}
-                x={width / 2} 
-                y={height / 2} 
-                textAnchor="middle" 
-                fontSize="12" 
-                fontWeight="800" 
-                fill={config.color} 
-                opacity="0.5"
-              >
-                {config.unit === '%' ? (kpi === 'ok1' ? '1er OK' : kpi.split('_').join(' ')) : kpi} : Datos insuficientes para análisis
-              </text>
-            );
-          }
+          if (validPoints.length < 3) return null;
 
-          const isPercent = config.unit === '%';
-          const targetY = getScaleY(config.target, isPercent);
+          // Target line always at 75% for all normalized metrics
+          const targetY = height - padding - (75 / 100) * (height - 2 * padding);
 
           return (
             <g key={kpi}>
@@ -216,9 +218,9 @@ const LineChart = ({
                 x2={width - (padding / 2)} 
                 y2={targetY} 
                 stroke={config.color} 
-                strokeWidth="1" 
+                strokeWidth="1.5" 
                 strokeDasharray="4 4" 
-                opacity="0.4"
+                opacity="0.3"
               />
               
               {(() => {
@@ -241,10 +243,10 @@ const LineChart = ({
                     d={d} 
                     fill="none" 
                     stroke={config.color} 
-                    strokeWidth="3.5" 
+                    strokeWidth="4" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
-                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                    style={{ filter: `drop-shadow(0 4px 6px ${config.color}30)` }}
                   />
                 ));
               })()}
@@ -254,13 +256,13 @@ const LineChart = ({
                   key={i} 
                   cx={p.x} 
                   cy={p.y} 
-                  r={hoveredPoint?.kpi === kpi && hoveredPoint?.week === p.week ? "6" : "4"} 
+                  r={hoveredPoint?.kpi === kpi && hoveredPoint?.dateLabel === p.dateLabel ? "7" : "4.5"} 
                   fill="white" 
                   stroke={config.color} 
                   strokeWidth="3" 
                   onMouseEnter={() => setHoveredPoint(p)}
                   onMouseLeave={() => setHoveredPoint(null)}
-                  style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{ cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
                 />
               ))}
             </g>
@@ -275,14 +277,14 @@ const LineChart = ({
           const diffPrefix = diff > 0 ? '+' : '';
           
           return (
-            <g transform={`translate(${Math.min(hoveredPoint.x + 10, width - 110)}, ${hoveredPoint.y - 60})`}>
-              <rect width="120" height="55" rx="12" fill="#1e293b" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }} />
-              <text x="12" y="20" fill="#94a3b8" fontSize="10" fontWeight="800">{hoveredPoint.week}</text>
-              <text x="12" y="36" fill="white" fontSize="14" fontWeight="950">
+            <g transform={`translate(${Math.min(hoveredPoint.x + 15, width - 125)}, ${hoveredPoint.y - 70})`}>
+              <rect width="130" height="60" rx="16" fill="#0f172a" style={{ filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.4))' }} />
+              <text x="12" y="20" fill="#94a3b8" fontSize="10" fontWeight="900" style={{ textTransform: 'uppercase' }}>{(config as any).label}</text>
+              <text x="12" y="38" fill="white" fontSize="16" fontWeight="950">
                 {hoveredPoint.val}{config.unit}
               </text>
-              <text x="12" y="48" fill={isBetter ? '#4ade80' : '#f87171'} fontSize="9" fontWeight="900">
-                {diffPrefix}{diff.toFixed(1)} vs objetivo
+              <text x="12" y="50" fill={isBetter ? '#4ade80' : '#f87171'} fontSize="10" fontWeight="900">
+                {hoveredPoint.dateLabel} • {diffPrefix}{diff.toFixed(1)} vs obj
               </text>
             </g>
           );
@@ -312,17 +314,17 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
   const [activeKPIs, setActiveKPIs] = useState<Record<string, boolean>>({
     resolucion: true,
     productividad: true,
-    ok1: true,
+    reiteros: true,
     no_encontrados: false
   });
 
   const teacherMetrics = technician?.metrics || {};
 
-  const kpiConfigs: Record<string, { color: string, target: number, unit: string, reverse?: boolean }> = {
-    resolucion: { color: '#019df4', target: 75, unit: '%' },
-    productividad: { color: '#f59e0b', target: 6, unit: '' },
-    ok1: { color: '#10b981', target: 80, unit: '%' },
-    no_encontrados: { color: '#64748b', target: 4.9, unit: '%', reverse: true },
+  const kpiConfigs: Record<string, { color: string, target: number, unit: string, label: string, reverse?: boolean }> = {
+    resolucion: { label: 'Resolución', color: '#019df4', target: 75, unit: '%' },
+    productividad: { label: 'Productividad', color: '#f59e0b', target: 6, unit: '' },
+    reiteros: { label: 'Reiteros', color: '#ef4444', target: 4.5, unit: '%', reverse: true },
+    no_encontrados: { label: 'No encontrados', color: '#64748b', target: 4.9, unit: '%', reverse: true },
   };
 
   const scores = useMemo(() => {
@@ -447,41 +449,66 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
               </div>
 
               {/* Evolution Chart Section */}
-              <div style={{ 
-                backgroundColor: '#ffffff', 
-                borderRadius: '24px', 
-                padding: '24px', 
-                border: '2px solid #f1f5f9',
-                marginBottom: '40px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: '950', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Semanal</h3>
+              <div style={{ backgroundColor: '#f8fafc', borderRadius: '32px', padding: '32px', border: '2px solid #f1f5f9', marginBottom: '40px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>Evolución Semanal</h3>
                   
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {Object.entries(kpiConfigs).map(([kpi, config]) => (
-                      <button 
-                        key={kpi}
-                        onClick={() => setActiveKPIs(prev => ({ ...prev, [kpi]: !prev[kpi] }))}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '10px',
-                          border: `2px solid ${activeKPIs[kpi] ? config.color : '#e2e8f0'}`,
-                          backgroundColor: activeKPIs[kpi] ? `${config.color}10` : 'white',
-                          color: activeKPIs[kpi] ? config.color : '#94a3b8',
-                          fontSize: '11px',
-                          fontWeight: '900',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          textTransform: 'uppercase'
-                        }}
-                      >
-                        {kpi === 'ok1' ? '1er OK' : kpi.split('_').join(' ')}
-                      </button>
-                    ))}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {Object.entries(kpiConfigs).map(([kpi, config]) => {
+                      const points = Object.keys(teacherMetrics[kpi] || {}).filter(k => /^s\d+$/.test(k));
+                      const isInsufficient = points.length < 3;
+                      
+                      return (
+                        <button
+                          key={kpi}
+                          onClick={() => setActiveKPIs(prev => ({ ...prev, [kpi]: !prev[kpi] }))}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 16px',
+                            borderRadius: '14px',
+                            border: '2px solid',
+                            borderColor: activeKPIs[kpi] ? config.color : '#e2e8f0',
+                            backgroundColor: activeKPIs[kpi] ? `${config.color}10` : 'white',
+                            color: activeKPIs[kpi] ? config.color : '#64748b',
+                            fontSize: '13px',
+                            fontWeight: '800',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            opacity: isInsufficient && !activeKPIs[kpi] ? 0.6 : 1
+                          }}
+                        >
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: config.color }} />
+                          {kpi === 'ok1' ? '1er OK' : kpi.split('_').join(' ').charAt(0).toUpperCase() + kpi.split('_').join(' ').slice(1)}
+                          {isInsufficient && (
+                            <span style={{ fontSize: '10px', backgroundColor: '#fee2e2', color: '#ef4444', padding: '2px 6px', borderRadius: '6px' }}>
+                              Incomp.
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <LineChart data={technician.metrics} configs={kpiConfigs} activeKPIs={activeKPIs} />
+                <div style={{ height: '300px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LineChart 
+                    data={teacherMetrics} 
+                    configs={kpiConfigs} 
+                    activeKPIs={activeKPIs} 
+                  />
+                </div>
+                
+                <div style={{ marginTop: '20px', display: 'flex', gap: '24px', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '20px', height: '1px', borderTop: '2px dashed #94a3b8', opacity: 0.5 }} />
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700' }}>Línea de Objetivo</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', fontWeight: '600' }}>
+                    * Productividad normalizada base objetivo (100% = {kpiConfigs.productividad.target})
+                  </div>
+                </div>
               </div>
 
               {/* KPI Details Grid */}
