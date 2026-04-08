@@ -41,9 +41,9 @@ interface TechnicianDetailsProps {
 
 // --- Components ---
 
-const MetricCard = ({ label, value, unit, color, icon: Icon, isLatest = false }: any) => (
+const MetricCard = ({ label, value, unit, statusStyle, icon: Icon, isLatest = false }: any) => (
   <div style={{
-    backgroundColor: color.bg,
+    backgroundColor: statusStyle.bg,
     padding: '16px',
     borderRadius: '20px',
     display: 'flex',
@@ -66,24 +66,24 @@ const MetricCard = ({ label, value, unit, color, icon: Icon, isLatest = false }:
         borderRadius: '6px',
         fontSize: '8px',
         fontWeight: '900',
-        color: color.text,
+        color: statusStyle.color,
         textTransform: 'uppercase'
       }}>
         Última semana
       </div>
     )}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: color.text }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: statusStyle.color }}>
       <Icon size={14} strokeWidth={3} />
       <span style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
     </div>
-    <div style={{ fontSize: '24px', fontWeight: '950', color: color.text }}>
+    <div style={{ fontSize: '24px', fontWeight: '950', color: statusStyle.color }}>
       {value ?? '-'}<span style={{ fontSize: '14px', fontWeight: '800', opacity: 0.7 }}>{unit}</span>
     </div>
   </div>
 );
 
 const DetailRow = ({ label, value, unit, green, yellow, reverse }: any) => {
-  const color = getStatusColor(value, green, yellow, reverse);
+  const style = getStatusColor(value, green, yellow, reverse);
   return (
     <div style={{ 
       display: 'grid', 
@@ -96,8 +96,8 @@ const DetailRow = ({ label, value, unit, green, yellow, reverse }: any) => {
     }}>
       <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{label}</span>
       <div style={{ 
-        backgroundColor: color.bg || '#f1f5f9', 
-        color: color.text || '#64748b', 
+        backgroundColor: style.bg || '#f1f5f9', 
+        color: style.color || '#64748b', 
         padding: '4px 8px', 
         borderRadius: '8px', 
         fontSize: '13px', 
@@ -262,15 +262,15 @@ const normalize = (value: number | null, min: number, max: number, inverted = fa
 };
 
 const getStatusColor = (value: number | null, green: number, yellow: number, reverse = false) => {
-  if (value === null) return { bg: '#f1f5f9', text: '#64748b' };
+  if (value === null) return { bg: '#f1f5f9', color: '#64748b' };
   if (reverse) {
-    if (value <= green) return { bg: '#ecfdf5', text: '#059669' };
-    if (value <= yellow) return { bg: '#fffbeb', text: '#d97706' };
-    return { bg: '#fef2f2', text: '#dc2626' };
+    if (value <= green) return { bg: '#ecfdf5', color: '#059669' };
+    if (value <= yellow) return { bg: '#fffbeb', color: '#d97706' };
+    return { bg: '#fef2f2', color: '#dc2626' };
   }
-  if (value >= green) return { bg: '#ecfdf5', text: '#059669' };
-  if (value >= yellow) return { bg: '#fffbeb', text: '#d97706' };
-  return { bg: '#fef2f2', text: '#dc2626' };
+  if (value >= green) return { bg: '#ecfdf5', color: '#059669' };
+  if (value >= yellow) return { bg: '#fffbeb', color: '#d97706' };
+  return { bg: '#fef2f2', color: '#dc2626' };
 };
 
 // --- Main Export ---
@@ -464,10 +464,10 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
               {/* Snapshot Section */}
               <div style={{ marginBottom: '40px' }}>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <MetricCard label="Resolución" value={latest.resolucion} unit="%" icon={TrendingUp} color={getStatusColor(latest.resolucion, 75, 70)} isLatest />
-                  <MetricCard label="Productividad" value={latest.productividad} unit="" icon={Zap} color={getStatusColor(latest.productividad, 6, 5)} isLatest />
-                  <MetricCard label="1er OK" value={latest.ok1} unit="%" icon={CheckCircle2} color={getStatusColor(latest.ok1, 80, 71)} isLatest />
-                  <MetricCard label="Hallazgo" value={latest.no_encontrados} unit="%" icon={Search} color={getStatusColor(latest.no_encontrados, 4.9, 6.9, true)} isLatest />
+                  <MetricCard label="Resolución" value={latest.resolucion} unit="%" icon={TrendingUp} statusStyle={getStatusColor(latest.resolucion, 75, 70)} isLatest />
+                  <MetricCard label="Productividad" value={latest.productividad} unit="" icon={Zap} statusStyle={getStatusColor(latest.productividad, 6, 5)} isLatest />
+                  <MetricCard label="1er OK" value={latest.ok1} unit="%" icon={CheckCircle2} statusStyle={getStatusColor(latest.ok1, 80, 71)} isLatest />
+                  <MetricCard label="Hallazgo" value={latest.no_encontrados} unit="%" icon={Search} statusStyle={getStatusColor(latest.no_encontrados, 4.9, 6.9, true)} isLatest />
                 </div>
               </div>
 
