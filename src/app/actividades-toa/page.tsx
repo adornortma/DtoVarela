@@ -60,7 +60,7 @@ const TOA_KPI_CONFIG: Record<ToaKpiType, KpiConfigItem> = {
   inicio: { label: 'Inicio', unit: '%', targets: { green: 80, yellow: 71 }, icon: Activity },
   ok1: { label: '1er OK', unit: '%', targets: { green: 80, yellow: 71 }, icon: CheckCircle2 },
   cierres: { label: 'Cant. Cierres', unit: '', targets: { green: 0, yellow: 0 }, icon: ClipboardCheck },
-  completadas: { label: 'Completadas', unit: '%', targets: { green: 80, yellow: 71 }, icon: ListChecks },
+  completadas: { label: 'Completadas', unit: '%', targets: { green: 75, yellow: 70 }, icon: ListChecks },
   no_encontrados: { label: 'No encontrados', unit: '%', targets: { green: 4.9, yellow: 6.9, reverse: true }, icon: Search },
   deriva_bajadas: { label: 'Deriva Bajadas', unit: '%', targets: { green: 4.9, yellow: 6.9, reverse: true }, icon: ArrowRightLeft },
 };

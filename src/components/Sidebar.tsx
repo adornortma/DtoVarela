@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck } from 'lucide-react';
-import React from 'react';
+import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -12,6 +12,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
+  const [showInfo, setShowInfo] = useState(false);
 
   const navItems = [
     { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: '/' },
@@ -95,11 +96,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
         })}
       </nav>
 
+      <button 
+        onClick={() => setShowInfo(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          width: '100%',
+          padding: '14px',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderRadius: '16px',
+          color: 'white',
+          fontSize: '13px',
+          fontWeight: '800',
+          cursor: 'pointer',
+          marginBottom: '12px',
+          transition: 'all 0.2s'
+        }}
+      >
+        <Info size={18} />
+        Semaforización
+      </button>
+
       <div style={{ 
         padding: '20px', 
         backgroundColor: 'rgba(255, 255, 255, 0.08)', 
         borderRadius: '20px',
-        marginTop: 'auto',
         border: '1px solid rgba(255,255,255,0.1)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
@@ -147,6 +170,98 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
         </div>
       )}
 
+      {/* Modal Semaforización */}
+      {showInfo && (
+        <div 
+          onClick={() => setShowInfo(false)}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            top: 0,
+            backgroundColor: 'rgba(0, 51, 102, 0.4)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              backgroundColor: 'white',
+              borderTopLeftRadius: '32px',
+              borderTopRightRadius: '32px',
+              padding: '32px',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.2)',
+              animation: 'slideUp 0.4s cubic-bezier(0, 0, 0.2, 1)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>Semáforos</h2>
+              <button 
+                onClick={() => setShowInfo(false)}
+                style={{ padding: '8px', borderRadius: '12px', border: 'none', backgroundColor: '#f1f5f9', cursor: 'pointer' }}
+              >
+                <X size={20} color="#64748b" />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <section>
+                <h3 style={{ fontSize: '12px', fontWeight: '900', color: 'var(--movistar-blue)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Resolución</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { label: 'Resolución', green: '≥ 75%', yellow: '70% - 74.9%' },
+                    { label: 'Reiteros', green: '≤ 4.5%', yellow: '4.6% - 5%' },
+                    { label: 'Puntualidad', green: '≥ 80%', yellow: '70% - 79.9%' },
+                    { label: 'Productividad', green: '≥ 6.0', yellow: '5.0 - 5.9' },
+                  ].map(row => (
+                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: '10px', fontSize: '13px', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '700', color: '#334155' }}>{row.label}</span>
+                      <span style={{ backgroundColor: '#86efac', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#064e3b', fontSize: '11px' }}>{row.green}</span>
+                      <span style={{ backgroundColor: '#fde047', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#713f12', fontSize: '11px' }}>{row.yellow}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <div style={{ height: '1px', backgroundColor: '#e2e8f0' }}></div>
+
+              <section>
+                <h3 style={{ fontSize: '12px', fontWeight: '900', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Actividades TOA</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { label: 'Completadas', green: '≥ 75%', yellow: '70% - 74.9%' },
+                    { label: 'Inicio', green: '≥ 80%', yellow: '71% - 79.9%' },
+                    { label: '1er OK', green: '≥ 80%', yellow: '71% - 79.9%' },
+                    { label: 'No encontrados', green: '≤ 4.9%', yellow: '5.0% - 6.9%' },
+                    { label: 'Cant. Cierres', green: '-', yellow: '-' },
+                  ].map(row => (
+                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: '10px', fontSize: '13px', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '700', color: '#334155' }}>{row.label}</span>
+                      <span style={{ backgroundColor: '#86efac', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#064e3b', fontSize: '11px' }}>{row.green}</span>
+                      <span style={{ backgroundColor: '#fde047', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#713f12', fontSize: '11px' }}>{row.yellow}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+            
+            <p style={{ marginTop: '24px', fontSize: '11px', color: '#94a3b8', textAlign: 'center', fontWeight: '600' }}>
+              Valores por debajo del rango amarillo se marcarán en <span style={{ color: '#ef4444' }}>rojo</span>.
+            </p>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -155,6 +270,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
         @keyframes slideIn {
           from { transform: translateX(-100%); }
           to { transform: translateX(0); }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
         }
         .desktop-sidebar {
           display: block;
