@@ -702,9 +702,20 @@ export default function ActividadesToaPage() {
         </div>
       </section>
 
-      <div style={{ width: '100%', backgroundColor: 'white', borderRadius: '28px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)', border: '2px solid #e2e8f0' }}>
+      <div style={{ 
+        width: '100%', 
+        backgroundColor: 'white', 
+        borderRadius: '28px', 
+        padding: '0 32px 32px 32px', 
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)', 
+        border: '2px solid #e2e8f0',
+        maxHeight: 'calc(100vh - 200px)',
+        overflowY: 'auto',
+        overflowX: 'auto',
+        position: 'relative'
+      }}>
           {!loading && (
-            <div style={{ position: 'sticky', top: '-32px', zIndex: 10, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB', margin: '0 -32px 16px -32px', padding: '16px 32px 12px 32px' }}>
+            <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '1px solid #E5E7EB', margin: '0 -32px 16px -32px', padding: '20px 32px 12px 32px' }}>
               <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                   <colgroup>
                       <col style={{ width: '280px' }} />

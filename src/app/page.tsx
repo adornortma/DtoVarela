@@ -1014,10 +1014,21 @@ export default function Home() {
         </div>
       </section>
 
-      <div style={{ width: '100%', overflowX: 'auto', backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: 'var(--card-shadow)', border: '1px solid #cbd5e1' }}>
+      <div style={{ 
+        width: '100%', 
+        backgroundColor: 'white', 
+        borderRadius: '24px', 
+        padding: '0 24px 24px 24px', 
+        boxShadow: 'var(--card-shadow)', 
+        border: '1px solid #cbd5e1',
+        maxHeight: 'calc(100vh - 200px)',
+        overflowY: 'auto',
+        overflowX: 'auto',
+        position: 'relative'
+      }}>
           <div style={{ minWidth: '950px' }}>
               {!loading && data.length > 0 && (
-                <div style={{ position: 'sticky', top: '-24px', zIndex: 10, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB', margin: '0 -24px 16px -24px', padding: '16px 24px 12px 24px' }}>
+                <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '1px solid #E5E7EB', margin: '0 -24px 16px -24px', padding: '20px 24px 12px 24px' }}>
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
                         <col style={{ width: '30%' }} />
