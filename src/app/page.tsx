@@ -12,10 +12,16 @@ import {
   Zap, 
   CheckCircle2, 
   Loader2,
-  Pencil
+  Pencil,
+  ClipboardCheck,
+  Activity,
+  ListChecks,
+  Search,
+  ArrowRightLeft
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
+import TechnicianDetailsSheet from '@/components/TechnicianDetailsSheet';
 
 // --- Types ---
 type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
@@ -37,11 +43,12 @@ interface MetricData {
 }
 
 interface ItemRow {
-  id?: string; // Tecnico ID or Cell Name
+  id?: string;
   name: string;
-  metrics: Record<KpiType, MetricData>;
+  metrics: Record<string, MetricData>;
   isCell: boolean;
   technicians?: ItemRow[];
+  celula?: string;
 }
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -329,14 +336,16 @@ const CellGroup = ({
   viewMode,
   selectedWeek,
   config, 
-  onUpdateMetric 
+  onUpdateMetric,
+  onTechnicianClick
 }: { 
   row: ItemRow, 
   kpi: KpiType, 
   viewMode: ViewMode,
   selectedWeek: WeekKey,
   config: Record<KpiType, KpiConfigItem>,
-  onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void
+  onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void,
+  onTechnicianClick: (tech: ItemRow) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const metrics = row.metrics[kpi];
@@ -441,12 +450,24 @@ const CellGroup = ({
 
                 {isExpanded && sortedTechnicians.map((tech) => (
                     <tr key={tech.name} style={{ backgroundColor: '#ffffff', borderTop: '1px solid #f1f5f9' }}>
-                        <td style={{ 
+                        <td 
+                          onClick={() => onTechnicianClick({ ...tech, celula: row.name })}
+                          style={{ 
                             padding: '8px 20px 8px 68px', 
-                        }}>
+                            cursor: 'pointer'
+                          }}
+                        >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ width: '2px', height: '14px', backgroundColor: '#e2e8f0', borderRadius: '2px' }} />
-                                <span style={{ fontSize: '13px', color: '#333', fontWeight: '700' }}>{tech.name}</span>
+                                <span style={{ 
+                                  fontSize: '13px', 
+                                  color: 'var(--movistar-blue)', 
+                                  fontWeight: '800',
+                                  textDecoration: 'underline',
+                                  textUnderlineOffset: '2px'
+                                }}>
+                                  {tech.name}
+                                </span>
                             </div>
                         </td>
                         {viewMode === 'semanal' ? (
@@ -493,9 +514,11 @@ export default function Home() {
   const [visibleMonths, setVisibleMonths] = useState(
     MONTHS.slice(Math.max(0, new Date().getMonth() - 1), Math.max(0, new Date().getMonth() - 1) + 4)
   );
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [data, setData] = useState<ItemRow[]>([]);
+  const [selectedTechnician, setSelectedTechnician] = useState<ItemRow | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(true);
   const [kpiConfig, setKpiConfig] = useState<Record<KpiType, KpiConfigItem>>(DEFAULT_KPI_CONFIG);
   const [districtKPIs, setDistrictKPIs] = useState<any>(null);
@@ -625,10 +648,16 @@ export default function Home() {
           name: cellName,
           isCell: true,
           metrics: {
-            reiteros: createEmptyMetricData(month, year),
             resolucion: createEmptyMetricData(month, year),
+            reiteros: createEmptyMetricData(month, year),
             puntualidad: createEmptyMetricData(month, year),
             productividad: createEmptyMetricData(month, year),
+            inicio: createEmptyMetricData(month, year),
+            ok1: createEmptyMetricData(month, year),
+            completadas: createEmptyMetricData(month, year),
+            no_encontrados: createEmptyMetricData(month, year),
+            deriva_bajadas: createEmptyMetricData(month, year),
+            cierres: createEmptyMetricData(month, year),
           },
           technicians: []
         };
@@ -643,19 +672,31 @@ export default function Home() {
           name: techName,
           isCell: false,
           metrics: {
-            reiteros: createEmptyMetricData(month, year),
             resolucion: createEmptyMetricData(month, year),
+            reiteros: createEmptyMetricData(month, year),
             puntualidad: createEmptyMetricData(month, year),
             productividad: createEmptyMetricData(month, year),
+            inicio: createEmptyMetricData(month, year),
+            ok1: createEmptyMetricData(month, year),
+            completadas: createEmptyMetricData(month, year),
+            no_encontrados: createEmptyMetricData(month, year),
+            deriva_bajadas: createEmptyMetricData(month, year),
+            cierres: createEmptyMetricData(month, year),
           }
         };
         cell.technicians?.push(tech);
       }
 
-      tech.metrics.reiteros[week] = { value: m.reitero, id: m.id, date: m.fecha };
-      tech.metrics.resolucion[week] = { value: m.resolucion, id: m.id, date: m.fecha };
-      tech.metrics.puntualidad[week] = { value: m.puntualidad, id: m.id, date: m.fecha };
-      tech.metrics.productividad[week] = { value: m.productividad, id: m.id, date: m.fecha };
+      tech.metrics.reiteros[week] = { value: m.reitero ?? null, id: m.id, date: m.fecha };
+      tech.metrics.resolucion[week] = { value: m.resolucion ?? null, id: m.id, date: m.fecha };
+      tech.metrics.puntualidad[week] = { value: m.puntualidad ?? null, id: m.id, date: m.fecha };
+      tech.metrics.productividad[week] = { value: m.productividad ?? null, id: m.id, date: m.fecha };
+      tech.metrics.inicio[week] = { value: m.inicio ?? null, id: m.id, date: m.fecha };
+      tech.metrics.ok1[week] = { value: m.ok1 ?? null, id: m.id, date: m.fecha };
+      tech.metrics.completadas[week] = { value: m.completadas ?? null, id: m.id, date: m.fecha };
+      tech.metrics.no_encontrados[week] = { value: m.no_encontrados ?? null, id: m.id, date: m.fecha };
+      tech.metrics.deriva_bajadas[week] = { value: m.deriva_bajadas ?? null, id: m.id, date: m.fecha };
+      tech.metrics.cierres[week] = { value: m.cierres ?? null, id: m.id, date: m.fecha };
     });
 
     cellTotals.forEach(ct => {
@@ -666,10 +707,16 @@ export default function Home() {
           name: cellName,
           isCell: true,
           metrics: {
-            reiteros: createEmptyMetricData(month, year),
             resolucion: createEmptyMetricData(month, year),
+            reiteros: createEmptyMetricData(month, year),
             puntualidad: createEmptyMetricData(month, year),
             productividad: createEmptyMetricData(month, year),
+            inicio: createEmptyMetricData(month, year),
+            ok1: createEmptyMetricData(month, year),
+            completadas: createEmptyMetricData(month, year),
+            no_encontrados: createEmptyMetricData(month, year),
+            deriva_bajadas: createEmptyMetricData(month, year),
+            cierres: createEmptyMetricData(month, year),
           },
           technicians: []
         };
@@ -683,7 +730,7 @@ export default function Home() {
     });
 
     Object.values(cellMap).forEach(cell => {
-        (['reiteros', 'resolucion', 'puntualidad', 'productividad'] as KpiType[]).forEach(kpi => {
+        (['reiteros', 'resolucion', 'puntualidad', 'productividad', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'] as any[]).forEach(kpi => {
             (['s1', 's2', 's3', 's4', 's5'] as const).forEach(week => {
                 if (cell.metrics[kpi][week].value === null) {
                   const techValues = cell.technicians?.map(t => t.metrics[kpi][week].value).filter(v => v !== null) as number[];
@@ -1018,6 +1065,10 @@ export default function Home() {
                       selectedWeek={selectedWeek}
                       config={kpiConfig} 
                       onUpdateMetric={updatePuntualidad}
+                      onTechnicianClick={(tech) => {
+                        setSelectedTechnician(tech);
+                        setShowDetails(true);
+                      }}
                     />
                   ))}
                 </div>
@@ -1041,6 +1092,11 @@ export default function Home() {
           .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important; gap: 24px !important; }
         }
       `}</style>
+      <TechnicianDetailsSheet
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        technician={selectedTechnician}
+      />
     </div>
   );
 }
