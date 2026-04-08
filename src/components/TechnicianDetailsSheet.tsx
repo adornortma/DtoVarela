@@ -46,22 +46,22 @@ interface TechnicianDetailsProps {
 const MetricCard = ({ label, value, unit, statusStyle, icon: Icon }: any) => (
   <div style={{
     backgroundColor: statusStyle.bg,
-    padding: '16px',
-    borderRadius: '20px',
+    padding: '20px',
+    borderRadius: '24px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: '6px',
     minWidth: '120px',
     flex: 1,
-    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-    border: '1px solid rgba(0,0,0,0.05)',
-    position: 'relative'
+    border: '1px solid #E5E7EB',
+    position: 'relative',
+    transition: 'all 0.2s ease',
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: statusStyle.color }}>
-      <Icon size={14} strokeWidth={3} />
-      <span style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <Icon size={14} color="#6B7280" />
+      <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#6B7280' }}>{label}</span>
     </div>
-    <div style={{ fontSize: '24px', fontWeight: '950', color: statusStyle.color }}>
+    <div style={{ fontSize: '28px', fontWeight: '950', color: statusStyle.color }}>
       {value ?? '-'}<span style={{ fontSize: '14px', fontWeight: '800', opacity: 0.7 }}>{unit}</span>
     </div>
   </div>
@@ -297,15 +297,22 @@ const LineChart = ({
 // --- Helper Functions ---
 
 const getStatusColor = (value: number | null, green: number, yellow: number, reverse = false) => {
-  if (value === null) return { bg: '#f1f5f9', color: '#64748b' };
+  if (value === null) return { bg: '#F3F4F6', color: '#6B7280' };
+  
+  const COLORS = {
+    green: { bg: 'rgba(34, 197, 94, 0.15)', color: '#059669' },
+    yellow: { bg: 'rgba(217, 119, 6, 0.15)', color: '#D97706' },
+    red: { bg: 'rgba(220, 38, 38, 0.15)', color: '#DC2626' }
+  };
+
   if (reverse) {
-    if (value <= green) return { bg: '#ecfdf5', color: '#059669' };
-    if (value <= yellow) return { bg: '#fffbeb', color: '#d97706' };
-    return { bg: '#fef2f2', color: '#dc2626' };
+    if (value <= green) return COLORS.green;
+    if (value <= yellow) return COLORS.yellow;
+    return COLORS.red;
   }
-  if (value >= green) return { bg: '#ecfdf5', color: '#059669' };
-  if (value >= yellow) return { bg: '#fffbeb', color: '#d97706' };
-  return { bg: '#fef2f2', color: '#dc2626' };
+  if (value >= green) return COLORS.green;
+  if (value >= yellow) return COLORS.yellow;
+  return COLORS.red;
 };
 
 // --- Main Export ---
@@ -421,17 +428,17 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
               <div>
-                <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: 1, marginBottom: '12px' }}>{technician.name}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', lineHeight: 1, marginBottom: '12px' }}>{technician.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6B7280' }}>
                   <Briefcase size={16} />
-                  <span style={{ fontSize: '15px', fontWeight: '700' }}>Célula: <span style={{ color: '#0f172a' }}>{technician.celula}</span></span>
+                  <span style={{ fontSize: '15px', fontWeight: '600' }}>Célula: <span style={{ color: '#1F2937', fontWeight: '800' }}>{technician.celula}</span></span>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                style={{ padding: '12px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', cursor: 'pointer' }}
+                style={{ padding: '12px', borderRadius: '16px', border: 'none', backgroundColor: '#F3F4F6', cursor: 'pointer', transition: 'all 0.2s' }}
               >
-                <X size={24} color="#0f172a" strokeWidth={3} />
+                <X size={24} color="#1F2937" strokeWidth={3} />
               </button>
             </div>
 

@@ -24,12 +24,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     <div style={{
       width: '260px',
       height: '100vh',
-      backgroundColor: 'var(--movistar-blue)',
-      color: 'white',
+      backgroundColor: '#1E40AF',
+      color: '#F9FAFB',
       display: 'flex',
       flexDirection: 'column',
       padding: '32px 20px',
-      boxShadow: '4px 0 20px rgba(0, 51, 102, 0.1)',
+      boxShadow: '4px 0 20px rgba(0, 0, 0, 0.1)',
       zIndex: 1000,
       position: 'relative'
     }}>
@@ -58,11 +58,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
 
       <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', gap: '14px' }}>
         <div style={{ backgroundColor: 'white', padding: '8px', borderRadius: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-          <Briefcase size={24} color="var(--movistar-blue)" strokeWidth={2.5} />
+          <Briefcase size={24} color="#1E40AF" strokeWidth={2.5} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontWeight: '950', fontSize: '19px', letterSpacing: '0.5px', lineHeight: '1.1' }}>DISTRITO</span>
-          <span style={{ fontSize: '11px', fontWeight: '800', opacity: '0.8', letterSpacing: '2px', color: '#e0f2fe' }}>F. VARELA</span>
+          <span style={{ fontWeight: '900', fontSize: '19px', letterSpacing: '0.5px', lineHeight: '1.1', color: '#F9FAFB' }}>DISTRITO</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', opacity: '0.8', letterSpacing: '2px', color: '#BFDBFE' }}>F. VARELA</span>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
               onClick={onClose}
               style={{
                 textDecoration: 'none',
-                color: 'white',
+                color: '#F9FAFB',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '14px',
@@ -84,12 +84,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                 borderRadius: '16px',
                 backgroundColor: isActive ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                fontWeight: isActive ? '900' : '600',
+                fontWeight: isActive ? '700' : '500',
                 fontSize: '13px',
-                border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent'
+                opacity: isActive ? 1 : 0.85
               }}
             >
-              {item.icon}
+              <span style={{ opacity: 0.85 }}>{item.icon}</span>
               {item.name}
             </Link>
           );

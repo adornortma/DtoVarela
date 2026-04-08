@@ -78,18 +78,23 @@ const getWeekOfDate = (date: Date): WeekKey => {
 };
 
 const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
-  if (value === null) return { bg: '#f1f5f9', text: '#666' };
+  if (value === null) return { bg: '#F3F4F6', text: '#6B7280' };
   const { targets } = config[kpi];
-  const TEXT_DARK = '#1a1a1a';
+  
+  const COLORS = {
+    green: { bg: 'rgba(34, 197, 94, 0.15)', text: '#059669' },
+    yellow: { bg: 'rgba(217, 119, 6, 0.15)', text: '#D97706' },
+    red: { bg: 'rgba(220, 38, 38, 0.15)', text: '#DC2626' }
+  };
 
   if (targets.reverse) {
-    if (value <= targets.green) return { bg: '#86efac', text: TEXT_DARK }; 
-    if (value <= targets.yellow) return { bg: '#fde047', text: TEXT_DARK }; 
-    return { bg: '#fca5a5', text: TEXT_DARK }; 
+    if (value <= targets.green) return COLORS.green;
+    if (value <= targets.yellow) return COLORS.yellow;
+    return COLORS.red;
   } else {
-    if (value >= targets.green) return { bg: '#86efac', text: TEXT_DARK };
-    if (value >= targets.yellow) return { bg: '#fde047', text: TEXT_DARK };
-    return { bg: '#fca5a5', text: TEXT_DARK };
+    if (value >= targets.green) return COLORS.green;
+    if (value >= targets.yellow) return COLORS.yellow;
+    return COLORS.red;
   }
 };
 
@@ -142,30 +147,29 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
 
   return (
     <div style={{ marginBottom: '40px' }}>
-      <p style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <p style={{ fontSize: '12px', fontWeight: '900', color: '#6B7280', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
           Indicadores del distrito (última actualización: {formattedDate})
       </p>
-      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
         {stats.map((stat) => {
-          const statusColor = getStatusColor(stat.value, stat.kpi, config);
+          const colors = getStatusColors(stat.value, stat.kpi, config);
           const { label, unit, targets } = config[stat.kpi];
 
           return (
             <div key={stat.kpi} className="kpi-card" style={{
-              backgroundColor: 'white',
+              backgroundColor: colors.bg,
               padding: '24px 28px',
-              borderRadius: '20px',
-              border: `3px solid ${statusColor}`,
-              boxShadow: 'var(--card-shadow)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              borderRadius: '24px',
+              border: '1px solid #E5E7EB',
+              transition: 'all 0.3s ease',
             }}>
               <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
+                <h3 style={{ fontSize: '11px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
               
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '950', color: '#0f172a', letterSpacing: '-2px' }}>
+                <span style={{ fontSize: '48px', fontWeight: '950', color: colors.text, letterSpacing: '-2px' }}>
                   {stat.kpi === 'productividad' ? stat.value.toFixed(2) : stat.value}
                 </span>
                 <span style={{ fontSize: '20px', fontWeight: '800', color: '#94a3b8' }}>{unit}</span>
@@ -370,14 +374,13 @@ const CellGroup = ({
 
   return (
     <div style={{
-        border: `2px solid ${borderColor}`,
-        borderRadius: '16px',
+        border: '1px solid #E5E7EB',
+        borderRadius: '24px',
         marginBottom: '16px',
         overflow: 'hidden',
         backgroundColor: 'white',
         transition: 'all 0.3s ease',
-        boxShadow: isExpanded ? '0 8px 30px rgba(1, 157, 244, 0.08)' : '0 1px 3px rgba(0,0,0,0.02)',
-        padding: '2px'
+        boxShadow: isExpanded ? '0 10px 15px -3px rgba(0, 0, 0, 0.05)' : 'none',
     }}>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
@@ -391,11 +394,10 @@ const CellGroup = ({
             <tbody>
                 <tr 
                     onClick={() => row.isCell && setIsExpanded(!isExpanded)}
-                    className="table-row-hover"
                     style={{ 
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        backgroundColor: isExpanded ? '#f8fafc' : 'transparent',
+                        backgroundColor: isExpanded ? '#F3F4F6' : 'transparent',
                     }}
                 >
                     <style jsx>{`
@@ -412,10 +414,10 @@ const CellGroup = ({
                         <div style={{ 
                             display: 'flex', 
                             alignItems: 'center',
-                            backgroundColor: isExpanded ? 'var(--movistar-blue)' : 'rgba(1, 157, 244, 0.08)',
-                            padding: '6px',
-                            borderRadius: '8px',
-                            color: isExpanded ? 'white' : 'var(--movistar-blue)',
+                            backgroundColor: isExpanded ? '#1F2937' : '#F3F4F6',
+                            padding: '8px',
+                            borderRadius: '10px',
+                            color: isExpanded ? 'white' : '#1F2937',
                         }}>
                             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </div>
@@ -423,7 +425,7 @@ const CellGroup = ({
                             <span style={{ 
                                 fontWeight: '900',
                                 fontSize: '15px',
-                                color: '#1a1a1a',
+                                color: '#1F2937',
                                 lineHeight: '1.2'
                             }}>
                                 {row.name}
@@ -448,26 +450,23 @@ const CellGroup = ({
                     )}
                 </tr>
 
-                {isExpanded && sortedTechnicians.map((tech) => (
-                    <tr key={tech.name} style={{ backgroundColor: '#ffffff', borderTop: '1px solid #f1f5f9' }}>
+                {isExpanded && sortedTechnicians.map((tech, idx) => (
+                    <tr 
+                        key={tech.name} 
+                        style={{ 
+                            backgroundColor: idx % 2 === 0 ? 'white' : '#F9FAFB', 
+                            borderTop: '1px solid #E5E7EB' 
+                        }}
+                    >
                         <td 
                           onClick={() => onTechnicianClick({ ...tech, celula: row.name })}
                           style={{ 
-                            padding: '8px 20px 8px 68px', 
+                            padding: '12px 24px 12px 64px', 
                             cursor: 'pointer'
-                          }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '2px', height: '14px', backgroundColor: '#e2e8f0', borderRadius: '2px' }} />
-                                <span style={{ 
-                                  fontSize: '13px', 
-                                  color: 'var(--movistar-blue)', 
-                                  fontWeight: '800',
-                                  textDecoration: 'underline',
-                                  textUnderlineOffset: '2px'
-                                }}>
-                                  {tech.name}
-                                </span>
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: '4px', height: '4px', backgroundColor: '#94a3b8', borderRadius: '50%' }} />
+                                <span style={{ fontSize: '13px', color: '#4B5563', fontWeight: '700' }}>{tech.name}</span>
                             </div>
                         </td>
                         {viewMode === 'semanal' ? (

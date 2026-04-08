@@ -78,18 +78,24 @@ const getWeekOfDate = (date: Date): WeekKey => {
 };
 
 const getStatusColors = (value: number | null, kpi: ToaKpiType, config: Record<ToaKpiType, KpiConfigItem>) => {
-  if (value === null) return { bg: '#f1f5f9', text: '#666' };
+  if (value === null) return { bg: '#F3F4F6', text: '#6B7280' };
   const { targets } = config[kpi];
-  const TEXT_DARK = '#1a1a1a';
+  
+  // New standardized semaforización with low saturation background and strong text
+  const COLORS = {
+    green: { bg: 'rgba(34, 197, 94, 0.15)', text: '#059669' },
+    yellow: { bg: 'rgba(217, 119, 6, 0.15)', text: '#D97706' },
+    red: { bg: 'rgba(220, 38, 38, 0.15)', text: '#DC2626' }
+  };
 
   if (targets.reverse) {
-    if (value <= targets.green) return { bg: '#86efac', text: TEXT_DARK }; 
-    if (value <= targets.yellow) return { bg: '#fde047', text: TEXT_DARK }; 
-    return { bg: '#fca5a5', text: TEXT_DARK }; 
+    if (value <= targets.green) return COLORS.green;
+    if (value <= targets.yellow) return COLORS.yellow;
+    return COLORS.red;
   } else {
-    if (value >= targets.green) return { bg: '#86efac', text: TEXT_DARK };
-    if (value >= targets.yellow) return { bg: '#fde047', text: TEXT_DARK };
-    return { bg: '#fca5a5', text: TEXT_DARK };
+    if (value >= targets.green) return COLORS.green;
+    if (value >= targets.yellow) return COLORS.yellow;
+    return COLORS.red;
   }
 };
 
@@ -134,33 +140,32 @@ const DistrictOverview = ({ config, districtData }: { config: Record<ToaKpiType,
 
   return (
     <div style={{ marginBottom: '40px' }}>
-      <p style={{ fontSize: '13px', fontWeight: '800', color: '#475569', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <p style={{ fontSize: '12px', fontWeight: '900', color: '#6B7280', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
           Consolidado de Actividad TOA - Distrito Varela
       </p>
-      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         {stats.map((stat) => {
-          const statusColor = getStatusColor(stat.value, stat.kpi, config);
+          const colors = getStatusColors(stat.value, stat.kpi, config);
           const { label, unit, targets } = config[stat.kpi];
 
           return (
             <div key={stat.kpi} className="kpi-card" style={{
-              backgroundColor: 'white',
+              backgroundColor: colors.bg,
               padding: '24px',
-              borderRadius: '20px',
-              border: `3px solid ${statusColor}`,
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              borderRadius: '24px',
+              border: '1px solid #E5E7EB',
               transition: 'all 0.3s ease',
             }}>
               <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '13px', fontWeight: '950', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
+                <h3 style={{ fontSize: '11px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
               
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px' }}>
+                <span style={{ fontSize: '42px', fontWeight: '950', color: colors.text, letterSpacing: '-1.5px' }}>
                   {stat.value}
                 </span>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: '#94a3b8' }}>{unit}</span>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: '#94a3b8' }}>{unit}</span>
               </div>
             </div>
           );
@@ -188,18 +193,18 @@ const MetricCard = ({
   const colors = getStatusColors(entry.value, kpi, config);
 
   return (
-    <td style={{ padding: '6px' }}>
+    <td style={{ padding: '4px' }}>
       <div style={{
         backgroundColor: colors.bg,
-        borderRadius: '10px',
-        height: '56px',
+        borderRadius: '8px',
+        height: '48px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        boxShadow: entry.value !== null ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
-        border: '2px solid rgba(0,0,0,0.05)',
+        boxShadow: 'none',
+        border: '1px solid #E5E7EB',
         transition: 'all 0.2s',
       }}>
         <span style={{ 
@@ -251,14 +256,13 @@ const CellGroup = ({
 
   return (
     <div style={{
-        border: `2px solid ${borderColor}`,
-        borderRadius: '18px',
-        marginBottom: '20px',
+        border: '1px solid #E5E7EB',
+        borderRadius: '24px',
+        marginBottom: '16px',
         overflow: 'hidden',
         backgroundColor: 'white',
         transition: 'all 0.3s ease',
-        boxShadow: isExpanded ? '0 20px 25px -5px rgba(0, 0, 0, 0.1)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        padding: '2px'
+        boxShadow: isExpanded ? '0 20px 25px -5px rgba(0, 0, 0, 0.05)' : 'none',
     }}>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
@@ -275,7 +279,7 @@ const CellGroup = ({
                     style={{ 
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        backgroundColor: isExpanded ? '#f1f5f9' : 'transparent',
+                        backgroundColor: isExpanded ? '#F3F4F6' : 'transparent',
                     }}
                 >
                     <td style={{ 
@@ -287,18 +291,18 @@ const CellGroup = ({
                         <div style={{ 
                             display: 'flex', 
                             alignItems: 'center',
-                            backgroundColor: isExpanded ? '#334155' : 'rgba(51, 65, 85, 0.08)',
+                            backgroundColor: isExpanded ? '#1F2937' : '#F3F4F6',
                             padding: '8px',
                             borderRadius: '10px',
-                            color: isExpanded ? 'white' : '#334155',
+                            color: isExpanded ? 'white' : '#1F2937',
                         }}>
-                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ 
-                                fontWeight: '950',
-                                fontSize: '16px',
-                                color: '#0f172a',
+                                fontWeight: '900',
+                                fontSize: '15px',
+                                color: '#1F2937',
                                 lineHeight: '1.2'
                             }}>
                                 {row.name}
@@ -320,8 +324,8 @@ const CellGroup = ({
                     )}
                 </tr>
 
-                {isExpanded && sortedTechnicians.map((tech) => (
-                    <tr key={tech.name} style={{ backgroundColor: '#ffffff', borderTop: '2px solid #f1f5f9' }}>
+                {isExpanded && sortedTechnicians.map((tech, idx) => (
+                    <tr key={tech.name} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#F9FAFB', borderTop: '1px solid #E5E7EB' }}>
                         <td 
                           onClick={() => onTechnicianClick({ ...tech, celula: row.name })}
                           style={{ 
@@ -329,8 +333,8 @@ const CellGroup = ({
                             cursor: 'pointer'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '3px', height: '16px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
-                                <span style={{ fontSize: '14px', color: '#1e293b', fontWeight: '800' }}>{tech.name}</span>
+                                <div style={{ width: '4px', height: '4px', backgroundColor: '#94a3b8', borderRadius: '50%' }} />
+                                <span style={{ fontSize: '13px', color: '#4B5563', fontWeight: '700' }}>{tech.name}</span>
                             </div>
                         </td>
                         {viewMode === 'semanal' ? (
@@ -565,23 +569,22 @@ export default function ActividadesToaPage() {
 
       <section style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {visibleMonths.map(month => (
               <button 
                 key={month} 
                 onClick={() => handleMonthSelect(month)} 
                 style={{ 
-                  padding: '14px 28px', 
-                  borderRadius: '16px', 
-                  fontSize: '15px', 
-                  fontWeight: selectedMonth === month ? '950' : '800', 
-                  backgroundColor: selectedMonth === month ? '#1e293b' : '#f1f5f9', 
-                  color: selectedMonth === month ? 'white' : '#475569', 
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
-                  border: '2px solid',
-                  borderColor: selectedMonth === month ? '#1e293b' : '#cbd5e1', 
+                  padding: '12px 24px', 
+                  borderRadius: '14px', 
+                  fontSize: '14px', 
+                  fontWeight: selectedMonth === month ? '900' : '700', 
+                  backgroundColor: selectedMonth === month ? '#1F2937' : '#F3F4F6', 
+                  color: selectedMonth === month ? 'white' : '#1F2937', 
+                  transition: 'all 0.2s', 
+                  border: 'none',
                   cursor: 'pointer', 
-                  boxShadow: selectedMonth === month ? '0 10px 15px -3px rgba(0,0,0,0.2)' : 'none',
+                  boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
                 }}
               >
                 {month}
