@@ -82,9 +82,9 @@ const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiT
   const { targets } = config[kpi];
   
   const COLORS = {
-    green: { bg: 'rgba(34, 197, 94, 0.15)', text: '#059669' },
-    yellow: { bg: 'rgba(217, 119, 6, 0.15)', text: '#D97706' },
-    red: { bg: 'rgba(220, 38, 38, 0.15)', text: '#DC2626' }
+    green: { bg: '#DCFCE7', text: '#15803d' },
+    yellow: { bg: '#FEF3C7', text: '#b45309' },
+    red: { bg: '#FEE2E2', text: '#b91c1c' }
   };
 
   if (targets.reverse) {
@@ -123,19 +123,6 @@ const calculateAverage = (metrics: MetricData): number | null => {
 // --- UI Components ---
 const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null }) => {
   const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
-
-  const getStatusColor = (value: number, kpi: KpiType, config: Record<KpiType, KpiConfigItem>) => {
-    const { targets } = config[kpi];
-    if (kpi === 'reiteros') {
-      if (value <= targets.green) return '#10b981';
-      if (value <= targets.yellow) return '#f59e0b';
-      return '#ef4444';
-    }
-    // For others (higher is better)
-    if (value >= targets.green) return '#10b981';
-    if (value >= targets.yellow) return '#f59e0b';
-    return '#ef4444';
-  };
 
   const safeData = districtData || { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
   const stats: { kpi: KpiType, value: number }[] = [

@@ -83,9 +83,9 @@ const getStatusColors = (value: number | null, kpi: ToaKpiType, config: Record<T
   
   // New standardized semaforización with low saturation background and strong text
   const COLORS = {
-    green: { bg: 'rgba(34, 197, 94, 0.15)', text: '#059669' },
-    yellow: { bg: 'rgba(217, 119, 6, 0.15)', text: '#D97706' },
-    red: { bg: 'rgba(220, 38, 38, 0.15)', text: '#DC2626' }
+    green: { bg: '#DCFCE7', text: '#15803d' },
+    yellow: { bg: '#FEF3C7', text: '#b45309' },
+    red: { bg: '#FEE2E2', text: '#b91c1c' }
   };
 
   if (targets.reverse) {
@@ -118,18 +118,6 @@ const calculateAverage = (metrics: MetricData): number | null => {
 
 // --- UI Components ---
 const DistrictOverview = ({ config, districtData }: { config: Record<ToaKpiType, KpiConfigItem>, districtData: Record<ToaKpiType, number> | null }) => {
-  const getStatusColor = (value: number, kpi: ToaKpiType, config: Record<ToaKpiType, KpiConfigItem>) => {
-    const { targets } = config[kpi];
-    if (targets.reverse) {
-      if (value <= targets.green) return '#10b981';
-      if (value <= targets.yellow) return '#f59e0b';
-      return '#ef4444';
-    }
-    if (value >= targets.green) return '#10b981';
-    if (value >= targets.yellow) return '#f59e0b';
-    return '#ef4444';
-  };
-
   const safeData = districtData || { inicio: 0, ok1: 0, cierres: 0, completadas: 0, no_encontrados: 0, deriva_bajadas: 0 };
   const stats: { kpi: ToaKpiType, value: number }[] = [
     { kpi: 'inicio', value: safeData.inicio || 0 },

@@ -56,7 +56,7 @@ export const classifyTechnician = (stats: TechnicianStats, thresholds: KPIThresh
   const errors = [resStatus, reitStatus, puntStatus, prodStatus].filter(s => s === 'error').length;
   
   if (reitStatus === 'error' || errors >= 2) return { label: 'Crítico', color: '#f87171' };
-  if (reitStatus === 'warning' || errors === 1) return { label: 'En Riesgo', color: '#fbbf24' };
+  if (reitStatus === 'warning' || errors === 1) return { label: 'En Riesgo', color: '#b45309' };
   
   if (stats.reiteros < 8 && stats.productividad < 7.5) return { label: 'Lento pero prolijo', color: '#019df4' };
   if (stats.reiteros > 12 && stats.productividad > 8.5) return { label: 'Rápido pero con fallas', color: '#f87171' };
