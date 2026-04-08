@@ -41,7 +41,9 @@ interface TechnicianDetailsProps {
 
 // --- Components ---
 
-const MetricCard = ({ label, value, unit, statusStyle, icon: Icon, isLatest = false }: any) => (
+// --- Components ---
+
+const MetricCard = ({ label, value, unit, statusStyle, icon: Icon }: any) => (
   <div style={{
     backgroundColor: statusStyle.bg,
     padding: '16px',
@@ -56,22 +58,6 @@ const MetricCard = ({ label, value, unit, statusStyle, icon: Icon, isLatest = fa
     position: 'relative',
     overflow: 'hidden'
   }}>
-    {isLatest && (
-      <div style={{
-        position: 'absolute',
-        top: '8px',
-        right: '8px',
-        backgroundColor: 'rgba(255,255,255,0.5)',
-        padding: '2px 6px',
-        borderRadius: '6px',
-        fontSize: '8px',
-        fontWeight: '900',
-        color: statusStyle.color,
-        textTransform: 'uppercase'
-      }}>
-        Última semana
-      </div>
-    )}
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: statusStyle.color }}>
       <Icon size={14} strokeWidth={3} />
       <span style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
@@ -121,12 +107,28 @@ const LineChart = ({
   configs: Record<string, { color: string, target: number, unit: string, reverse?: boolean }>,
   activeKPIs: Record<string, boolean>
 }) => {
+  const [hoveredPoint, setHoveredPoint] = useState<any>(null);
   const width = 600;
-  const height = 200;
-  const padding = 30;
-  const weeks = ['s1', 's2', 's3', 's4', 's5'];
+  const height = 240;
+  const padding = 40;
+
+  // Dynamic rolling window: find all available week keys in data
+  const weeks = useMemo(() => {
+    const allKeys = new Set<string>();
+    Object.values(data || {}).forEach((kpiData: any) => {
+      Object.keys(kpiData || {}).forEach(k => {
+        if (/^s\d+$/.test(k)) allKeys.add(k);
+      });
+    });
+    const sorted = Array.from(allKeys).sort((a, b) => {
+      const numA = parseInt(a.slice(1));
+      const numB = parseInt(b.slice(1));
+      return numA - numB;
+    });
+    // Fallback to s1-s5 if empty
+    return sorted.length > 0 ? sorted : ['s1', 's2', 's3', 's4', 's5'];
+  }, [data]);
   
-  // Calculate vertical scaling based on percentages (0-100) or productivity (0-10)
   const getScaleY = (val: number, isPercent: boolean) => {
     const max = isPercent ? 100 : 10;
     return height - padding - (val / max) * (height - 2 * padding);
@@ -144,7 +146,9 @@ const LineChart = ({
         return {
           x: padding + i * ((width - 2 * padding) / (weeks.length - 1)),
           y: getScaleY(val, isPercent),
-          val
+          val,
+          week: w.toUpperCase(),
+          kpi
         };
       });
     } catch (e) {
@@ -153,7 +157,7 @@ const LineChart = ({
   };
 
   return (
-    <div style={{ width: '100%', height: height + 40, position: 'relative' }}>
+    <div style={{ width: '100%', height: height + 60, position: 'relative' }}>
       <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
         {/* Grid Lines */}
         {[0, 25, 50, 75, 100].map(v => (
@@ -173,7 +177,7 @@ const LineChart = ({
           <text 
             key={w} 
             x={padding + i * ((width - 2 * padding) / (weeks.length - 1))} 
-            y={height - 5} 
+            y={height - 10} 
             textAnchor="middle" 
             fontSize="10" 
             fontWeight="700" 
@@ -183,70 +187,94 @@ const LineChart = ({
           </text>
         ))}
 
-        {/* Target Lines & Series */}
+        {/* Series and Targets */}
         {Object.entries(configs).map(([kpi, config]) => {
           if (!activeKPIs[kpi]) return null;
           const points = getPoints(kpi);
           const isPercent = config.unit === '%';
           const targetY = getScaleY(config.target, isPercent);
 
-          // Path with gaps
-          let paths: string[] = [];
-          let currentPath = "";
-          
-          points.forEach((p, i) => {
-            if (p) {
-               if (currentPath === "") currentPath = `M ${p.x} ${p.y}`;
-               else currentPath += ` L ${p.x} ${p.y}`;
-            } else {
-               if (currentPath !== "") paths.push(currentPath);
-               currentPath = "";
-            }
-          });
-          if (currentPath !== "") paths.push(currentPath);
-
+          // Target Line
           return (
             <g key={kpi}>
-              {/* Target Area Reference (Shadow line) */}
               <line 
                 x1={padding} 
                 y1={targetY} 
                 x2={width - padding} 
                 y2={targetY} 
-                stroke={config.color} 
-                strokeWidth="1.5" 
+                stroke="#cbd5e1" 
+                strokeWidth="1" 
                 strokeDasharray="4 4" 
-                opacity="0.3"
               />
               
-              {/* Lines */}
-              {paths.map((d, idx) => (
-                <path 
-                  key={idx} 
-                  d={d} 
-                  fill="none" 
-                  stroke={config.color} 
-                  strokeWidth="3" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-              ))}
+              {/* Actual Line */}
+              {(() => {
+                let paths: string[] = [];
+                let currentPath = "";
+                points.forEach((p) => {
+                  if (p) {
+                    if (currentPath === "") currentPath = `M ${p.x} ${p.y}`;
+                    else currentPath += ` L ${p.x} ${p.y}`;
+                  } else {
+                    if (currentPath !== "") paths.push(currentPath);
+                    currentPath = "";
+                  }
+                });
+                if (currentPath !== "") paths.push(currentPath);
+                
+                return paths.map((d, idx) => (
+                  <path 
+                    key={idx} 
+                    d={d} 
+                    fill="none" 
+                    stroke={config.color} 
+                    strokeWidth="3.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                  />
+                ));
+              })()}
 
-              {/* Dots */}
+              {/* Interaction points */}
               {points.map((p, i) => p && (
                 <circle 
                   key={i} 
                   cx={p.x} 
                   cy={p.y} 
-                  r="4" 
+                  r={hoveredPoint?.kpi === kpi && hoveredPoint?.week === p.week ? "6" : "4"} 
                   fill="white" 
                   stroke={config.color} 
-                  strokeWidth="2.5" 
+                  strokeWidth="3" 
+                  onMouseEnter={() => setHoveredPoint(p)}
+                  onMouseLeave={() => setHoveredPoint(null)}
+                  style={{ cursor: 'pointer', transition: 'all 0.2s' }}
                 />
               ))}
             </g>
           );
         })}
+
+        {/* Tooltip Overlay */}
+        {hoveredPoint && (() => {
+          const config = configs[hoveredPoint.kpi];
+          const diff = hoveredPoint.val - config.target;
+          const isBetter = config.reverse ? diff <= 0 : diff >= 0;
+          const diffPrefix = diff > 0 ? '+' : '';
+          
+          return (
+            <g transform={`translate(${Math.min(hoveredPoint.x + 10, width - 110)}, ${hoveredPoint.y - 60})`}>
+              <rect width="120" height="55" rx="12" fill="#1e293b" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }} />
+              <text x="12" y="20" fill="#94a3b8" fontSize="10" fontWeight="800">{hoveredPoint.week}</text>
+              <text x="12" y="36" fill="white" fontSize="14" fontWeight="950">
+                {hoveredPoint.val}{config.unit}
+              </text>
+              <text x="12" y="48" fill={isBetter ? '#4ade80' : '#f87171'} fontSize="9" fontWeight="900">
+                {diffPrefix}{diff.toFixed(1)} vs objetivo
+              </text>
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );
@@ -354,28 +382,24 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     try {
       const resVal = scores.resolucion || 0;
       const prodVal = scores.productividad || 0;
-      const reitVal = scores.reiteros || 0;
+      const okVal = scores.ok1 || 0;
 
       if (resVal >= 78 && prodVal >= 6.5) status = 'high';
-      else if (resVal < 70 || reitVal > 5.5) status = 'risk';
+      else if (resVal < 70 || scores.reiteros > 5.5) status = 'risk';
 
-      ['resolucion', 'productividad', 'ok1', 'reiteros'].forEach(kpi => {
-        const kpiData = teacherMetrics[kpi];
-        if (!kpiData) return;
-        const weeks = ['s1', 's2', 's3', 's4', 's5'];
-        const values = weeks.map(w => kpiData[w]?.value).filter(v => typeof v === 'number' && v !== null) as number[];
-        if (values.length >= 2) {
-          const last = values[values.length - 1];
-          const prev = values[values.length - 2];
-          if (kpi === 'resolucion' && last < 75) list.push("Resolución debajo del objetivo semanal");
-          if (kpi === 'reiteros' && last > 5) list.push("Alerta de reiteros en última semana");
-          if (kpi === 'productividad' && last > prev) list.push("Mejora en productividad detectada");
-          if (kpi === 'resolucion' && last > prev) list.push("Tendencia creciente en resolución");
-        }
-      });
+      // Advanced insights logic
+      if (resVal > 75) list.push("Resolución por encima del objetivo");
+      else if (resVal < 70) list.push("Alerta: Resolución crítica");
+
+      if (prodVal >= 6) list.push("Productividad en objetivo");
+      else list.push("Productividad debajo del objetivo");
+
+      if (okVal > 80) list.push("Excelente rendimiento en 1er OK");
+      
+      if ((scores.no_encontrados || 0) > 6) list.push("No encontrados en aumento");
     } catch (e) { console.error(e); }
 
-    return { insights: list.slice(0, 3), status };
+    return { insights: list.slice(0, 2), status };
   }, [teacherMetrics, scores, technician]);
 
   const statusConfig = (function() {
@@ -404,7 +428,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
             backdropFilter: 'blur(12px)',
             zIndex: 4000,
             display: 'flex',
-            alignItems: 'center', // Centered alignment
+            alignItems: 'center', 
             justifyContent: 'center',
             animation: 'fadeIn 0.2s ease-out'
           }}
@@ -416,7 +440,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
               maxWidth: '850px',
               maxHeight: '90vh',
               backgroundColor: 'white',
-              borderRadius: '32px', // Fully rounded
+              borderRadius: '32px', 
               padding: '40px',
               display: 'flex',
               flexDirection: 'column',
@@ -463,11 +487,12 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
               
               {/* Snapshot Section */}
               <div style={{ marginBottom: '40px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Resumen – Semana actual</h3>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <MetricCard label="Resolución" value={latest.resolucion} unit="%" icon={TrendingUp} statusStyle={getStatusColor(latest.resolucion, 75, 70)} isLatest />
-                  <MetricCard label="Productividad" value={latest.productividad} unit="" icon={Zap} statusStyle={getStatusColor(latest.productividad, 6, 5)} isLatest />
-                  <MetricCard label="1er OK" value={latest.ok1} unit="%" icon={CheckCircle2} statusStyle={getStatusColor(latest.ok1, 80, 71)} isLatest />
-                  <MetricCard label="Hallazgo" value={latest.no_encontrados} unit="%" icon={Search} statusStyle={getStatusColor(latest.no_encontrados, 4.9, 6.9, true)} isLatest />
+                  <MetricCard label="Resolución" value={latest.resolucion} unit="%" icon={TrendingUp} statusStyle={getStatusColor(latest.resolucion, 75, 70)} />
+                  <MetricCard label="Productividad" value={latest.productividad} unit="" icon={Zap} statusStyle={getStatusColor(latest.productividad, 6, 5)} />
+                  <MetricCard label="1er OK" value={latest.ok1} unit="%" icon={CheckCircle2} statusStyle={getStatusColor(latest.ok1, 80, 71)} />
+                  <MetricCard label="No encontrados" value={latest.no_encontrados} unit="%" icon={Search} statusStyle={getStatusColor(latest.no_encontrados, 4.9, 6.9, true)} />
                 </div>
               </div>
 
@@ -479,6 +504,28 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
                 border: '2px solid #f1f5f9',
                 marginBottom: '40px'
               }}>
+                {/* Insights Banner */}
+                {performanceInfo.insights.length > 0 && (
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+                    {performanceInfo.insights.map((insight: string, idx: number) => (
+                      <div key={idx} style={{ 
+                        flex: 1, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        padding: '12px 16px', 
+                        backgroundColor: '#f0f9ff', 
+                        borderRadius: '16px', 
+                        borderLeft: '4px solid #0ea5e9',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                      }}>
+                        <Zap size={14} color="#0ea5e9" />
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#0369a1' }}>{insight}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: '950', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Semanal</h3>
                   
@@ -506,32 +553,11 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
                   </div>
                 </div>
 
-                {/* Insights Banner */}
-                {performanceInfo.insights.length > 0 && (
-                  <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                    {performanceInfo.insights.map((insight: string, idx: number) => (
-                      <div key={idx} style={{ 
-                        flex: 1, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        padding: '10px 16px', 
-                        backgroundColor: '#f0f9ff', 
-                        borderRadius: '12px', 
-                        borderLeft: '4px solid #0ea5e9'
-                      }}>
-                        <AlertCircle size={14} color="#0ea5e9" />
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#0369a1' }}>{insight}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 <LineChart data={technician.metrics} configs={kpiConfigs} activeKPIs={activeKPIs} />
               </div>
 
               {/* KPI Details Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '20px' }}>
                 <section>
                   <h3 style={{ fontSize: '14px', fontWeight: '950', color: 'var(--movistar-blue)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <TrendingUp size={16} /> Resultados <span style={{fontSize: '10px', opacity: 0.5}}>(Promedio)</span>
@@ -552,7 +578,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
                     <DetailRow label="Inicio" value={scores.inicio} unit="%" green={80} yellow={71} />
                     <DetailRow label="1er OK" value={scores.ok1} unit="%" green={80} yellow={71} />
                     <DetailRow label="Completadas" value={scores.completadas} unit="%" green={75} yellow={70} />
-                    <DetailRow label="No Encontrados" value={scores.no_encontrados} unit="%" green={4.9} yellow={6.9} reverse />
+                    <DetailRow label="No encontrados" value={scores.no_encontrados} unit="%" green={4.9} yellow={6.9} reverse />
                     <DetailRow label="Deriva Bajadas" value={scores.deriva_bajadas} unit="%" green={4.9} yellow={6.9} reverse />
                     <DetailRow label="Cant. Cierres" value={scores.cierres} unit="" green={0} yellow={0} />
                   </div>
