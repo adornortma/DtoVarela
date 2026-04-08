@@ -311,7 +311,7 @@ const MetricCard = ({
               letterSpacing: '-0.3px',
               lineHeight: '1'
           }}>
-            {entry.value !== null ? (kpi === 'productividad' ? `${entry.value} / 6` : `${entry.value}${unit}`) : '-'}
+            {entry.value !== null ? (kpi === 'productividad' ? `${entry.value}` : `${entry.value}${unit}`) : '-'}
           </span>
         )}
         
