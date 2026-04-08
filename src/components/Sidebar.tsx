@@ -184,8 +184,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
             backdropFilter: 'blur(8px)',
             zIndex: 3000,
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: 'center',
             justifyContent: 'center',
+            padding: '20px',
             animation: 'fadeIn 0.2s ease-out'
           }}
         >
@@ -195,13 +196,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
               width: '100%',
               maxWidth: '500px',
               backgroundColor: 'white',
-              borderTopLeftRadius: '32px',
-              borderTopRightRadius: '32px',
+              borderRadius: '32px',
               padding: '32px',
               maxHeight: '85vh',
               overflowY: 'auto',
-              boxShadow: '0 -10px 40px rgba(0,0,0,0.2)',
-              animation: 'slideUp 0.4s cubic-bezier(0, 0, 0.2, 1)'
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+              animation: 'modalFadeIn 0.3s cubic-bezier(0, 0, 0.2, 1)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -274,6 +274,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
         @keyframes slideUp {
           from { transform: translateY(100%); }
           to { transform: translateY(0); }
+        }
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: scale(0.95) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
         .desktop-sidebar {
           display: block;
