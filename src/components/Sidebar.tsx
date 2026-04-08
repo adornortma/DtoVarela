@@ -197,37 +197,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
               maxWidth: '500px',
               backgroundColor: 'white',
               borderRadius: '32px',
-              padding: '32px',
-              maxHeight: '85vh',
-              overflowY: 'auto',
+              padding: '40px',
+              maxHeight: '90vh',
+              overflowY: 'hidden',
               boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
               animation: 'modalFadeIn 0.3s cubic-bezier(0, 0, 0.2, 1)'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>Semáforos</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.0px', marginBottom: '4px' }}>Semaforización</h2>
+                <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>Configuración de objetivos y rangos</p>
+              </div>
               <button 
                 onClick={() => setShowInfo(false)}
-                style={{ padding: '8px', borderRadius: '12px', border: 'none', backgroundColor: '#f1f5f9', cursor: 'pointer' }}
+                style={{ 
+                  padding: '12px', 
+                  borderRadius: '16px', 
+                  border: 'none', 
+                  backgroundColor: '#f1f5f9', 
+                  cursor: 'pointer',
+                  transition: 'background 0.2s'
+                }}
               >
-                <X size={20} color="#64748b" />
+                <X size={24} color="#0f172a" strokeWidth={3} />
               </button>
+            </div>
+
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 100px 100px', 
+              gap: '12px', 
+              padding: '0 0 12px 0',
+              borderBottom: '2px solid #f1f5f9',
+              marginBottom: '16px'
+            }}>
+              <span style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Indicador</span>
+              <span style={{ fontSize: '11px', fontWeight: '900', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>Objetivo</span>
+              <span style={{ fontSize: '11px', fontWeight: '900', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>Rango</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <section>
-                <h3 style={{ fontSize: '12px', fontWeight: '900', color: 'var(--movistar-blue)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Resolución</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '950', color: 'var(--movistar-blue)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <TrendingUp size={14} /> KPIs Resolución
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {[
-                    { label: 'Resolución', green: '≥ 75%', yellow: '70% - 74.9%' },
+                    { label: 'Resolución', green: '≥ 75%', yellow: '70% - 74%' },
                     { label: 'Reiteros', green: '≤ 4.5%', yellow: '4.6% - 5%' },
-                    { label: 'Puntualidad', green: '≥ 80%', yellow: '70% - 79.9%' },
+                    { label: 'Puntualidad', green: '≥ 80%', yellow: '70% - 79%' },
                     { label: 'Productividad', green: '≥ 6.0', yellow: '5.0 - 5.9' },
                   ].map(row => (
-                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: '10px', fontSize: '13px', alignItems: 'center' }}>
-                      <span style={{ fontWeight: '700', color: '#334155' }}>{row.label}</span>
-                      <span style={{ backgroundColor: '#86efac', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#064e3b', fontSize: '11px' }}>{row.green}</span>
-                      <span style={{ backgroundColor: '#fde047', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#713f12', fontSize: '11px' }}>{row.yellow}</span>
+                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '12px', fontSize: '14px', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '800', color: '#1e293b' }}>{row.label}</span>
+                      <span style={{ backgroundColor: '#ecfdf5', padding: '8px 4px', borderRadius: '10px', textAlign: 'center', fontWeight: '900', color: '#059669', fontSize: '12px', border: '1px solid #10b98133' }}>{row.green}</span>
+                      <span style={{ backgroundColor: '#fffbeb', padding: '8px 4px', borderRadius: '10px', textAlign: 'center', fontWeight: '900', color: '#d97706', fontSize: '12px', border: '1px solid #f59e0b33' }}>{row.yellow}</span>
                     </div>
                   ))}
                 </div>
@@ -236,19 +261,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
               <div style={{ height: '1px', backgroundColor: '#e2e8f0' }}></div>
 
               <section>
-                <h3 style={{ fontSize: '12px', fontWeight: '900', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Actividades TOA</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '950', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ClipboardCheck size={14} /> Actividades TOA
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {[
-                    { label: 'Completadas', green: '≥ 75%', yellow: '70% - 74.9%' },
-                    { label: 'Inicio', green: '≥ 80%', yellow: '71% - 79.9%' },
-                    { label: '1er OK', green: '≥ 80%', yellow: '71% - 79.9%' },
-                    { label: 'No encontrados', green: '≤ 4.9%', yellow: '5.0% - 6.9%' },
-                    { label: 'Cant. Cierres', green: '-', yellow: '-' },
+                    { label: 'Completadas', green: '≥ 75%', yellow: '70% - 74%' },
+                    { label: 'Inicio', green: '≥ 80%', yellow: '71% - 79%' },
+                    { label: '1er OK', green: '≥ 80%', yellow: '71% - 79%' },
+                    { label: 'No encontrados', green: '≤ 4.9%', yellow: '5.0% - 6%' },
+                    { label: 'Deriva Bajadas', green: '≤ 4.9%', yellow: '5.0% - 6%' },
                   ].map(row => (
-                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: '10px', fontSize: '13px', alignItems: 'center' }}>
-                      <span style={{ fontWeight: '700', color: '#334155' }}>{row.label}</span>
-                      <span style={{ backgroundColor: '#86efac', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#064e3b', fontSize: '11px' }}>{row.green}</span>
-                      <span style={{ backgroundColor: '#fde047', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: '800', color: '#713f12', fontSize: '11px' }}>{row.yellow}</span>
+                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '12px', fontSize: '14px', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '800', color: '#1e293b' }}>{row.label}</span>
+                      <span style={{ backgroundColor: '#ecfdf5', padding: '8px 4px', borderRadius: '10px', textAlign: 'center', fontWeight: '900', color: '#059669', fontSize: '12px', border: '1px solid #10b98133' }}>{row.green}</span>
+                      <span style={{ backgroundColor: '#fffbeb', padding: '8px 4px', borderRadius: '10px', textAlign: 'center', fontWeight: '900', color: '#d97706', fontSize: '12px', border: '1px solid #f59e0b33' }}>{row.yellow}</span>
                     </div>
                   ))}
                 </div>
