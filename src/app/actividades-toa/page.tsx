@@ -373,10 +373,10 @@ const CellGroup = ({
 export default function ActividadesToaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('semanal');
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
-  const [selectedMonth, setSelectedMonth] = useState('Marzo');
+  const [selectedMonth, setSelectedMonth] = useState('Abril');
   const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedKpi, setSelectedKpi] = useState<ToaKpiType>('cierres');
+  const [selectedKpi, setSelectedKpi] = useState<ToaKpiType>('inicio');
   const [data, setData] = useState<ItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [districtKPIs, setDistrictKPIs] = useState<any>(null);
