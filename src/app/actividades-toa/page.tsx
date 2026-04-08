@@ -704,30 +704,32 @@ export default function ActividadesToaPage() {
 
       <div style={{ width: '100%', backgroundColor: 'white', borderRadius: '28px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)', border: '2px solid #e2e8f0' }}>
           {!loading && (
-            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginBottom: '16px' }}>
-                <colgroup>
-                    <col style={{ width: '280px' }} />
-                    {viewMode === 'semanal' ? (
-                      [1, 2, 3, 4, 5].map(i => <col key={i} style={{ width: '14%' }} />)
-                    ) : (
-                      [1, 2, 3, 4, 5, 6].map(i => <col key={i} style={{ width: '11%' }} />)
-                    )}
-                </colgroup>
-                <thead>
-                    <tr style={{ textAlign: 'left' }}>
-                        <th style={{ padding: '0 24px 12px 24px' }}></th>
-                        {viewMode === 'semanal' ? (
-                          weekLabels.map(label => (
-                            <th key={label} style={{ padding: '0 0 12px 0', fontSize: '12px', fontWeight: '950', color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>{label}</th>
-                          ))
-                        ) : (
-                          (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).map(k => (
-                            <th key={k} style={{ padding: '0 0 12px 0', fontSize: '12px', fontWeight: '950', color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>{TOA_KPI_CONFIG[k].label}</th>
-                          ))
-                        )}
-                    </tr>
-                </thead>
-            </table>
+            <div style={{ position: 'sticky', top: '-32px', zIndex: 10, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB', margin: '0 -32px 16px -32px', padding: '16px 32px 12px 32px' }}>
+              <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
+                  <colgroup>
+                      <col style={{ width: '280px' }} />
+                      {viewMode === 'semanal' ? (
+                        [1, 2, 3, 4, 5].map(i => <col key={i} style={{ width: '14%' }} />)
+                      ) : (
+                        [1, 2, 3, 4, 5, 6].map(i => <col key={i} style={{ width: '11%' }} />)
+                      )}
+                  </colgroup>
+                  <thead>
+                      <tr style={{ textAlign: 'left' }}>
+                          <th style={{ padding: '0 24px' }}></th>
+                          {viewMode === 'semanal' ? (
+                            weekLabels.map(label => (
+                              <th key={label} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{label}</th>
+                            ))
+                          ) : (
+                            (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).map(k => (
+                              <th key={k} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{TOA_KPI_CONFIG[k].label}</th>
+                            ))
+                          )}
+                      </tr>
+                  </thead>
+              </table>
+            </div>
           )}
           
           {loading ? (

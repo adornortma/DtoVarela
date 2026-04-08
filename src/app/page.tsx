@@ -1017,7 +1017,8 @@ export default function Home() {
       <div style={{ width: '100%', overflowX: 'auto', backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: 'var(--card-shadow)', border: '1px solid #cbd5e1' }}>
           <div style={{ minWidth: '950px' }}>
               {!loading && data.length > 0 && (
-                <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginBottom: '8px' }}>
+                <div style={{ position: 'sticky', top: '-24px', zIndex: 10, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB', margin: '0 -24px 16px -24px', padding: '16px 24px 12px 24px' }}>
+                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
                         <col style={{ width: '30%' }} />
                         <col style={{ width: '14%' }} />
@@ -1028,19 +1029,20 @@ export default function Home() {
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
-                            <th style={{ padding: '0 20px 12px 20px' }}></th>
+                            <th style={{ padding: '0 20px' }}></th>
                             {viewMode === 'semanal' ? (
                               weekLabels.map(label => (
-                                <th key={label} style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{label}</th>
+                                <th key={label} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{label}</th>
                               ))
                             ) : (
                               (Object.keys(kpiConfig) as KpiType[]).map(k => (
-                                <th key={k} style={{ padding: '0 0 12px 0', fontSize: '11px', fontWeight: '950', color: '#666', textTransform: 'uppercase', textAlign: 'center' }}>{kpiConfig[k].label}</th>
+                                <th key={k} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{kpiConfig[k].label}</th>
                               ))
                             )}
                         </tr>
                     </thead>
-                </table>
+                  </table>
+                </div>
               )}
               {loading ? (
                   <div style={{ padding: '100px', textAlign: 'center', color: '#666' }}>
