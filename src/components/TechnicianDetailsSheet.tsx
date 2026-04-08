@@ -276,7 +276,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     no_encontrados: false
   });
 
-  if (!technician) return null;
+  if (!technician || !technician.metrics) return null;
 
   const kpiConfigs: Record<string, { color: string, target: number, unit: string, reverse?: boolean }> = {
     resolucion: { color: '#019df4', target: 75, unit: '%' },
@@ -286,7 +286,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
   };
 
   const getAvg = (kpi: string) => {
-    if (!technician.metrics?.[kpi]) return null;
+    if (!technician?.metrics?.[kpi]) return null;
     const values = ['s1', 's2', 's3', 's4', 's5']
       .map(s => technician.metrics[kpi][s]?.value)
       .filter(v => v !== null && v !== undefined) as number[];
@@ -295,7 +295,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
   };
 
   const getLatest = (kpi: string) => {
-    if (!technician.metrics?.[kpi]) return null;
+    if (!technician?.metrics?.[kpi]) return null;
     const weeksOrder = ['s5', 's4', 's3', 's2', 's1'];
     for (const w of weeksOrder) {
       const val = technician.metrics[kpi][w]?.value;
@@ -330,8 +330,12 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     let status = 'estable'; // default
     
     // 1. Classification Logic (Status)
-    const isHighPerf = (scores.resolucion || 0) >= 78 && (scores.productividad || 0) >= 6.5;
-    const isAtRisk = (scores.resolucion || 0) < 70 || (scores.reiteros || 0) > 5.5;
+    const resolucionVal = scores.resolucion || 0;
+    const productivityVal = scores.productividad || 0;
+    const reiterosVal = scores.reiteros || 0;
+
+    const isHighPerf = resolucionVal >= 78 && productivityVal >= 6.5;
+    const isAtRisk = resolucionVal < 70 || reiterosVal > 5.5;
 
     if (isHighPerf) status = 'high';
     else if (isAtRisk) status = 'risk';
@@ -340,7 +344,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     // Multi-week trend check
     ['resolucion', 'productividad', 'ok1', 'reiteros'].forEach(kpi => {
         const weeks = ['s1', 's2', 's3', 's4', 's5'];
-        const values = weeks.map(w => technician.metrics[kpi]?.[w]?.value).filter(v => v != null);
+        const values = weeks.map(w => technician.metrics?.[kpi]?.[w]?.value).filter(v => v != null);
         if (values.length >= 2) {
             const last = values[values.length - 1];
             const prev = values[values.length - 2];
@@ -365,7 +369,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     high: { label: 'Alto Rendimiento', color: '#10b981', bg: '#ecfdf5' },
     risk: { label: 'En Riesgo', color: '#ef4444', bg: '#fef2f2' },
     estable: { label: 'Rendimiento Estable', color: '#64748b', bg: '#f1f5f9' }
-  }[performanceInfo.status as 'high' | 'risk' | 'estable'];
+  }[performanceInfo.status as 'high' | 'risk' | 'estable'] || { label: 'Normal', color: '#64748b', bg: '#f1f5f9' };
 
   return (
     <>
