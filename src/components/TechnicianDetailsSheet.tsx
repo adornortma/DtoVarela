@@ -96,15 +96,15 @@ const DetailRow = ({ label, value, unit, green, yellow, reverse }: any) => {
     }}>
       <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{label}</span>
       <div style={{ 
-        backgroundColor: color.bg, 
-        color: color.text, 
+        backgroundColor: color.bg || '#f1f5f9', 
+        color: color.text || '#64748b', 
         padding: '4px 8px', 
         borderRadius: '8px', 
         fontSize: '13px', 
         fontWeight: '900', 
         textAlign: 'center' 
       }}>
-        {value ?? '-'}{unit}
+        {value !== null && value !== undefined ? `${value}${unit}` : '-'}
       </div>
     </div>
   );
@@ -133,16 +133,23 @@ const LineChart = ({
   };
 
   const getPoints = (kpi: string) => {
-    const isPercent = configs[kpi].unit === '%';
-    return weeks.map((w, i) => {
-      const val = data[kpi]?.[w]?.value;
-      if (val === null || val === undefined) return null;
-      return {
-        x: padding + i * ((width - 2 * padding) / (weeks.length - 1)),
-        y: getScaleY(val, isPercent),
-        val
-      };
-    });
+    try {
+      const isPercent = configs[kpi]?.unit === '%';
+      const kpiData = data?.[kpi];
+      if (!kpiData) return weeks.map(() => null);
+
+      return weeks.map((w, i) => {
+        const val = kpiData[w]?.value;
+        if (typeof val !== 'number' || val === null) return null;
+        return {
+          x: padding + i * ((width - 2 * padding) / (weeks.length - 1)),
+          y: getScaleY(val, isPercent),
+          val
+        };
+      });
+    } catch (e) {
+      return weeks.map(() => null);
+    }
   };
 
   return (
@@ -276,7 +283,8 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     no_encontrados: false
   });
 
-  if (!technician || !technician.metrics) return null;
+  if (!isOpen || !technician || !technician.metrics) return null;
+  const teacherMetrics = technician.metrics;
 
   const kpiConfigs: Record<string, { color: string, target: number, unit: string, reverse?: boolean }> = {
     resolucion: { color: '#019df4', target: 75, unit: '%' },
@@ -286,25 +294,35 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
   };
 
   const getAvg = (kpi: string) => {
-    if (!technician?.metrics?.[kpi]) return null;
-    const values = ['s1', 's2', 's3', 's4', 's5']
-      .map(s => technician.metrics[kpi][s]?.value)
-      .filter(v => v !== null && v !== undefined) as number[];
-    if (values.length === 0) return null;
-    return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
+    try {
+      const kpiData = teacherMetrics[kpi];
+      if (!kpiData) return null;
+      const values = ['s1', 's2', 's3', 's4', 's5']
+        .map(s => kpiData[s]?.value)
+        .filter(v => typeof v === 'number' && v !== null) as number[];
+      if (values.length === 0) return null;
+      return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
+    } catch (e) {
+      return null;
+    }
   };
 
   const getLatest = (kpi: string) => {
-    if (!technician?.metrics?.[kpi]) return null;
-    const weeksOrder = ['s5', 's4', 's3', 's2', 's1'];
-    for (const w of weeksOrder) {
-      const val = technician.metrics[kpi][w]?.value;
-      if (val !== null && val !== undefined) return val;
+    try {
+      const kpiData = teacherMetrics[kpi];
+      if (!kpiData) return null;
+      const weeksOrder = ['s5', 's4', 's3', 's2', 's1'];
+      for (const w of weeksOrder) {
+        const val = kpiData[w]?.value;
+        if (typeof val === 'number' && val !== null) return val;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
-    return null;
   };
 
-  const scores = {
+  const scores = useMemo(() => ({
     resolucion: getAvg('resolucion'),
     productividad: getAvg('productividad'),
     reiteros: getAvg('reiteros'),
@@ -315,55 +333,63 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
     no_encontrados: getAvg('no_encontrados'),
     deriva_bajadas: getAvg('deriva_bajadas'),
     cierres: getAvg('cierres'),
-  };
+  }), [teacherMetrics]);
 
-  const latest = {
+  const latest = useMemo(() => ({
     resolucion: getLatest('resolucion'),
     productividad: getLatest('productividad'),
     ok1: getLatest('ok1'),
     no_encontrados: getLatest('no_encontrados'),
-  };
+  }), [teacherMetrics]);
 
   // Classification & Insights Logic
   const performanceInfo = useMemo(() => {
     const list: string[] = [];
     let status = 'estable'; // default
     
-    // 1. Classification Logic (Status)
-    const resolucionVal = scores.resolucion || 0;
-    const productivityVal = scores.productividad || 0;
-    const reiterosVal = scores.reiteros || 0;
+    try {
+      // 1. Classification Logic (Status)
+      const resolucionVal = scores.resolucion || 0;
+      const productivityVal = scores.productividad || 0;
+      const reiterosVal = scores.reiteros || 0;
 
-    const isHighPerf = resolucionVal >= 78 && productivityVal >= 6.5;
-    const isAtRisk = resolucionVal < 70 || reiterosVal > 5.5;
+      const isHighPerf = resolucionVal >= 78 && productivityVal >= 6.5;
+      const isAtRisk = resolucionVal < 70 || reiterosVal > 5.5;
 
-    if (isHighPerf) status = 'high';
-    else if (isAtRisk) status = 'risk';
+      if (isHighPerf) status = 'high';
+      else if (isAtRisk) status = 'risk';
 
-    // 2. Trend & Operational Insights
-    // Multi-week trend check
-    ['resolucion', 'productividad', 'ok1', 'reiteros'].forEach(kpi => {
-        const weeks = ['s1', 's2', 's3', 's4', 's5'];
-        const values = weeks.map(w => technician.metrics?.[kpi]?.[w]?.value).filter(v => v != null);
-        if (values.length >= 2) {
-            const last = values[values.length - 1];
-            const prev = values[values.length - 2];
-            
-            // Goals / Alert checks
-            if (kpi === 'resolucion' && last < 75) list.push("Resolución debajo del objetivo semanal");
-            if (kpi === 'reiteros' && last > 5) list.push("Alerta de reiteros en última semana");
-            if (kpi === 'productividad' && last > prev) list.push("Mejora en productividad detectada");
-            if (kpi === 'resolucion' && last > prev) list.push("Tendencia creciente en resolución");
-        }
-    });
+      // 2. Trend & Operational Insights
+      // Multi-week trend check
+      ['resolucion', 'productividad', 'ok1', 'reiteros'].forEach(kpi => {
+          const kpiData = teacherMetrics[kpi];
+          if (!kpiData) return;
 
-    // Activity checks
-    if ((scores.no_encontrados || 0) > 6.9) list.push("Nivel crítico de No Encontrados");
-    if ((scores.deriva_bajadas || 0) > 6.9) list.push("Deriva de bajadas fuera de rango");
-    if ((scores.ok1 || 0) < 71) list.push("Bajo rendimiento en 1er OK");
+          const weeks = ['s1', 's2', 's3', 's4', 's5'];
+          const values = weeks.map(w => kpiData[w]?.value).filter(v => typeof v === 'number' && v !== null) as number[];
+          
+          if (values.length >= 2) {
+              const last = values[values.length - 1];
+              const prev = values[values.length - 2];
+              
+              // Goals / Alert checks
+              if (kpi === 'resolucion' && last < 75) list.push("Resolución debajo del objetivo semanal");
+              if (kpi === 'reiteros' && last > 5) list.push("Alerta de reiteros en última semana");
+              if (kpi === 'productividad' && last > prev) list.push("Mejora en productividad detectada");
+              if (kpi === 'resolucion' && last > prev) list.push("Tendencia creciente en resolución");
+          }
+      });
 
-    return { insights: list.slice(0, 3), status };
-  }, [technician, scores]);
+      // Activity checks
+      if ((scores.no_encontrados || 0) > 6.9) list.push("Nivel crítico de No Encontrados");
+      if ((scores.deriva_bajadas || 0) > 6.9) list.push("Deriva de bajadas fuera de rango");
+      if ((scores.ok1 || 0) < 71) list.push("Bajo rendimiento en 1er OK");
+    } catch (e) {
+      console.error("Error calculating performance info", e);
+    }
+
+    return { insights: list.slice(0, 3) || [], status };
+  }, [teacherMetrics, scores]);
 
   const statusConfig = {
     high: { label: 'Alto Rendimiento', color: '#10b981', bg: '#ecfdf5' },
@@ -545,11 +571,11 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
         </div>
       )}
 
-      <style jsx global>{`
+      <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleIn { 
-          from { opacity: 0; transform: scale(0.95) translateY(10px); } 
-          to { opacity: 1; transform: scale(1) translateY(0); } 
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); } 
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
         }
       `}</style>
     </>
