@@ -494,8 +494,8 @@ const CellGroup = ({
 };
 
 export default function Home() {
-  const [viewMode, setViewMode] = useState<ViewMode>('semanal');
-  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
+  const [viewMode, setViewMode] = useState<ViewMode>('indicador');
+  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s2');
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
   const [visibleMonths, setVisibleMonths] = useState(
     MONTHS.slice(Math.max(0, new Date().getMonth() - 1), Math.max(0, new Date().getMonth() - 1) + 4)

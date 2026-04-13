@@ -359,8 +359,8 @@ const CellGroup = ({
 };
 
 export default function ActividadesToaPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>('semanal');
-  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
+  const [viewMode, setViewMode] = useState<ViewMode>('indicador');
+  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s2');
   const [selectedMonth, setSelectedMonth] = useState('Abril');
   const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
