@@ -766,15 +766,15 @@ export default function Home() {
   const hiddenMonths = MONTHS.filter(m => !visibleMonths.includes(m));
 
   return (
-    <div style={{ padding: '32px 20px 60px 0', width: '100%', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '32px 40px 60px 40px', width: '100%' }}>
       <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ backgroundColor: 'white', padding: '12px', borderRadius: '16px', color: 'var(--movistar-blue)', boxShadow: 'var(--card-shadow)', border: '1px solid #e2e8f0' }}>
-                <TrendingUp size={24} strokeWidth={3} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ backgroundColor: '#1e293b', padding: '16px', borderRadius: '20px', color: 'white', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)' }}>
+                <TrendingUp size={32} strokeWidth={2.5} />
             </div>
             <div>
-                <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px', lineHeight: '1' }}>KPIs Resolución</h1>
-                <p style={{ color: '#64748b', fontSize: '15px', fontWeight: '600', marginTop: '6px' }}>Fuente: Persa/incentivos - PBI Productividad</p>
+                <h1 style={{ fontSize: '36px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: '1' }}>KPIs Resolución</h1>
+                <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '700', marginTop: '8px' }}>Fuente: Persa/incentivos - PBI Productividad</p>
             </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', padding: '8px 16px', backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: 'var(--card-shadow)' }}>
@@ -787,7 +787,9 @@ export default function Home() {
         </div>
       </header>
 
-      <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} />
+      <section style={{ marginBottom: '40px' }}>
+        <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} />
+      </section>
 
 
       <section style={{ marginBottom: '40px' }}>
@@ -802,14 +804,13 @@ export default function Home() {
                   padding: '12px 24px', 
                   borderRadius: '14px', 
                   fontSize: '14px', 
-                  fontWeight: selectedMonth === month ? '950' : '700', 
+                  fontWeight: selectedMonth === month ? '900' : '700', 
                   backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : '#f1f5f9', 
                   color: selectedMonth === month ? 'white' : '#475569', 
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
-                  border: selectedMonth === month ? 'none' : '2px solid #cbd5e1', 
+                  transition: 'all 0.2s ease', 
+                  border: 'none',
                   cursor: 'pointer', 
-                  boxShadow: selectedMonth === month ? '0 6px 16px rgba(1, 157, 244, 0.3)' : 'none',
-                  transform: selectedMonth === month ? 'translateY(-2px)' : 'none'
+                  boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
                 }}
               >
                 {month}
@@ -945,7 +946,7 @@ export default function Home() {
       </section>
 
       <section style={{ marginBottom: '48px', position: 'relative', zIndex: 100 }}>
-        <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflow: 'visible', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
+        <div className="filter-tabs" style={{ display: 'flex', gap: '16px', overflow: 'visible', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
           {viewMode === 'semanal' ? (
             (Object.keys(kpiConfig) as KpiType[]).map(kpi => {
               const isActive = selectedKpi === kpi;
@@ -954,18 +955,18 @@ export default function Home() {
                     key={kpi} 
                     onClick={() => setSelectedKpi(kpi)} 
                     style={{ 
-                      minWidth: '180px', 
+                      minWidth: '200px', 
                       flexShrink: 0, 
-                      padding: '12px 20px', 
-                      borderRadius: '16px', 
+                      padding: '16px 24px', 
+                      borderRadius: '20px', 
                       backgroundColor: isActive ? '#f8fbfc' : '#f1f5f9', 
-                      border: isActive ? '3px solid #1e293b' : '2px solid #cbd5e1', 
+                      border: isActive ? '3px solid #1e293b' : '3px solid #cbd5e1', 
                       transition: 'all 0.2s ease', 
                       display: 'flex', 
                       alignItems: 'center', 
-                      gap: '12px', 
+                      gap: '14px', 
                       cursor: 'pointer', 
-                      boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.08)' : '0 2px 4px rgba(0,0,0,0.01)', 
+                      boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
                       transform: isActive ? 'translateY(-1px)' : 'none' 
                     }}
                   >
@@ -984,19 +985,19 @@ export default function Home() {
                     key={week} 
                     onClick={() => setSelectedWeek(week)} 
                     style={{ 
-                      minWidth: '180px', 
+                      minWidth: '200px', 
                       flexShrink: 0, 
-                      padding: '12px 20px', 
-                      borderRadius: '16px', 
+                      padding: '16px 24px', 
+                      borderRadius: '20px', 
                       backgroundColor: isActive ? '#f8fbfc' : '#f1f5f9', 
-                      border: isActive ? '3px solid #1e293b' : '2px solid #cbd5e1', 
+                      border: isActive ? '3px solid #1e293b' : '3px solid #cbd5e1', 
                       transition: 'all 0.2s ease', 
                       display: 'flex', 
                       flexDirection: 'column', 
                       alignItems: 'flex-start', 
-                      gap: '2px', 
+                      gap: '4px', 
                       cursor: 'pointer', 
-                      boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.08)' : '0 2px 4px rgba(0,0,0,0.01)', 
+                      boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
                       transform: isActive ? 'translateY(-1px)' : 'none',
                       position: 'relative'
                     }}
@@ -1016,10 +1017,10 @@ export default function Home() {
       <div style={{ 
         width: '100%', 
         backgroundColor: 'white', 
-        borderRadius: '24px', 
-        padding: '0 24px 24px 24px', 
-        boxShadow: 'var(--card-shadow)', 
-        border: '1px solid #cbd5e1',
+        borderRadius: '28px', 
+        padding: '0 32px 32px 32px', 
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)', 
+        border: '2px solid #e2e8f0',
         maxHeight: 'calc(100vh - 200px)',
         overflowY: 'auto',
         overflowX: 'auto',
@@ -1027,7 +1028,7 @@ export default function Home() {
       }}>
           <div style={{ minWidth: '950px' }}>
               {!loading && data.length > 0 && (
-                <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '1px solid #E5E7EB', margin: '0 -24px 16px -24px', padding: '20px 24px 12px 24px' }}>
+                <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '1px solid #E5E7EB', margin: '0 -32px 16px -32px', padding: '20px 32px 12px 32px' }}>
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
                         <col style={{ width: '30%' }} />
@@ -1039,7 +1040,7 @@ export default function Home() {
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
-                            <th style={{ padding: '0 20px' }}></th>
+                            <th style={{ padding: '0 24px' }}></th>
                             {viewMode === 'semanal' ? (
                               weekLabels.map(label => (
                                 <th key={label} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{label}</th>
@@ -1099,8 +1100,8 @@ export default function Home() {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
         .kpi-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
-        @media (min-width: 768px) {
-          .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important; gap: 24px !important; }
+        @media (min-width: 1024px) {
+          .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 24px !important; }
         }
       `}</style>
       <TechnicianDetailsSheet
