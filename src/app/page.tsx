@@ -89,11 +89,11 @@ const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiT
   if (value === null) return { bg: '#F3F4F6', text: '#6B7280' };
   const { targets } = config[kpi];
   
-  // Standardized semaforización with higher text contrast and standard backgrounds
+  // Standardized semaforización with requested suave backgrounds and strong text
   const COLORS = {
-    green: { bg: '#DCFCE7', text: '#166534' }, // Emerald-800
-    yellow: { bg: '#FEF3C7', text: '#92400e' }, // Amber-800
-    red: { bg: '#FEE2E2', text: '#991b1b' }    // Red-800
+    green: { bg: 'rgba(34,197,94,0.18)', text: '#166534' }, 
+    yellow: { bg: 'rgba(234,179,8,0.22)', text: '#854d0e' }, // 800-ish
+    red: { bg: 'rgba(239,68,68,0.18)', text: '#991b1b' }    
   };
 
   if (targets.reverse) {
@@ -153,16 +153,16 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
 
           return (
             <div key={stat.kpi} className="kpi-card" style={{
-              backgroundColor: 'white',
+              backgroundColor: colors.bg,
               padding: '16px 20px',
               borderRadius: '20px',
-              border: `1px solid rgba(0,0,0,0.12)`,
+              border: `2px solid ${colors.text}44`, // Subtly more intense than bg but matching text
               transition: 'all 0.3s ease',
               boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
             }}>
               <div style={{ marginBottom: '10px' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</h3>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: colors.text, display: 'inline-block', padding: '2px 8px', backgroundColor: colors.bg, borderRadius: '6px', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
+                <h3 style={{ fontSize: '10px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</h3>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: colors.text, display: 'inline-block', padding: '2px 8px', border: `1px solid ${colors.text}33`, borderRadius: '6px', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
               
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
