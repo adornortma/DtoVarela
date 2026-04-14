@@ -944,7 +944,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '32px' }}>
+      <section style={{ marginBottom: '32px', position: 'relative', zIndex: 100 }}>
         <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflow: 'visible', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
           {viewMode === 'semanal' ? (
             (Object.keys(kpiConfig) as KpiType[]).map(kpi => {
