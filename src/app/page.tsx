@@ -945,7 +945,7 @@ export default function Home() {
       </section>
 
       <section style={{ marginBottom: '32px' }}>
-        <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
+        <div className="filter-tabs" style={{ display: 'flex', gap: '12px', overflow: 'visible', paddingBottom: '12px', paddingTop: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
           {viewMode === 'semanal' ? (
             (Object.keys(kpiConfig) as KpiType[]).map(kpi => {
               const isActive = selectedKpi === kpi;

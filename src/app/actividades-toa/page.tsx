@@ -637,7 +637,7 @@ export default function ActividadesToaPage() {
       </section>
 
       <section style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '4px' }}>
+        <div style={{ display: 'flex', gap: '16px', overflow: 'visible', padding: '4px' }}>
           {viewMode === 'semanal' ? (
             (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).map(kpi => {
               const isActive = selectedKpi === kpi;

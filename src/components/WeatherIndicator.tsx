@@ -38,7 +38,7 @@ export default function WeatherIndicator({ days }: WeatherIndicatorProps) {
         position: 'absolute', 
         top: '8px', 
         right: '8px', 
-        zIndex: 50 
+        zIndex: 9999 
       }}
     >
       <div 
@@ -75,14 +75,14 @@ export default function WeatherIndicator({ days }: WeatherIndicatorProps) {
       {isOpen && (
         <div style={{
           position: 'absolute',
-          bottom: 'calc(100% + 12px)',
+          top: 'calc(100% + 12px)',
           right: '-8px',
           backgroundColor: 'white',
           borderRadius: '16px',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           overflow: 'hidden',
           minWidth: '200px',
-          zIndex: 100,
+          zIndex: 9999,
           border: '2px solid #0284c7',
           animation: 'tooltipFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
@@ -126,23 +126,23 @@ export default function WeatherIndicator({ days }: WeatherIndicatorProps) {
             ))}
           </div>
           
-          {/* Arrow pointing down */}
+          {/* Arrow pointing up */}
           <div style={{
             position: 'absolute',
-            bottom: '-7px',
+            top: '-7px',
             right: '18px',
             width: '12px',
             height: '12px',
             backgroundColor: 'white',
             transform: 'rotate(45deg)',
-            borderRight: '2px solid #0284c7',
-            borderBottom: '2px solid #0284c7',
+            borderLeft: '2px solid #0284c7',
+            borderTop: '2px solid #0284c7',
             zIndex: -1
           }} />
           
           <style jsx>{`
             @keyframes tooltipFadeIn {
-              from { opacity: 0; transform: translateY(10px) scale(0.95); }
+              from { opacity: 0; transform: translateY(-10px) scale(0.95); }
               to { opacity: 1; transform: translateY(0) scale(1); }
             }
           `}</style>
