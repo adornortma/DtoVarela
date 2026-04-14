@@ -22,6 +22,14 @@ import {
 
 import { supabase } from '@/lib/supabase';
 import TechnicianDetailsSheet from '@/components/TechnicianDetailsSheet';
+import WeatherIndicator from '@/components/WeatherIndicator';
+
+// --- Weather Data ---
+const WEATHER_DATA: Record<string, Record<string, string[]>> = {
+  'Abril': {
+    's2': ['Lunes 06-04', 'Martes 07-04']
+  }
+};
 
 // --- Types ---
 type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
@@ -989,9 +997,13 @@ export default function Home() {
                       gap: '2px', 
                       cursor: 'pointer', 
                       boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.08)' : '0 2px 4px rgba(0,0,0,0.01)', 
-                      transform: isActive ? 'translateY(-1px)' : 'none' 
+                      transform: isActive ? 'translateY(-1px)' : 'none',
+                      position: 'relative'
                     }}
                   >
+                    {WEATHER_DATA[selectedMonth]?.[week] && (
+                      <WeatherIndicator days={WEATHER_DATA[selectedMonth][week]} />
+                    )}
                     <span style={{ fontSize: '13px', fontWeight: '900', color: isActive ? '#1e293b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</span>
                     <span style={{ fontSize: '10px', fontWeight: '700', color: isActive ? '#475569' : '#94a3b8', textTransform: 'uppercase' }}>{subLabel}</span>
                   </button>

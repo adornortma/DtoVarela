@@ -19,6 +19,14 @@ import {
 
 import { supabase } from '@/lib/supabase';
 import TechnicianDetailsSheet from '@/components/TechnicianDetailsSheet';
+import WeatherIndicator from '@/components/WeatherIndicator';
+
+// --- Weather Data ---
+const WEATHER_DATA: Record<string, Record<string, string[]>> = {
+  'Abril': {
+    's2': ['Lunes 06-04', 'Martes 07-04']
+  }
+};
 
 // --- Types ---
 type ToaKpiType = 'inicio' | 'ok1' | 'cierres' | 'completadas' | 'no_encontrados' | 'deriva_bajadas';
@@ -679,8 +687,12 @@ export default function ActividadesToaPage() {
                         gap: '4px', 
                         cursor: 'pointer', 
                         boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
+                        position: 'relative'
                       }}
                   >
+                    {WEATHER_DATA[selectedMonth]?.[week] && (
+                      <WeatherIndicator days={WEATHER_DATA[selectedMonth][week]} />
+                    )}
                     <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1e293b' : '#64748b', textTransform: 'uppercase' }}>{label}</span>
                     <span style={{ fontSize: '11px', fontWeight: '800', color: isActive ? '#64748b' : '#94a3b8' }}>{subLabel}</span>
                   </button>
