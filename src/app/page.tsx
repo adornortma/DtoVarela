@@ -368,15 +368,27 @@ const CellGroup = ({
   const borderColor = isExpanded ? 'var(--movistar-blue)' : 'rgba(1, 157, 244, 0.15)';
 
   return (
-    <div style={{
-        border: '1px solid #E5E7EB',
-        borderRadius: '24px',
-        marginBottom: '16px',
+    <div className="cell-group-container" style={{
+        border: isExpanded ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.12)',
+        borderRadius: '20px',
+        marginBottom: '12px',
         overflow: 'hidden',
         backgroundColor: 'white',
-        transition: 'all 0.3s ease',
-        boxShadow: isExpanded ? '0 10px 15px -3px rgba(0, 0, 0, 0.05)' : 'none',
+        transition: 'all 0.2s ease',
+        boxShadow: isExpanded ? '0 4px 12px rgba(0, 0, 0, 0.05)' : 'none',
     }}>
+        <style jsx>{`
+          .cell-group-container:hover {
+            border-color: rgba(0,0,0,0.2);
+            background-color: #fafafa;
+          }
+          .main-row:hover {
+            background-color: #f8fafc !important;
+          }
+          .tech-row:hover {
+            background-color: #f1f5f9 !important;
+          }
+        `}</style>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
                 <col style={{ width: '30%' }} />
@@ -388,18 +400,15 @@ const CellGroup = ({
             </colgroup>
             <tbody>
                 <tr 
+                    className="main-row"
                     onClick={() => row.isCell && setIsExpanded(!isExpanded)}
                     style={{ 
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        backgroundColor: isExpanded ? '#F3F4F6' : 'transparent',
+                        backgroundColor: isExpanded ? '#f8fafc' : 'transparent',
+                        borderBottom: isExpanded ? '1px solid rgba(0,0,0,0.08)' : 'none'
                     }}
                 >
-                    <style jsx>{`
-                      .table-row-hover:hover {
-                        background-color: #f1f5f9 !important;
-                      }
-                    `}</style>
                     <td style={{ 
                         padding: '8px 16px', 
                         display: 'flex', 
@@ -448,18 +457,20 @@ const CellGroup = ({
                 {isExpanded && sortedTechnicians.map((tech, idx) => (
                     <tr 
                         key={tech.name} 
+                        className="tech-row"
                         style={{ 
-                            backgroundColor: idx % 2 === 0 ? 'white' : '#F9FAFB', 
-                            borderTop: '1px solid #E5E7EB' 
+                            backgroundColor: '#f8fafc',
+                            borderTop: '1px solid rgba(0,0,0,0.05)',
+                            transition: 'all 0.2s'
                         }}
                     >
                         <td 
                           onClick={() => onTechnicianClick({ ...tech, celula: row.name })}
                           style={{ 
-                            padding: '12px 24px 12px 64px', 
+                            padding: '6px 16px 6px 60px', 
                             cursor: 'pointer'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
                                 <div style={{ width: '4px', height: '4px', backgroundColor: '#94a3b8', borderRadius: '50%' }} />
                                 <span style={{ fontSize: '13px', color: '#4B5563', fontWeight: '700' }}>{tech.name}</span>
                             </div>
