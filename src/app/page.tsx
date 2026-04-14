@@ -89,10 +89,11 @@ const getStatusColors = (value: number | null, kpi: KpiType, config: Record<KpiT
   if (value === null) return { bg: '#F3F4F6', text: '#6B7280' };
   const { targets } = config[kpi];
   
+  // Standardized semaforización with higher text contrast and standard backgrounds
   const COLORS = {
-    green: { bg: '#DCFCE7', text: '#15803d' },
-    yellow: { bg: '#FEF3C7', text: '#b45309' },
-    red: { bg: '#FEE2E2', text: '#b91c1c' }
+    green: { bg: '#DCFCE7', text: '#166534' }, // Emerald-800
+    yellow: { bg: '#FEF3C7', text: '#92400e' }, // Amber-800
+    red: { bg: '#FEE2E2', text: '#991b1b' }    // Red-800
   };
 
   if (targets.reverse) {
@@ -152,22 +153,23 @@ const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record
 
           return (
             <div key={stat.kpi} className="kpi-card" style={{
-              backgroundColor: colors.bg,
-              padding: '14px 20px',
+              backgroundColor: 'white',
+              padding: '16px 20px',
               borderRadius: '20px',
-              border: '1px solid #E5E7EB',
+              border: `1px solid rgba(0,0,0,0.12)`,
               transition: 'all 0.3s ease',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
             }}>
               <div style={{ marginBottom: '10px' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</h3>
-                <div style={{ fontSize: '10px', fontWeight: '600', color: '#6B7280', marginTop: '2px' }}>Objetivo: {targets.green}{unit}</div>
+                <h3 style={{ fontSize: '10px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</h3>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: colors.text, display: 'inline-block', padding: '2px 8px', backgroundColor: colors.bg, borderRadius: '6px', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
               
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '32px', fontWeight: '950', color: colors.text, letterSpacing: '-1.5px' }}>
+                <span style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px' }}>
                   {stat.kpi === 'productividad' ? stat.value.toFixed(2) : stat.value}
                 </span>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: '#94a3b8' }}>{unit}</span>
+                <span style={{ fontSize: '16px', fontWeight: '900', color: colors.text }}>{unit}</span>
               </div>
             </div>
           );
@@ -1030,8 +1032,8 @@ export default function Home() {
         backgroundColor: 'white', 
         borderRadius: '24px', 
         padding: '0 20px 20px 20px', 
-        boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.1)', 
-        border: '2px solid #e2e8f0',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)', 
+        border: '1px solid rgba(0,0,0,0.12)',
         maxHeight: 'calc(100vh - 220px)',
         overflowY: 'auto',
         overflowX: 'auto',
@@ -1039,7 +1041,7 @@ export default function Home() {
       }}>
           <div style={{ minWidth: '950px' }}>
               {!loading && data.length > 0 && (
-                <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '1px solid #E5E7EB', margin: '0 -20px 12px -20px', padding: '12px 20px 8px 20px' }}>
+                <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '2px solid rgba(0,0,0,0.1)', margin: '0 -20px 12px -20px', padding: '20px 20px 12px 20px' }}>
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
                         <col style={{ width: '30%' }} />
@@ -1054,11 +1056,11 @@ export default function Home() {
                             <th style={{ padding: '0 24px' }}></th>
                             {viewMode === 'semanal' ? (
                               weekLabels.map(label => (
-                                <th key={label} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{label}</th>
+                                <th key={label} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{label}</th>
                               ))
                             ) : (
                               (Object.keys(kpiConfig) as KpiType[]).map(k => (
-                                <th key={k} style={{ padding: '0', fontSize: '11px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.05em' }}>{kpiConfig[k].label}</th>
+                                <th key={k} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{kpiConfig[k].label}</th>
                               ))
                             )}
                         </tr>
