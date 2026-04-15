@@ -394,6 +394,8 @@ export default function DetalleDiario() {
   const stats = useMemo(() => {
     if (!actuaciones.length) return null;
 
+    const filteredActuaciones = actuaciones.filter(a => a.tx_celula?.toUpperCase() !== 'ACCESO VARELA');
+
     const district = {
       cumplidas: 0,
       noRealizadas: 0,
@@ -404,7 +406,7 @@ export default function DetalleDiario() {
 
     const cells: Record<string, CellDailyGroup> = {};
 
-    actuaciones.forEach(act => {
+    filteredActuaciones.forEach(act => {
       const e = act.estado.toUpperCase();
       const cellName = act.tx_celula || 'SIN CÉLULA';
       const techName = act.recurso || 'SIN TÉCNICO';
@@ -437,6 +439,10 @@ export default function DetalleDiario() {
       }
 
       // Update counters
+      district.total++;
+      cell.total++;
+      tech.total++;
+
       if (e === 'CUMPLIDA') {
         district.cumplidas++;
         cell.cumplidas++;
@@ -451,26 +457,21 @@ export default function DetalleDiario() {
         tech.suspendidas++;
       }
       
-      district.total++;
-      cell.total++;
-      tech.total++;
       tech.actuaciones.push(act);
     });
 
-    // Calculate percentages
+    // Calculate percentages and sort
     district.resolucionPorcentaje = district.total > 0 ? (district.cumplidas / district.total) * 100 : 0;
-    
+
     const cellList = Object.values(cells).map(cell => {
       cell.resolucionPorcentaje = cell.total > 0 ? (cell.cumplidas / cell.total) * 100 : 0;
       cell.technicians.forEach(t => {
         t.resolucionPorcentaje = t.total > 0 ? (t.cumplidas / t.total) * 100 : 0;
       });
-      // Sort techs by resolution % desc
       cell.technicians.sort((a, b) => a.resolucionPorcentaje - b.resolucionPorcentaje);
       return cell;
     }).sort((a, b) => b.resolucionPorcentaje - a.resolucionPorcentaje);
 
-    // Global Insights
     const getTopResolucion = (items: Actuacion[]) => {
       if (!items.length) return null;
       const counts: Record<string, number> = {};
@@ -482,14 +483,13 @@ export default function DetalleDiario() {
       return top ? { text: top[0].charAt(0).toUpperCase() + top[0].slice(1), percentage: (top[1] / items.length) * 100 } : null;
     };
 
-    const principalResolucion = getTopResolucion(actuaciones.filter(a => a.estado.toUpperCase() === 'CUMPLIDA'));
-    const principalProblema = getTopResolucion(actuaciones.filter(a => ['NO_REALIZADA', 'SUSPENDIDA'].includes(a.estado.toUpperCase())));
-    const celulaCritica = [...cellList].sort((a, b) => a.resolucionPorcentaje - b.resolucionPorcentaje)[0];
+    const principalResolucion = getTopResolucion(filteredActuaciones.filter(a => a.estado.toUpperCase() === 'CUMPLIDA'));
+    const principalInformado = getTopResolucion(filteredActuaciones.filter(a => ['NO_REALIZADA', 'SUSPENDIDA'].includes(a.estado.toUpperCase())));
 
     return { 
       district, 
       cells: cellList, 
-      insights: { principalResolucion, principalProblema, celulaCritica } 
+      insights: { principalResolucion, principalInformado } 
     };
   }, [actuaciones]);
 
@@ -658,7 +658,7 @@ export default function DetalleDiario() {
             </div>
           )}
           
-          {stats.insights.principalProblema && (
+          {stats.insights.principalInformado && (
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -670,24 +670,7 @@ export default function DetalleDiario() {
             }}>
               <XCircle size={14} color="#f43f5e" />
               <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b' }}>
-                Principal problema: <span style={{ fontWeight: '900' }}>{stats.insights.principalProblema.text} ({stats.insights.principalProblema.percentage.toFixed(0)}%)</span>
-              </span>
-            </div>
-          )}
-
-          {stats.insights.celulaCritica && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              padding: '8px 16px', 
-              backgroundColor: '#fef2f2', 
-              borderRadius: '12px',
-              border: '1px solid #fee2e2'
-            }}>
-              <Clock size={14} color="#ef4444" />
-              <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b' }}>
-                Célula crítica: <span style={{ fontWeight: '900' }}>{stats.insights.celulaCritica.name} ({stats.insights.celulaCritica.resolucionPorcentaje.toFixed(1)}%)</span>
+                Principal Informado: <span style={{ fontWeight: '900' }}>{stats.insights.principalInformado.text} ({stats.insights.principalInformado.percentage.toFixed(0)}%)</span>
               </span>
             </div>
           )}
