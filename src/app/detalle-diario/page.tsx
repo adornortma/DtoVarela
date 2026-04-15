@@ -120,7 +120,7 @@ const AnalysisDrawer = ({
         .slice(0, 5);
 
       const top = sorted[0];
-      const insight = top ? `Principal motivo: ${top.text} (${top.percentage.toFixed(0)}%)` : '';
+      const insight = top ? `Principal motivo: ${top.text} (${top.count}/${total} - ${top.percentage.toFixed(0)}%)` : '';
 
       return { sorted, total, insight, max: sorted[0]?.count || 1 };
     };
@@ -592,7 +592,12 @@ export default function DetalleDiario() {
         counts[text] = (counts[text] || 0) + 1;
       });
       const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-      return top ? { text: top[0].charAt(0).toUpperCase() + top[0].slice(1), percentage: (top[1] / items.length) * 100 } : null;
+      return top ? { 
+        text: top[0].charAt(0).toUpperCase() + top[0].slice(1), 
+        percentage: (top[1] / items.length) * 100,
+        count: top[1],
+        total: items.length
+      } : null;
     };
 
     const principalResolucion = getTopResolucion(filteredActuaciones.filter(a => a.estado.toUpperCase() === 'CUMPLIDA'));
@@ -795,7 +800,7 @@ export default function DetalleDiario() {
             }}>
               <CheckCircle2 size={14} color="#10b981" />
               <span style={{ fontSize: '12px', fontWeight: '700', color: '#166534' }}>
-                Principal resolución: <span style={{ fontWeight: '900' }}>{stats.insights.principalResolucion.text} ({stats.insights.principalResolucion.percentage.toFixed(0)}%)</span>
+                Principal resolución: <span style={{ fontWeight: '900' }}>{stats.insights.principalResolucion.text} ({stats.insights.principalResolucion.count}/{stats.insights.principalResolucion.total} - {stats.insights.principalResolucion.percentage.toFixed(0)}%)</span>
               </span>
             </div>
           )}
@@ -812,7 +817,7 @@ export default function DetalleDiario() {
             }}>
               <XCircle size={14} color="#f43f5e" />
               <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b' }}>
-                Principal Informado: <span style={{ fontWeight: '900' }}>{stats.insights.principalInformado.text} ({stats.insights.principalInformado.percentage.toFixed(0)}%)</span>
+                Principal Informado: <span style={{ fontWeight: '900' }}>{stats.insights.principalInformado.text} ({stats.insights.principalInformado.count}/{stats.insights.principalInformado.total} - {stats.insights.principalInformado.percentage.toFixed(0)}%)</span>
               </span>
             </div>
           )}
