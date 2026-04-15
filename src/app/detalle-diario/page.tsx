@@ -193,84 +193,87 @@ const AnalysisDrawer = ({
         {/* Content - 1fr with internal scroll */}
         <div style={{ 
           overflowY: 'auto', 
-          padding: '24px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '40px' 
+          WebkitOverflowScrolling: 'touch'
         }}>
-          
-          {/* Bloque 1: Resueltas */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
-              <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resueltas (OK)</h3>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginLeft: 'auto' }}>{analysis.resueltas.total} actuaciones</span>
-            </div>
+          <div style={{ 
+            padding: '24px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '40px' 
+          }}>
             
-            {analysis.resueltas.insight && (
-              <div style={{ backgroundColor: '#f0fdf4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #dcfce7', marginBottom: '20px', fontSize: '13px', fontWeight: '800', color: '#166534' }}>
-                💡 {analysis.resueltas.insight}
+            {/* Bloque 1: Resueltas */}
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
+                <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resueltas (OK)</h3>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginLeft: 'auto' }}>{analysis.resueltas.total} actuaciones</span>
               </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {analysis.resueltas.sorted.map((item, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '700' }}>
-                    <span style={{ color: '#1e293b' }}>{item.text}</span>
-                    <span style={{ color: '#64748b' }}>{item.count}</span>
-                  </div>
-                  <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ 
-                      height: '100%', 
-                      backgroundColor: '#10b981', 
-                      borderRadius: '4px',
-                      width: `${(item.count / analysis.resueltas.max) * 100}%`,
-                      opacity: 0.6
-                    }}></div>
-                  </div>
+              
+              {analysis.resueltas.insight && (
+                <div style={{ backgroundColor: '#f0fdf4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #dcfce7', marginBottom: '20px', fontSize: '13px', fontWeight: '800', color: '#166534' }}>
+                  💡 {analysis.resueltas.insight}
                 </div>
-              ))}
-              {analysis.resueltas.total === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos de resolución</p>}
-            </div>
-          </section>
+              )}
 
-          {/* Bloque 2: No Resueltas */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></div>
-              <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>No Resueltas / Susp.</h3>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginLeft: 'auto' }}>{analysis.noResueltas.total} actuaciones</span>
-            </div>
-
-            {analysis.noResueltas.insight && (
-              <div style={{ backgroundColor: '#fff1f2', padding: '12px 16px', borderRadius: '12px', border: '1px solid #ffe4e6', marginBottom: '20px', fontSize: '13px', fontWeight: '800', color: '#991b1b' }}>
-                ⚠️ {analysis.noResueltas.insight}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {analysis.resueltas.sorted.map((item, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '700' }}>
+                      <span style={{ color: '#1e293b' }}>{item.text}</span>
+                      <span style={{ color: '#64748b' }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        height: '100%', 
+                        backgroundColor: '#10b981', 
+                        borderRadius: '4px',
+                        width: `${(item.count / analysis.resueltas.max) * 100}%`,
+                        opacity: 0.6
+                      }}></div>
+                    </div>
+                  </div>
+                ))}
+                {analysis.resueltas.total === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos de resolución</p>}
               </div>
-            )}
+            </section>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {analysis.noResueltas.sorted.map((item, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '700' }}>
-                    <span style={{ color: '#1e293b' }}>{item.text}</span>
-                    <span style={{ color: '#64748b' }}>{item.count}</span>
-                  </div>
-                  <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ 
-                      height: '100%', 
-                      backgroundColor: '#f43f5e', 
-                      borderRadius: '4px',
-                      width: `${(item.count / analysis.noResueltas.max) * 100}%`,
-                      opacity: 0.6
-                    }}></div>
-                  </div>
+            {/* Bloque 2: No Resueltas */}
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></div>
+                <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>No Resueltas / Susp.</h3>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginLeft: 'auto' }}>{analysis.noResueltas.total} actuaciones</span>
+              </div>
+
+              {analysis.noResueltas.insight && (
+                <div style={{ backgroundColor: '#fff1f2', padding: '12px 16px', borderRadius: '12px', border: '1px solid #ffe4e6', marginBottom: '20px', fontSize: '13px', fontWeight: '800', color: '#991b1b' }}>
+                  ⚠️ {analysis.noResueltas.insight}
                 </div>
-              ))}
-              {analysis.noResueltas.total === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos de fallo</p>}
-            </div>
-          </section>
+              )}
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {analysis.noResueltas.sorted.map((item, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '700' }}>
+                      <span style={{ color: '#1e293b' }}>{item.text}</span>
+                      <span style={{ color: '#64748b' }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        height: '100%', 
+                        backgroundColor: '#f43f5e', 
+                        borderRadius: '4px',
+                        width: `${(item.count / analysis.noResueltas.max) * 100}%`,
+                        opacity: 0.6
+                      }}></div>
+                    </div>
+                  </div>
+                ))}
+                {analysis.noResueltas.total === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos de fallo</p>}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </>
@@ -432,8 +435,8 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
         </div>
 
         {/* List - 1fr with internal scroll */}
-        <div style={{ overflowY: 'auto', padding: '24px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tech.actuaciones.map((act, i) => {
               const badge = getStatusBadge(act.estado);
               const StatusIcon = badge.icon;
@@ -462,19 +465,19 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
                     color: badge.color,
                     flexShrink: 0
                   }}>
-                    <StatusIcon size={20} />
+                    <StatusIcon size={18} />
                   </div>
                   
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '900', color: badge.color, textTransform: 'uppercase' }}>{badge.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '900', color: badge.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{act.estado}</span>
                     </div>
-                    <p style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', lineHeight: '1.4' }}>
-                      {act.resolucion || 'Sin detalle de resolución'}
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', opacity: 0.6 }}>
-                       <MapPin size={12} />
-                       <span style={{ fontSize: '11px', fontWeight: '700' }}>Célula: {act.tx_celula}</span>
+                    <div style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b', marginBottom: '8px', lineHeight: '1.4' }}>
+                      {act.resolucion || '(Sin descripción)'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                      <MapPin size={12} />
+                      <span>Célula: {act.tx_celula}</span>
                     </div>
                   </div>
                 </div>
