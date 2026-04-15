@@ -491,7 +491,7 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
 };
 
 export default function DetalleDiario() {
-  const [selectedDate, setSelectedDate] = useState('2026-04-06');
+  const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [actuaciones, setActuaciones] = useState<Actuacion[]>([]);
   const [expandedCells, setExpandedCells] = useState<Record<string, boolean>>({});
@@ -611,6 +611,7 @@ export default function DetalleDiario() {
   }, [actuaciones]);
 
   const fetchData = async () => {
+    if (!selectedDate) return;
     setLoading(true);
     try {
       // Fetch actuaciones
@@ -649,6 +650,27 @@ export default function DetalleDiario() {
   }, [selectedDate]);
 
   useEffect(() => {
+    const fetchLatestDate = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('actuaciones')
+          .select('fecha_cita')
+          .order('fecha_cita', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.fecha_cita) {
+          setSelectedDate(data.fecha_cita);
+        } else {
+          // Fallback only if no data at all
+          setSelectedDate('2026-04-06');
+        }
+      } catch (err) {
+        console.error('Error auto-selecting latest date:', err);
+        setSelectedDate('2026-04-06');
+      }
+    };
+    fetchLatestDate();
     fetchRainyDays();
   }, []);
 
