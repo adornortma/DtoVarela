@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -790,13 +791,34 @@ export default function Home() {
                 <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>Fuente: Persa/incentivos - PBI Productividad</p>
             </div>
         </div>
-        <div style={{ display: 'flex', gap: '12px', padding: '8px 16px', backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: 'var(--card-shadow)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--movistar-blue)' }}></div>
-              <span style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b' }}>{selectedMonth}</span>
-            </div>
-            <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0' }}></div>
-            <span style={{ fontSize: '13px', fontWeight: '900', color: 'var(--movistar-blue)' }}>{kpiConfig[selectedKpi].label}</span>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <Link 
+            href="/detalle-diario"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '10px 20px', 
+              backgroundColor: '#1e293b', 
+              color: 'white', 
+              borderRadius: '16px', 
+              fontSize: '13px', 
+              fontWeight: '800',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Activity size={16} />
+            Ver Detalle Diario
+          </Link>
+          <div style={{ display: 'flex', gap: '12px', padding: '8px 16px', backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: 'var(--card-shadow)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--movistar-blue)' }}></div>
+                <span style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b' }}>{selectedMonth}</span>
+              </div>
+              <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0' }}></div>
+              <span style={{ fontSize: '13px', fontWeight: '900', color: 'var(--movistar-blue)' }}>{kpiConfig[selectedKpi].label}</span>
+          </div>
         </div>
       </header>
 
