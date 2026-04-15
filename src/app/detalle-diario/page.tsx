@@ -468,9 +468,29 @@ export default function DetalleDiario() {
       // Sort techs by resolution % desc
       cell.technicians.sort((a, b) => a.resolucionPorcentaje - b.resolucionPorcentaje);
       return cell;
-    }).sort((a, b) => a.resolucionPorcentaje - b.resolucionPorcentaje);
+    }).sort((a, b) => b.resolucionPorcentaje - a.resolucionPorcentaje);
 
-    return { district, cells: cellList };
+    // Global Insights
+    const getTopResolucion = (items: Actuacion[]) => {
+      if (!items.length) return null;
+      const counts: Record<string, number> = {};
+      items.forEach(a => {
+        const text = (a.resolucion || 'Sin detalle').trim().toLowerCase();
+        counts[text] = (counts[text] || 0) + 1;
+      });
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      return top ? { text: top[0].charAt(0).toUpperCase() + top[0].slice(1), percentage: (top[1] / items.length) * 100 } : null;
+    };
+
+    const principalResolucion = getTopResolucion(actuaciones.filter(a => a.estado.toUpperCase() === 'CUMPLIDA'));
+    const principalProblema = getTopResolucion(actuaciones.filter(a => ['NO_REALIZADA', 'SUSPENDIDA'].includes(a.estado.toUpperCase())));
+    const celulaCritica = [...cellList].sort((a, b) => a.resolucionPorcentaje - b.resolucionPorcentaje)[0];
+
+    return { 
+      district, 
+      cells: cellList, 
+      insights: { principalResolucion, principalProblema, celulaCritica } 
+    };
   }, [actuaciones]);
 
   const fetchData = async () => {
@@ -609,6 +629,71 @@ export default function DetalleDiario() {
           ))}
       </div>
 
+      {/* Resumen del Día Insights */}
+      {!loading && stats?.insights && (
+        <div style={{ 
+          display: 'flex', 
+          gap: '12px', 
+          marginBottom: '24px', 
+          flexWrap: 'wrap',
+          backgroundColor: 'white',
+          padding: '16px',
+          borderRadius: '20px',
+          border: '1px solid #e2e8f0'
+        }}>
+          {stats.insights.principalResolucion && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '8px 16px', 
+              backgroundColor: '#f0fdf4', 
+              borderRadius: '12px',
+              border: '1px solid #dcfce7'
+            }}>
+              <CheckCircle2 size={14} color="#10b981" />
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#166534' }}>
+                Principal resolución: <span style={{ fontWeight: '900' }}>{stats.insights.principalResolucion.text} ({stats.insights.principalResolucion.percentage.toFixed(0)}%)</span>
+              </span>
+            </div>
+          )}
+          
+          {stats.insights.principalProblema && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '8px 16px', 
+              backgroundColor: '#fff1f2', 
+              borderRadius: '12px',
+              border: '1px solid #ffe4e6'
+            }}>
+              <XCircle size={14} color="#f43f5e" />
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b' }}>
+                Principal problema: <span style={{ fontWeight: '900' }}>{stats.insights.principalProblema.text} ({stats.insights.principalProblema.percentage.toFixed(0)}%)</span>
+              </span>
+            </div>
+          )}
+
+          {stats.insights.celulaCritica && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '8px 16px', 
+              backgroundColor: '#fef2f2', 
+              borderRadius: '12px',
+              border: '1px solid #fee2e2'
+            }}>
+              <Clock size={14} color="#ef4444" />
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b' }}>
+                Célula crítica: <span style={{ fontWeight: '900' }}>{stats.insights.celulaCritica.name} ({stats.insights.celulaCritica.resolucionPorcentaje.toFixed(1)}%)</span>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Block 2: Structure Table */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {loading ? (
@@ -649,7 +734,42 @@ export default function DetalleDiario() {
                   </div>
                   <div>
                     <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b' }}>{cell.name}</h3>
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>{cell.technicians.length} técnicos activos hoy</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>{cell.technicians.length} técnicos activos hoy</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAnalysisCell(cell);
+                          setIsAnalysisOpen(true);
+                        }}
+                        style={{
+                          width: 'fit-content',
+                          backgroundColor: '#f8fafc',
+                          color: 'var(--movistar-blue)',
+                          padding: '6px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid #e2e8f0',
+                          fontSize: '11px',
+                          fontWeight: '950',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--movistar-blue)';
+                          e.currentTarget.style.color = 'white';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.color = 'var(--movistar-blue)';
+                        }}
+                      >
+                        <Activity size={12} />
+                        VER MOTIVOS
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -660,38 +780,6 @@ export default function DetalleDiario() {
                    </div>
                    
                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAnalysisCell(cell);
-                          setIsAnalysisOpen(true);
-                        }}
-                        style={{
-                          backgroundColor: '#f1f5f9',
-                          color: '#64748b',
-                          padding: '8px 12px',
-                          borderRadius: '12px',
-                          border: 'none',
-                          fontSize: '11px',
-                          fontWeight: '900',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#e2e8f0';
-                          e.currentTarget.style.color = '#0ea5e9';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f1f5f9';
-                          e.currentTarget.style.color = '#64748b';
-                        }}
-                      >
-                        <Activity size={14} />
-                      </button>
-
                       <div style={{ 
                         backgroundColor: getSemaforo(cell.resolucionPorcentaje).bg, 
                         color: getSemaforo(cell.resolucionPorcentaje).color,
