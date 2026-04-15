@@ -388,17 +388,17 @@ export default function DetalleDiario() {
           }}>
             <button 
               onClick={handlePrevDay}
-              style={{ p: '8px', borderRadius: '10px', backgroundColor: '#f8fafc', color: '#1e293b' }}
+              style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f8fafc', color: '#1e293b' }}
             >
               <ChevronLeft size={20} strokeWidth={3} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', px: '12px', minWidth: '180px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 12px', minWidth: '180px', justifyContent: 'center' }}>
                <Calendar size={18} color="var(--movistar-blue)" />
                <span style={{ fontSize: '15px', fontWeight: '900', color: '#1e293b' }}>{dayInfo.full}</span>
             </div>
             <button 
               onClick={handleNextDay}
-              style={{ p: '8px', borderRadius: '10px', backgroundColor: '#f8fafc', color: '#1e293b' }}
+              style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f8fafc', color: '#1e293b' }}
             >
               <ChevronRight size={20} strokeWidth={3} />
             </button>
