@@ -145,14 +145,23 @@ const AnalysisDrawer = ({
         }}
       />
       <div style={{
-        position: 'fixed', top: 0, right: isOpen ? 0 : '-500px',
-        width: '100%', maxWidth: '450px', height: '100vh',
-        backgroundColor: 'white', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
-        zIndex: 6001, transition: 'right 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex', flexDirection: 'column'
+        position: 'fixed', 
+        top: isOpen ? '5vh' : '100vh',
+        right: '24px',
+        width: 'calc(100% - 48px)',
+        maxWidth: '450px', 
+        maxHeight: '90vh',
+        backgroundColor: 'white', 
+        borderRadius: '32px',
+        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+        zIndex: 6001, 
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
-        {/* Header */}
-        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9' }}>
+        {/* Header - Fixed */}
+        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', flexShrink: 0, position: 'relative' }}>
           <button 
             onClick={onClose}
             style={{ position: 'absolute', top: '24px', right: '24px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b' }}
@@ -173,7 +182,7 @@ const AnalysisDrawer = ({
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content - Scrollable */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
           
           {/* Bloque 1: Resueltas */}
@@ -254,6 +263,80 @@ const AnalysisDrawer = ({
   );
 };
 
+const CalendarPicker = ({ isOpen, onClose, selectedDate, onSelect, rainyDays }: { isOpen: boolean, onClose: () => void, selectedDate: string, onSelect: (date: string) => void, rainyDays: string[] }) => {
+  const [viewDate, setViewDate] = useState(new Date(selectedDate + 'T12:00:00'));
+  
+  if (!isOpen) return null;
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  const monthName = viewDate.toLocaleString('es-ES', { month: 'long' });
+
+  const days = [];
+  // Padding
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  // Real days
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={onClose} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: '340px', backgroundColor: 'white', borderRadius: '32px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ textTransform: 'capitalize', fontWeight: '900', color: '#1e293b' }}>{monthName} {year}</h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={prevMonth} style={{ padding: '8px', borderRadius: '12px', border: '1px solid #f1f5f9', cursor: 'pointer' }}><ChevronLeft size={18} /></button>
+            <button onClick={nextMonth} style={{ padding: '8px', borderRadius: '12px', border: '1px solid #f1f5f9', cursor: 'pointer' }}><ChevronRight size={18} /></button>
+          </div>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
+          {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map(d => (
+            <span key={d} style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', padding: '8px 0' }}>{d}</span>
+          ))}
+          {days.map((d, i) => {
+            if (d === null) return <div key={`empty-${i}`} />;
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isSelected = dateStr === selectedDate;
+            const hasRain = rainyDays.includes(dateStr);
+
+            return (
+              <button
+                key={i}
+                onClick={() => { onSelect(dateStr); onClose(); }}
+                style={{
+                  padding: '10px 0',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: isSelected ? 'var(--movistar-blue)' : 'transparent',
+                  color: isSelected ? 'white' : '#1e293b',
+                  fontWeight: '800',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {d}
+                {hasRain && (
+                  <span style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '8px' }}>🌧️</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClose: () => void, tech: TechDailyStats | null, date: string }) => {
   if (!tech) return null;
 
@@ -277,20 +360,22 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
       />
       <div style={{
         position: 'fixed',
-        top: 0,
-        right: isOpen ? 0 : '-500px',
-        width: '100%',
+        top: isOpen ? '5vh' : '100vh',
+        right: '24px',
+        width: 'calc(100% - 48px)',
         maxWidth: '450px',
-        height: '100vh',
+        maxHeight: '90vh',
         backgroundColor: 'white',
+        borderRadius: '32px',
         boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
         zIndex: 5001,
-        transition: 'right 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
-        {/* Header */}
-        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', position: 'relative' }}>
+        {/* Header - Fixed */}
+        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', flexShrink: 0, position: 'relative' }}>
           <button 
             onClick={onClose}
             style={{ position: 'absolute', top: '24px', right: '24px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b' }}
@@ -305,7 +390,7 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
             <div>
               <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>{tech.name}</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: '700' }}>
-                <span>Detalle de Actuaciones</span>
+                <span>Actuaciones</span>
                 <span>•</span>
                 <span>{date}</span>
               </div>
@@ -324,7 +409,7 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
           </div>
         </div>
 
-        {/* List */}
+        {/* List - Scrollable */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tech.actuaciones.map((act, i) => {
@@ -340,7 +425,6 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
                   gap: '16px',
                   position: 'relative'
                 }}>
-                  {/* Timeline line */}
                   {i < tech.actuaciones.length - 1 && (
                     <div style={{ position: 'absolute', left: '33px', top: '50px', width: '2px', height: '30px', backgroundColor: '#e2e8f0' }} />
                   )}
@@ -390,6 +474,9 @@ export default function DetalleDiario() {
   const [selectedAnalysisCell, setSelectedAnalysisCell] = useState<CellDailyGroup | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [isRainy, setIsRainy] = useState(false);
+  const [rainyDays, setRainyDays] = useState<string[]>([]);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const stats = useMemo(() => {
     if (!actuaciones.length) return null;
@@ -496,31 +583,44 @@ export default function DetalleDiario() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch actuaciones
+      const { data: acts, error: actsErr } = await supabase
         .from('actuaciones')
         .select('*')
         .eq('fecha_cita', selectedDate);
       
-      if (error) throw error;
-      setActuaciones(data || []);
+      if (actsErr) throw actsErr;
+      setActuaciones(acts || []);
+
+      // Fetch day meta (rain)
+      const { data: meta } = await supabase
+        .from('dias_operativos')
+        .select('lluvia')
+        .eq('fecha', selectedDate)
+        .maybeSingle();
+      
+      setIsRainy(meta?.lluvia || false);
+
     } catch (e) {
       console.error('Error loading daily detail:', e);
-      // Fallback data for demo if table doesn't exist yet
-      setActuaciones([
-        { id: '1', tx_celula: 'BERAZATEGUI', fecha_cita: '2026-04-06', estado: 'CUMPLIDA', recurso: 'Gomez, J.', resolucion: 'Se cambió drop y ONT' },
-        { id: '2', tx_celula: 'BERAZATEGUI', fecha_cita: '2026-04-06', estado: 'NO_REALIZADA', recurso: 'Gomez, J.', resolucion: 'Cliente ausente' },
-        { id: '3', tx_celula: 'BERAZATEGUI', fecha_cita: '2026-04-06', estado: 'CUMPLIDA', recurso: 'Rodriguez, M.', resolucion: 'Reparación de acometida' },
-        { id: '4', tx_celula: 'VARELA 1', fecha_cita: '2026-04-06', estado: 'SUSPENDIDA', recurso: 'Perez, E.', resolucion: 'Falta material de altura' },
-        { id: '5', tx_celula: 'VARELA 1', fecha_cita: '2026-04-06', estado: 'CUMPLIDA', recurso: 'Perez, E.', resolucion: 'Siniestro resuelto' },
-      ]);
+      setActuaciones([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchRainyDays = async () => {
+    const { data } = await supabase.from('dias_operativos').select('fecha').eq('lluvia', true);
+    if (data) setRainyDays(data.map(d => d.fecha));
+  };
+
   useEffect(() => {
     fetchData();
   }, [selectedDate]);
+
+  useEffect(() => {
+    fetchRainyDays();
+  }, []);
 
   const toggleCell = (name: string) => {
     setExpandedCells(prev => ({ ...prev, [name]: !prev[name] }));
@@ -577,17 +677,23 @@ export default function DetalleDiario() {
           }}>
             <button 
               onClick={handlePrevDay}
-              style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f8fafc', color: '#1e293b' }}
+              style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#1e293b', border: 'none', cursor: 'pointer' }}
             >
               <ChevronLeft size={20} strokeWidth={3} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 12px', minWidth: '180px', justifyContent: 'center' }}>
-               <Calendar size={18} color="var(--movistar-blue)" />
-               <span style={{ fontSize: '15px', fontWeight: '900', color: '#1e293b' }}>{dayInfo.full}</span>
+            <div 
+              onClick={() => setIsCalendarOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 16px', minWidth: '180px', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.2s' }}
+            >
+               <div style={{ position: 'relative' }}>
+                <Calendar size={18} color="var(--movistar-blue)" />
+                {isRainy && <span style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '14px' }}>🌧️</span>}
+               </div>
+               <span style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>{dayInfo.full}</span>
             </div>
             <button 
               onClick={handleNextDay}
-              style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f8fafc', color: '#1e293b' }}
+              style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#1e293b', border: 'none', cursor: 'pointer' }}
             >
               <ChevronRight size={20} strokeWidth={3} />
             </button>
@@ -854,12 +960,20 @@ export default function DetalleDiario() {
         date={dayInfo.full}
       />
 
-      <AnalysisDrawer
-        isOpen={isAnalysisOpen}
+      <AnalysisDrawer 
+        isOpen={isAnalysisOpen} 
         onClose={() => setIsAnalysisOpen(false)}
         cellName={selectedAnalysisCell?.name || ''}
+        analysis={cellAnalysis}
         date={dayInfo.full}
-        actuaciones={actuaciones.filter(a => a.tx_celula === selectedAnalysisCell?.name)}
+      />
+
+      <CalendarPicker 
+        isOpen={isCalendarOpen}
+        onClose={() => setIsCalendarOpen(false)}
+        selectedDate={selectedDate}
+        onSelect={(date) => setSelectedDate(date)}
+        rainyDays={rainyDays}
       />
 
       <style jsx global>{`

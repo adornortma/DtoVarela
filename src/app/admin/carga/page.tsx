@@ -77,10 +77,19 @@ export default function CargaAdminPage() {
   const [detectedColumns, setDetectedColumns] = useState<string[]>([]);
 
   const [activeTab, setActiveTab] = useState<'resumen' | 'detalle'>('resumen');
+  const [lluvia, setLluvia] = useState(false);
 
   useEffect(() => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
   }, []);
+
+  useEffect(() => {
+    const fetchRain = async () => {
+      const { data } = await supabase.from('dias_operativos').select('lluvia').eq('fecha', selectedDate).maybeSingle();
+      setLluvia(data?.lluvia || false);
+    };
+    if (selectedDate) fetchRain();
+  }, [selectedDate]);
 
   // 2. Event Handlers
   const handleLogin = (e: React.FormEvent) => {
@@ -167,6 +176,10 @@ export default function CargaAdminPage() {
       if (toInsert.length > 0) {
         const { error } = await supabase.from('actuaciones').insert(toInsert);
         if (error) throw error;
+        
+        // Upsert daily meta
+        await supabase.from('dias_operativos').upsert({ fecha: selectedDate, lluvia: lluvia });
+        
         processedCount = toInsert.length;
       }
 
@@ -383,7 +396,11 @@ export default function CargaAdminPage() {
         kpisDetected: detectedKpis
       });
       setUnidentified(missingTechs);
-      if (errors.length === 0 && processedCount > 0) setPastedData('');
+      if (errors.length === 0 && processedCount > 0) {
+        // Upsert daily meta
+        await supabase.from('dias_operativos').upsert({ fecha: selectedDate, lluvia: lluvia });
+        setPastedData('');
+      }
 
     } catch (err: any) {
       console.error(err);
@@ -575,9 +592,15 @@ export default function CargaAdminPage() {
 
           <form onSubmit={handleProcessData}>
               <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900', marginBottom: '12px' }}>
-                      <Calendar size={18} color="#019df4" /> {activeTab === 'resumen' ? 'FECHA DE MÉTRICAS' : 'FECHA DE ACTUACIONES'}
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900' }}>
+                        <Calendar size={18} color="#019df4" /> {activeTab === 'resumen' ? 'FECHA DE MÉTRICAS' : 'FECHA DE ACTUACIONES'}
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', backgroundColor: lluvia ? '#e0f2fe' : '#f8fafc', padding: '6px 12px', borderRadius: '10px', border: lluvia ? '1px solid #bae6fd' : '1px solid #e2e8f0', transition: 'all 0.2s' }}>
+                      <input type="checkbox" checked={lluvia} onChange={(e) => setLluvia(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: lluvia ? '#0369a1' : '#64748b' }}>🌧️ Hubo lluvia hoy</span>
+                    </label>
+                  </div>
                   <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '18px', border: '2px solid #f1f5f9', fontWeight: '800' }} />
               </div>
               

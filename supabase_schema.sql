@@ -81,6 +81,13 @@ CREATE TABLE IF NOT EXISTS public.actuaciones (
     created_at timestamptz DEFAULT now()
 );
 
+-- 7. Días Operativos (Metadata por día)
+CREATE TABLE IF NOT EXISTS public.dias_operativos (
+    fecha date PRIMARY KEY,
+    lluvia boolean DEFAULT false,
+    created_at timestamptz DEFAULT now()
+);
+
 -- Índices Sugeridos
 CREATE INDEX IF NOT EXISTS idx_metricas_fecha ON metricas(fecha);
 CREATE INDEX IF NOT EXISTS idx_actuaciones_fecha ON actuaciones(fecha_cita);
