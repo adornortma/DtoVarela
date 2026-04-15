@@ -185,7 +185,7 @@ const AnalysisDrawer = ({
         </div>
 
         {/* Content - Scrollable */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+        <div style={{ overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
           
           {/* Bloque 1: Resueltas */}
           <section>
@@ -414,7 +414,7 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
         </div>
 
         {/* List - Scrollable */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div style={{ overflowY: 'auto', padding: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tech.actuaciones.map((act, i) => {
               const badge = getStatusBadge(act.estado);
