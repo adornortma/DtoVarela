@@ -158,12 +158,19 @@ const AnalysisDrawer = ({
         transform: `translateY(${isOpen ? '0' : '110%'})`,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex', 
-        flexDirection: 'column',
-        overflow: 'hidden'
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
       }}>
-        {/* Header - Fixed */}
-        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', flexShrink: 0, position: 'relative' }}>
+        {/* Header - Sticky */}
+        <div style={{ 
+          padding: '32px 24px', 
+          borderBottom: '1px solid #f1f5f9', 
+          position: 'sticky', 
+          top: 0, 
+          backgroundColor: 'rgba(255,255,255,0.9)', 
+          backdropFilter: 'blur(8px)',
+          zIndex: 10 
+        }}>
           <button 
             onClick={onClose}
             style={{ position: 'absolute', top: '24px', right: '24px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b' }}
@@ -184,8 +191,8 @@ const AnalysisDrawer = ({
           </div>
         </div>
 
-        {/* Content - Scrollable */}
-        <div style={{ overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+        {/* Content */}
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
           
           {/* Bloque 1: Resueltas */}
           <section>
@@ -374,12 +381,19 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
         transform: `translateY(${isOpen ? '0' : '110%'})`,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
       }}>
-        {/* Header - Fixed */}
-        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', flexShrink: 0, position: 'relative' }}>
+        {/* Header - Sticky */}
+        <div style={{ 
+          padding: '32px 24px', 
+          borderBottom: '1px solid #f1f5f9', 
+          position: 'sticky', 
+          top: 0, 
+          backgroundColor: 'rgba(255,255,255,0.9)', 
+          backdropFilter: 'blur(8px)',
+          zIndex: 10 
+        }}>
           <button 
             onClick={onClose}
             style={{ position: 'absolute', top: '24px', right: '24px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b' }}
@@ -413,8 +427,8 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
           </div>
         </div>
 
-        {/* List - Scrollable */}
-        <div style={{ overflowY: 'auto', padding: '24px' }}>
+        {/* List */}
+        <div style={{ padding: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tech.actuaciones.map((act, i) => {
               const badge = getStatusBadge(act.estado);
