@@ -158,18 +158,17 @@ const AnalysisDrawer = ({
         transform: `translateY(${isOpen ? '0' : '110%'})`,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch'
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
-        {/* Header - Sticky */}
+        {/* Header - Fixed Height */}
         <div style={{ 
           padding: '32px 24px', 
           borderBottom: '1px solid #f1f5f9', 
-          position: 'sticky', 
-          top: 0, 
-          backgroundColor: 'rgba(255,255,255,0.9)', 
-          backdropFilter: 'blur(8px)',
-          zIndex: 10 
+          flexShrink: 0,
+          position: 'relative',
+          backgroundColor: 'white'
         }}>
           <button 
             onClick={onClose}
@@ -191,8 +190,16 @@ const AnalysisDrawer = ({
           </div>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+        {/* Content - Scrollable only if exceeds parent height */}
+        <div style={{ 
+          flex: 1, 
+          minHeight: 0, 
+          overflowY: 'auto', 
+          padding: '24px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '40px' 
+        }}>
           
           {/* Bloque 1: Resueltas */}
           <section>
@@ -381,18 +388,17 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
         transform: `translateY(${isOpen ? '0' : '110%'})`,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch'
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
-        {/* Header - Sticky */}
+        {/* Header - Fixed Height */}
         <div style={{ 
           padding: '32px 24px', 
           borderBottom: '1px solid #f1f5f9', 
-          position: 'sticky', 
-          top: 0, 
-          backgroundColor: 'rgba(255,255,255,0.9)', 
-          backdropFilter: 'blur(8px)',
-          zIndex: 10 
+          flexShrink: 0, 
+          position: 'relative',
+          backgroundColor: 'white'
         }}>
           <button 
             onClick={onClose}
@@ -427,8 +433,8 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
           </div>
         </div>
 
-        {/* List */}
-        <div style={{ padding: '24px' }}>
+        {/* List - Scrollable only if exceeds parent height */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tech.actuaciones.map((act, i) => {
               const badge = getStatusBadge(act.estado);
