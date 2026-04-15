@@ -158,17 +158,17 @@ const AnalysisDrawer = ({
         transform: `translateY(${isOpen ? '0' : '110%'})`,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex',
-        flexDirection: 'column',
+        display: 'grid',
+        gridTemplateRows: 'auto 1fr',
         overflow: 'hidden'
       }}>
-        {/* Header - Fixed Height */}
+        {/* Header - Auto height */}
         <div style={{ 
           padding: '32px 24px', 
           borderBottom: '1px solid #f1f5f9', 
-          flexShrink: 0,
           position: 'relative',
-          backgroundColor: 'white'
+          backgroundColor: 'white',
+          zIndex: 10
         }}>
           <button 
             onClick={onClose}
@@ -190,10 +190,8 @@ const AnalysisDrawer = ({
           </div>
         </div>
 
-        {/* Content - Scrollable only if exceeds parent height */}
+        {/* Content - 1fr with internal scroll */}
         <div style={{ 
-          flex: 1, 
-          minHeight: 0, 
           overflowY: 'auto', 
           padding: '24px', 
           display: 'flex', 
@@ -388,17 +386,17 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
         transform: `translateY(${isOpen ? '0' : '110%'})`,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex',
-        flexDirection: 'column',
+        display: 'grid',
+        gridTemplateRows: 'auto 1fr',
         overflow: 'hidden'
       }}>
-        {/* Header - Fixed Height */}
+        {/* Header - Auto height */}
         <div style={{ 
           padding: '32px 24px', 
           borderBottom: '1px solid #f1f5f9', 
-          flexShrink: 0, 
           position: 'relative',
-          backgroundColor: 'white'
+          backgroundColor: 'white',
+          zIndex: 10
         }}>
           <button 
             onClick={onClose}
@@ -433,8 +431,8 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
           </div>
         </div>
 
-        {/* List - Scrollable only if exceeds parent height */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '24px' }}>
+        {/* List - 1fr with internal scroll */}
+        <div style={{ overflowY: 'auto', padding: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tech.actuaciones.map((act, i) => {
               const badge = getStatusBadge(act.estado);
