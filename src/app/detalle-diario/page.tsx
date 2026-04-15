@@ -86,6 +86,173 @@ const formatDateLong = (dateStr: string) => {
 };
 
 // --- Components ---
+const AnalysisDrawer = ({ 
+  isOpen, 
+  onClose, 
+  cellName, 
+  date, 
+  actuaciones 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  cellName: string, 
+  date: string,
+  actuaciones: Actuacion[]
+}) => {
+  const analysis = useMemo(() => {
+    if (!actuaciones.length) return null;
+
+    const process = (items: Actuacion[]) => {
+      const counts: Record<string, number> = {};
+      items.forEach(a => {
+        const text = (a.resolucion || 'Sin detalle').trim().toLowerCase();
+        counts[text] = (counts[text] || 0) + 1;
+      });
+
+      const total = items.length;
+      const sorted = Object.entries(counts)
+        .map(([text, count]) => ({ 
+          text: text.charAt(0).toUpperCase() + text.slice(1), 
+          count,
+          percentage: (count / total) * 100 
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      const top = sorted[0];
+      const insight = top ? `Principal motivo: ${top.text} (${top.percentage.toFixed(0)}%)` : '';
+
+      return { sorted, total, insight, max: sorted[0]?.count || 1 };
+    };
+
+    const resueltas = process(actuaciones.filter(a => a.estado.toUpperCase() === 'CUMPLIDA'));
+    const noResueltas = process(actuaciones.filter(a => ['NO_REALIZADA', 'SUSPENDIDA'].includes(a.estado.toUpperCase())));
+
+    return { resueltas, noResueltas };
+  }, [actuaciones]);
+
+  if (!analysis) return null;
+
+  return (
+    <>
+      <div 
+        onClick={onClose}
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
+          zIndex: 6000, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease'
+        }}
+      />
+      <div style={{
+        position: 'fixed', top: 0, right: isOpen ? 0 : '-500px',
+        width: '100%', maxWidth: '450px', height: '100vh',
+        backgroundColor: 'white', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+        zIndex: 6001, transition: 'right 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        display: 'flex', flexDirection: 'column'
+      }}>
+        {/* Header */}
+        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9' }}>
+          <button 
+            onClick={onClose}
+            style={{ position: 'absolute', top: '24px', right: '24px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b' }}
+          >
+            <X size={20} />
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <div style={{ backgroundColor: '#0ea5e9', padding: '10px', borderRadius: '14px', color: 'white' }}>
+              <Activity size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>Motivos de resolución</h2>
+              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '700' }}>
+                {cellName} • {date}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+          
+          {/* Bloque 1: Resueltas */}
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
+              <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resueltas (OK)</h3>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginLeft: 'auto' }}>{analysis.resueltas.total} actuaciones</span>
+            </div>
+            
+            {analysis.resueltas.insight && (
+              <div style={{ backgroundColor: '#f0fdf4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #dcfce7', marginBottom: '20px', fontSize: '13px', fontWeight: '800', color: '#166534' }}>
+                💡 {analysis.resueltas.insight}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {analysis.resueltas.sorted.map((item, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '700' }}>
+                    <span style={{ color: '#1e293b' }}>{item.text}</span>
+                    <span style={{ color: '#64748b' }}>{item.count}</span>
+                  </div>
+                  <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      backgroundColor: '#10b981', 
+                      borderRadius: '4px',
+                      width: `${(item.count / analysis.resueltas.max) * 100}%`,
+                      opacity: 0.6
+                    }}></div>
+                  </div>
+                </div>
+              ))}
+              {analysis.resueltas.total === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos de resolución</p>}
+            </div>
+          </section>
+
+          {/* Bloque 2: No Resueltas */}
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></div>
+              <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>No Resueltas / Susp.</h3>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginLeft: 'auto' }}>{analysis.noResueltas.total} actuaciones</span>
+            </div>
+
+            {analysis.noResueltas.insight && (
+              <div style={{ backgroundColor: '#fff1f2', padding: '12px 16px', borderRadius: '12px', border: '1px solid #ffe4e6', marginBottom: '20px', fontSize: '13px', fontWeight: '800', color: '#991b1b' }}>
+                ⚠️ {analysis.noResueltas.insight}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {analysis.noResueltas.sorted.map((item, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '700' }}>
+                    <span style={{ color: '#1e293b' }}>{item.text}</span>
+                    <span style={{ color: '#64748b' }}>{item.count}</span>
+                  </div>
+                  <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      backgroundColor: '#f43f5e', 
+                      borderRadius: '4px',
+                      width: `${(item.count / analysis.noResueltas.max) * 100}%`,
+                      opacity: 0.6
+                    }}></div>
+                  </div>
+                </div>
+              ))}
+              {analysis.noResueltas.total === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos de fallo</p>}
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </>
+  );
+};
 
 const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClose: () => void, tech: TechDailyStats | null, date: string }) => {
   if (!tech) return null;
@@ -220,7 +387,9 @@ export default function DetalleDiario() {
   const [actuaciones, setActuaciones] = useState<Actuacion[]>([]);
   const [expandedCells, setExpandedCells] = useState<Record<string, boolean>>({});
   const [selectedTech, setSelectedTech] = useState<TechDailyStats | null>(null);
+  const [selectedAnalysisCell, setSelectedAnalysisCell] = useState<CellDailyGroup | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
 
   const stats = useMemo(() => {
     if (!actuaciones.length) return null;
@@ -489,16 +658,51 @@ export default function DetalleDiario() {
                       <span style={{ display: 'block', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase' }}>C / NR / S</span>
                       <span style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{cell.cumplidas} / {cell.noRealizadas} / {cell.suspendidas}</span>
                    </div>
-                   <div style={{ 
-                     backgroundColor: getSemaforo(cell.resolucionPorcentaje).bg, 
-                     color: getSemaforo(cell.resolucionPorcentaje).color,
-                     padding: '8px 16px',
-                     borderRadius: '12px',
-                     minWidth: '90px',
-                     textAlign: 'center'
-                   }}>
-                      <span style={{ display: 'block', fontSize: '10px', fontWeight: '900', opacity: 0.8, textTransform: 'uppercase' }}>Resolución</span>
-                      <span style={{ fontSize: '16px', fontWeight: '950' }}>{cell.resolucionPorcentaje.toFixed(1)}%</span>
+                   
+                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAnalysisCell(cell);
+                          setIsAnalysisOpen(true);
+                        }}
+                        style={{
+                          backgroundColor: '#f1f5f9',
+                          color: '#64748b',
+                          padding: '8px 12px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          fontSize: '11px',
+                          fontWeight: '900',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#e2e8f0';
+                          e.currentTarget.style.color = '#0ea5e9';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f1f5f9';
+                          e.currentTarget.style.color = '#64748b';
+                        }}
+                      >
+                        <Activity size={14} />
+                      </button>
+
+                      <div style={{ 
+                        backgroundColor: getSemaforo(cell.resolucionPorcentaje).bg, 
+                        color: getSemaforo(cell.resolucionPorcentaje).color,
+                        padding: '8px 16px',
+                        borderRadius: '12px',
+                        minWidth: '94px',
+                        textAlign: 'center'
+                      }}>
+                          <span style={{ display: 'block', fontSize: '10px', fontWeight: '900', opacity: 0.8, textTransform: 'uppercase' }}>Resolución</span>
+                          <span style={{ fontSize: '16px', fontWeight: '950' }}>{cell.resolucionPorcentaje.toFixed(1)}%</span>
+                      </div>
                    </div>
                 </div>
               </div>
@@ -577,6 +781,14 @@ export default function DetalleDiario() {
         onClose={() => setIsDrawerOpen(false)} 
         tech={selectedTech} 
         date={dayInfo.full}
+      />
+
+      <AnalysisDrawer
+        isOpen={isAnalysisOpen}
+        onClose={() => setIsAnalysisOpen(false)}
+        cellName={selectedAnalysisCell?.name || ''}
+        date={dayInfo.full}
+        actuaciones={actuaciones.filter(a => a.tx_celula === selectedAnalysisCell?.name)}
       />
 
       <style jsx global>{`
