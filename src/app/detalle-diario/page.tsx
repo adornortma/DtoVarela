@@ -67,8 +67,10 @@ const getSemaforo = (value: number) => {
 };
 
 const formatDateLong = (dateStr: string) => {
+  if (!dateStr) return { full: 'Calculando...', monthName: '', dayOfWeek: '', short: '' };
   try {
-    const d = new Date(dateStr + 'T12:00:00'); // Use mid-day to avoid timezone shifting
+    const d = new Date(dateStr + 'T12:00:00');
+    if (isNaN(d.getTime())) return { full: dateStr, monthName: '', dayOfWeek: '', short: '' };
     const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const dayName = days[d.getDay()];
@@ -281,7 +283,19 @@ const AnalysisDrawer = ({
 };
 
 const CalendarPicker = ({ isOpen, onClose, selectedDate, onSelect, rainyDays }: { isOpen: boolean, onClose: () => void, selectedDate: string, onSelect: (date: string) => void, rainyDays: string[] }) => {
-  const [viewDate, setViewDate] = useState(new Date(selectedDate + 'T12:00:00'));
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    return isNaN(d.getTime()) ? new Date() : d;
+  });
+
+  useEffect(() => {
+    if (isOpen && selectedDate) {
+      const d = new Date(selectedDate + 'T12:00:00');
+      if (!isNaN(d.getTime())) {
+        setViewDate(d);
+      }
+    }
+  }, [isOpen, selectedDate]);
   
   if (!isOpen) return null;
 
