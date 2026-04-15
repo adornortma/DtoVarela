@@ -687,12 +687,23 @@ export default function DetalleDiario() {
             </button>
             <div 
               onClick={() => setIsCalendarOpen(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 16px', minWidth: '180px', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.2s' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minWidth: '180px', justifyContent: 'center', cursor: 'pointer' }}
             >
-               <div style={{ position: 'relative' }}>
-                <Calendar size={18} color="var(--movistar-blue)" />
-                {isRainy && <span style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '14px' }}>🌧️</span>}
-               </div>
+               {isRainy && (
+                 <div style={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   justifyContent: 'center',
+                   backgroundColor: '#eff6ff', 
+                   padding: '6px', 
+                   borderRadius: '12px', 
+                   border: '1px solid #dbeafe',
+                   animation: 'bounce-subtle 2s infinite'
+                 }}>
+                   <span style={{ fontSize: '22px' }}>🌧️</span>
+                 </div>
+               )}
+               <Calendar size={18} color="var(--movistar-blue)" />
                <span style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>{dayInfo.full}</span>
             </div>
             <button 
@@ -989,6 +1000,10 @@ export default function DetalleDiario() {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes bounce-subtle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
         }
       `}</style>
     </div>
