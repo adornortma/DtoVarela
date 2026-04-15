@@ -964,7 +964,7 @@ export default function DetalleDiario() {
         isOpen={isAnalysisOpen} 
         onClose={() => setIsAnalysisOpen(false)}
         cellName={selectedAnalysisCell?.name || ''}
-        analysis={cellAnalysis}
+        actuaciones={actuaciones.filter(a => a.tx_celula === selectedAnalysisCell?.name)}
         date={dayInfo.full}
       />
 
