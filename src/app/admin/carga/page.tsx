@@ -76,6 +76,8 @@ export default function CargaAdminPage() {
   const [distritoStatus, setDistritoStatus] = useState<string | null>(null);
   const [detectedColumns, setDetectedColumns] = useState<string[]>([]);
 
+  const [activeTab, setActiveTab] = useState<'resumen' | 'detalle'>('resumen');
+
   useEffect(() => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
   }, []);
@@ -98,15 +100,97 @@ export default function CargaAdminPage() {
     return isNaN(num) ? 0 : num;
   };
 
-  const findHeaderIdx = (headers: string[], config: KpiMappingConfig) => {
+  const findHeaderIdx = (headers: string[], names: string[]) => {
     return headers.findIndex(h => {
       const normalizedH = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      return config.names.some(name => normalizedH === name.toLowerCase());
+      return names.some(name => normalizedH === name.toLowerCase());
     });
+  };
+
+  const [previewData, setPreviewData] = useState<any[]>([]);
+
+  const handleProcessActuaciones = async () => {
+    if (!pastedData.trim()) return;
+    setLoading(true);
+    setSummary(null);
+    const errors: string[] = [];
+    let processedCount = 0;
+
+    try {
+      const initialRows = pastedData.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      
+      const headerText = initialRows[0];
+      // Robust separator detection
+      let separator = '\t';
+      if (headerText.includes('\t')) separator = '\t';
+      else if (headerText.includes(';')) separator = ';';
+      else if (headerText.includes('|')) separator = '|';
+      else if (headerText.includes(',')) separator = ',';
+
+      const headers = headerText.split(separator).map(c => c.trim().toUpperCase());
+
+      const idxCelula = headers.findIndex(h => h.includes('CELULA'));
+      const idxFecha = headers.findIndex(h => h.includes('FECHA') || h.includes('CITA'));
+      const idxEstado = headers.findIndex(h => h.includes('ESTADO'));
+      const idxRecurso = headers.findIndex(h => h.includes('RECURSO') || h.includes('TECNICO') || h.includes('AGENTE'));
+      const idxResolucion = headers.findIndex(h => h.includes('RESOLUCION'));
+
+      if (idxCelula === -1 || idxEstado === -1 || idxRecurso === -1) {
+        throw new Error("No se detectaron las columnas necesarias (Célula, Estado, Recurso). Asegúrate de incluir la cabecera.");
+      }
+
+      const rows = initialRows.slice(1).map(line => line.split(separator).map(c => c.trim()));
+      
+      const toInsert = rows.map(row => {
+        let rawDate = row[idxFecha] || selectedDate;
+        // Normalización básica de fecha si viene en un formato extraño
+        if (rawDate.includes('/')) {
+          const parts = rawDate.split('/');
+          if (parts[2]?.length === 4) rawDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        
+        return {
+          tx_celula: row[idxCelula]?.toUpperCase().replace(/_/g, ' ') || 'SIN CELULA',
+          fecha_cita: rawDate,
+          estado: row[idxEstado]?.toUpperCase() || 'DESCONOCIDO',
+          recurso: row[idxRecurso] || 'SIN NOMBRE',
+          resolucion: row[idxResolucion] || ''
+        };
+      }).filter(r => r.recurso !== 'SIN NOMBRE');
+
+      if (toInsert.length > 0) {
+        const { error } = await supabase.from('actuaciones').insert(toInsert);
+        if (error) throw error;
+        processedCount = toInsert.length;
+      }
+
+      setSummary({ 
+        total: rows.length, 
+        processed: processedCount, 
+        errors: [], 
+        techniciansCreated: 0, 
+        cellTotalsProcessed: 0, 
+        kpisDetected: ['Identificador', 'Célula', 'Fecha', 'Estado', 'Resolución'] 
+      });
+      setPastedData('');
+      setPreviewData([]);
+
+    } catch (err: any) {
+      console.error(err);
+      errors.push(`${err.message}`);
+      setSummary({ total: 0, processed: 0, errors, techniciansCreated: 0, cellTotalsProcessed: 0, kpisDetected: [] });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleProcessData = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (activeTab === 'detalle') {
+      return handleProcessActuaciones();
+    }
     if (!pastedData.trim() || !selectedDate) return;
     
     setLoading(true);
@@ -153,7 +237,6 @@ export default function CargaAdminPage() {
 
       const headers = headerText.split(separator).map(c => c.trim());
       const rawLines = initialRows.map(line => {
-        // Para cada fila, si el separador principal falla (da 1 columna pero esperamos más), try others
         let parts = line.split(separator).map(c => c.trim());
         if (parts.length < 2 && headers.length >= 2) {
             for (const s of separators) {
@@ -172,10 +255,12 @@ export default function CargaAdminPage() {
       });
       const celulaIdx = headers.findIndex(h => ['celula', 'sector', 'grupo', 'unidad'].some(v => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(v)));
       
-      // Mapear KPIs dinámicamente
       const kpiIndices: Record<string, { idx: number, type: 'percentage' | 'number' }> = {};
       KPI_CONFIG.forEach(config => {
-        const idx = findHeaderIdx(headers, config);
+        const idx = headers.findIndex(h => {
+          const normalizedH = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          return config.names.some(name => normalizedH === name.toLowerCase());
+        });
         if (idx !== -1) {
           kpiIndices[config.key] = { idx, type: config.type };
           detectedKpis.push(config.label);
@@ -201,7 +286,6 @@ export default function CargaAdminPage() {
           let rawCelula = celulaIdx !== -1 ? (row[celulaIdx] || null) : null;
           if (rawCelula) rawCelula = rawCelula.toUpperCase().replace(/_/g, ' ').trim();
           
-          // Extraer valores de KPIs detectados
           const kpiValues: Record<string, number> = {};
           Object.entries(kpiIndices).forEach(([key, { idx, type }]) => {
             if (row[idx]) kpiValues[key] = parseNum(row[idx], type);
@@ -210,118 +294,57 @@ export default function CargaAdminPage() {
           const updatePayload: any = { ...kpiValues };
           if (rawCelula) updatePayload.celula = rawCelula;
 
-          // Caso: Fila de Totales de Célula
           if (rawTecnico.toUpperCase().includes('TOTAL')) {
             const celulaName = rawCelula || rawTecnico.replace(/TOTAL\s+/i, '').trim();
-            
             const { data: existingCell } = await supabase.from('metricas_celula').select('id').eq('celula', celulaName).eq('fecha', selectedDate).maybeSingle();
-            
-            let cellErr;
             if (existingCell) {
-              const { error } = await supabase.from('metricas_celula').update(updatePayload).eq('id', existingCell.id);
-              cellErr = error;
+              await supabase.from('metricas_celula').update(updatePayload).eq('id', existingCell.id);
             } else {
-              const { error } = await supabase.from('metricas_celula').insert({ celula: celulaName, fecha: selectedDate, ...updatePayload });
-              cellErr = error;
-            }
-
-            if (cellErr) {
-              errors.push(`Error celda ${celulaName}: ${cellErr.message}`);
-              continue;
+              await supabase.from('metricas_celula').insert({ celula: celulaName, fecha: selectedDate, ...updatePayload });
             }
             cellTotalsCount++;
             processedCount++;
             continue;
           }
 
-          // Identificación del técnico
           const techInput = parseTechnicianInput(rawTecnico);
           let tecnicoId = null;
 
-          // Search by DNI
           if (techInput.dni) {
-            const { data: t, error: e1 } = await supabase.from('tecnicos').select('id').eq('dni', techInput.dni).maybeSingle();
+            const { data: t } = await supabase.from('tecnicos').select('id').eq('dni', techInput.dni).maybeSingle();
             if (t) tecnicoId = t.id;
           }
 
-          // Search by Name if not found
           if (!tecnicoId) {
             const { data: t } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).maybeSingle();
-            if (t) {
-              tecnicoId = t.id;
-            } else {
-              // Intento fallido con nombre original. 
-              // Si tiene múltiples palabras, intentar swap (ej: "Apellido Nombre" <-> "Nombre Apellido")
-              const words = techInput.normalized.split(' ').filter(w => w.length > 0);
-              if (words.length >= 2) {
-                // Rotar: el primer nombre al final (ej: "Algue Jonathan" -> "Jonathan Algue")
-                const rotated = [...words.slice(1), words[0]].join(' ');
-                const { data: t2 } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', rotated).maybeSingle();
-                
-                if (t2) {
-                   tecnicoId = t2.id;
-                   console.log(`Smart matched (rotated): ${rawTecnico} -> ${rotated}`);
-                } else if (words.length > 2) {
-                   // Si hay 3+ palabras, probar también moviendo la última al principio
-                   const lastToFront = [words[words.length-1], ...words.slice(0, -1)].join(' ');
-                   const { data: t3 } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', lastToFront).maybeSingle();
-                   if (t3) {
-                      tecnicoId = t3.id;
-                      console.log(`Smart matched (lastToFront): ${rawTecnico} -> ${lastToFront}`);
-                   }
-                }
-              }
-            }
+            if (t) tecnicoId = t.id;
           }
 
-          // Search by Alias (as a last resort)
           if (!tecnicoId) {
             const { data: a } = await supabase.from('tecnico_alias').select('tecnico_id').eq('valor_original', rawTecnico).maybeSingle();
             if (a) tecnicoId = a.tecnico_id;
           }
 
-          // FINAL LOGIC
           if (tecnicoId) {
-            // Manual Upsert for Alias
             const { data: existingAlias } = await supabase.from('tecnico_alias').select('id').eq('tecnico_id', tecnicoId).eq('valor_original', rawTecnico).maybeSingle();
             if (!existingAlias) {
               await supabase.from('tecnico_alias').insert({ tecnico_id: tecnicoId, valor_original: rawTecnico, tipo: techInput.dni ? 'dni_nombre' : 'nombre' });
             }
             
-            // INTENTO DE RECUPERAR CÉLULA SI NO VIENE EN EL EXCEL
             let cellToSave = rawCelula;
             if (!cellToSave) {
-              const { data: lastMetric } = await supabase
-                .from('metricas')
-                .select('celula')
-                .eq('tecnico_id', tecnicoId)
-                .not('celula', 'eq', 'DISTRITO')
-                .order('fecha', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-              
+              const { data: lastMetric } = await supabase.from('metricas').select('celula').eq('tecnico_id', tecnicoId).not('celula', 'eq', 'DISTRITO').order('fecha', { ascending: false }).limit(1).maybeSingle();
               cellToSave = lastMetric?.celula || "DISTRITO";
             }
 
-            // Manual Upsert for Metricas
             const { data: existingMetric } = await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).maybeSingle();
-            
-            let mErr;
             if (existingMetric) {
-               const { error } = await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
-               mErr = error;
+               await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
             } else {
-               const { error } = await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
-               mErr = error;
+               await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
             }
-
-            if (mErr) {
-              errors.push(`Error DB (${rawTecnico}): ${mErr.message}`);
-            } else {
-              processedCount++;
-            }
+            processedCount++;
           } else if (techInput.dni) {
-            // Auto-create WITHOUT 'celula' column in 'tecnicos' table
             const { data: n, error: iErr } = await supabase.from('tecnicos').insert({
               dni: techInput.dni,
               nombre_normalizado: techInput.normalized,
@@ -329,20 +352,15 @@ export default function CargaAdminPage() {
               nombre: techInput.name.split(',')[1]?.trim() || ""
             }).select('id').single();
 
-            if (iErr) {
-              errors.push(`Error creacion technical (${techInput.dni}): ${iErr.message}`);
-            } else if (n) {
+            if (n) {
               autoCreatedCount++;
-              // Insert directly (newly created)
-              const { error: mErr } = await supabase.from('metricas').insert({
+              await supabase.from('metricas').insert({
                 tecnico_id: n.id,
                 fecha: selectedDate,
                 celula: rawCelula || "DISTRITO",
                 ...updatePayload
               });
-              
-              if (mErr) errors.push(`Error metrica (${rawTecnico}): ${mErr.message}`);
-              else processedCount++;
+              processedCount++;
             }
           } else {
              if (!missingTechs.includes(rawTecnico)) missingTechs.push(rawTecnico);
@@ -376,9 +394,13 @@ export default function CargaAdminPage() {
     setLoading(true);
     setClearStatus("Borrando...");
     try {
-      await supabase.from('metricas').delete().eq('fecha', selectedDate);
-      await supabase.from('metricas_celula').delete().eq('fecha', selectedDate);
-      setClearStatus(`Semana ${selectedDate} borrada exitosamente.`);
+      if (activeTab === 'resumen') {
+        await supabase.from('metricas').delete().eq('fecha', selectedDate);
+        await supabase.from('metricas_celula').delete().eq('fecha', selectedDate);
+      } else {
+        await supabase.from('actuaciones').delete().eq('fecha_cita', selectedDate);
+      }
+      setClearStatus(`Datos de ${selectedDate} borrados exitosamente.`);
       setSummary(null);
       setShowClearConfirm(false);
     } catch (e) {
@@ -415,12 +437,8 @@ export default function CargaAdminPage() {
                     <p style={{ color: '#64748b', fontWeight: '700', marginTop: '4px' }}>Gestión de Datos Districtuales</p>
                 </div>
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ position: 'relative' }}>
-                        <input type="text" value={user} onChange={(e) => setUser(e.target.value)} placeholder="Usuario" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
-                    </div>
-                    <div style={{ position: 'relative' }}>
-                        <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Contraseña" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
-                    </div>
+                    <input type="text" value={user} onChange={(e) => setUser(e.target.value)} placeholder="Usuario" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
+                    <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Contraseña" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
                     {authError && <p style={{ color: '#ef4444', fontSize: '14px', fontWeight: '800', textAlign: 'center' }}>Credenciales incorrectas</p>}
                     <button type="submit" style={{ backgroundColor: '#1a171e', color: 'white', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '950', cursor: 'pointer', fontSize: '16px', marginTop: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>Iniciar Sesión</button>
                 </form>
@@ -472,18 +490,86 @@ export default function CargaAdminPage() {
                 </button>
             </form>
           </div>
+          
+          <div style={{ backgroundColor: '#fff1f2', padding: '24px', borderRadius: '24px', border: '1px solid #fecdd3' }}>
+             <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#be123c', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={18} /> Zona de Peligro
+             </h3>
+             <p style={{ fontSize: '12px', color: '#b91c1c', marginBottom: '16px', fontWeight: '700' }}>Borrar datos existentes para la fecha seleccionada ({selectedDate}).</p>
+             {!showClearConfirm ? (
+               <button onClick={() => setShowClearConfirm(true)} style={{ width: '100%', padding: '12px', backgroundColor: '#be123c', color: 'white', borderRadius: '12px', border: 'none', fontWeight: '900', fontSize: '13px' }}>Borrar Datos del Día</button>
+             ) : (
+               <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={handleClearData} style={{ flex: 1, padding: '12px', backgroundColor: '#e11d48', color: 'white', borderRadius: '12px', border: 'none', fontWeight: '900' }}>Confirmar</button>
+                  <button onClick={() => setShowClearConfirm(false)} style={{ flex: 1, padding: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontWeight: '900' }}>Canelar</button>
+               </div>
+             )}
+             {clearStatus && <p style={{ marginTop: '12px', fontSize: '11px', fontWeight: '900', color: '#be123c', textAlign: 'center' }}>{clearStatus}</p>}
+          </div>
         </div>
 
         <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '32px', border: '1px solid #eef2f6' }}>
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: '950', color: '#1a1a1a', marginBottom: '8px' }}>Importación Inteligente</h2>
-            <p style={{ color: '#64748b', fontWeight: '700' }}>Pega las filas con sus cabeceras.</p>
+          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '16px', marginBottom: '32px' }}>
+             <button 
+                onClick={() => setActiveTab('resumen')}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px', 
+                  borderRadius: '12px', 
+                  backgroundColor: activeTab === 'resumen' ? 'white' : 'transparent',
+                  color: activeTab === 'resumen' ? '#019df4' : '#64748b',
+                  fontWeight: '900',
+                  boxShadow: activeTab === 'resumen' ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+             >
+               Resumen KPI
+             </button>
+             <button 
+                onClick={() => setActiveTab('detalle')}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px', 
+                  borderRadius: '12px', 
+                  backgroundColor: activeTab === 'detalle' ? 'white' : 'transparent',
+                  color: activeTab === 'detalle' ? '#019df4' : '#64748b',
+                  fontWeight: '900',
+                  boxShadow: activeTab === 'detalle' ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+             >
+               Detalle Actuaciones
+             </button>
           </div>
+
+          <div style={{ marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: '950', color: '#1a1a1a', marginBottom: '8px' }}>
+              {activeTab === 'resumen' ? 'Importación Resumen KPI' : 'Importación Detalle Diario'}
+            </h2>
+            <p style={{ color: '#64748b', fontWeight: '700' }}>
+               {activeTab === 'resumen' 
+                ? 'Reporte de productividad agregada por técnico.' 
+                : 'Detalle individual de cada actuación realzada hoy.'}
+            </p>
+          </div>
+
+          {activeTab === 'detalle' && (
+            <div style={{ padding: '16px', backgroundColor: '#f0f9ff', borderRadius: '16px', border: '1px solid #bae6fd', marginBottom: '24px' }}>
+              <h4 style={{ fontSize: '12px', fontWeight: '900', color: '#0369a1', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                 <Info size={14} /> Formato Requerido
+              </h4>
+              <p style={{ fontSize: '11px', color: '#0c4a6e', fontWeight: '700', fontFamily: 'monospace' }}>
+                TX_CELULA [TAB] fecha_Cita [TAB] ESTADO [TAB] RECURSO [TAB] RESOLUCION
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleProcessData}>
               <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900', marginBottom: '12px' }}>
-                      <Calendar size={18} color="#019df4" /> SEMANA DE TRABAJO
+                      <Calendar size={18} color="#019df4" /> {activeTab === 'resumen' ? 'FECHA DE MÉTRICAS' : 'FECHA DE ACTUACIONES'}
                   </label>
                   <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '18px', border: '2px solid #f1f5f9', fontWeight: '800' }} />
               </div>
@@ -492,57 +578,44 @@ export default function CargaAdminPage() {
                   <textarea 
                     value={pastedData} 
                     onChange={(e) => setPastedData(e.target.value)} 
-                    placeholder="Pega aquí..." 
-                    style={{ width: '100%', height: '200px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace' }} 
+                    placeholder={activeTab === 'resumen' 
+                        ? "Pega aquí (Técnico, Productividad, Resolución...)" 
+                        : "Pega aquí (Célula, Fecha, Estado, Recurso, Resolución...)"} 
+                    style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
                   />
               </div>
 
-              <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer' }}>
-                  {loading ? "Procesando..." : "Sincronizar Cloud"}
+              <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
+                  {loading ? "Procesando..." : `Sincronizar Cloud (${activeTab === 'resumen' ? 'KPIs' : 'Detalle'})`}
               </button>
           </form>
 
           {summary && (
               <div style={{ marginTop: '32px' }}>
                 <div style={{ padding: '28px', backgroundColor: '#f0fdf4', borderRadius: '28px', border: '1px solid #dcfce7' }}>
-                   <h3 style={{ fontWeight: '950', color: '#065f46', marginBottom: '16px' }}>Resumen de Carga</h3>
+                   <h3 style={{ fontWeight: '950', color: '#065f46', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircle2 size={18} /> Carga Finalizada
+                   </h3>
                    
                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
                       <div style={{ padding: '12px', backgroundColor: 'white', borderRadius: '12px', textAlign: 'center' }}>
                          <span style={{ display: 'block', fontSize: '20px', fontWeight: '950', color: '#065f46' }}>{summary.processed}</span>
-                         <span style={{ fontSize: '10px', color: '#059669' }}>PROCESADOS</span>
+                         <span style={{ fontSize: '10px', color: '#059669', fontWeight: '800' }}>PROCESADOS</span>
                       </div>
                       <div style={{ padding: '12px', backgroundColor: 'white', borderRadius: '12px', textAlign: 'center' }}>
                          <span style={{ display: 'block', fontSize: '20px', fontWeight: '950', color: '#065f46' }}>{summary.errors.length}</span>
-                         <span style={{ fontSize: '10px', color: '#ef4444' }}>ERRORES</span>
+                         <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '800' }}>ERRORES</span>
                       </div>
                    </div>
 
                    {summary.errors.length > 0 && (
                      <div style={{ maxHeight: '150px', overflowY: 'auto', backgroundColor: '#fef2f2', padding: '12px', borderRadius: '12px', marginBottom: '16px' }}>
                         {summary.errors.map((err, i) => (
-                          <p key={i} style={{ fontSize: '11px', color: '#ef4444', marginBottom: '4px' }}>• {err}</p>
+                          <p key={i} style={{ fontSize: '11px', color: '#ef4444', marginBottom: '4px', fontWeight: '700' }}>• {err}</p>
                         ))}
                      </div>
                    )}
-
-                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {summary.kpisDetected.map((kpi, idx) => (
-                        <span key={idx} style={{ backgroundColor: '#dcfce7', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '950', color: '#065f46' }}>
-                          {kpi}
-                        </span>
-                      ))}
-                   </div>
                 </div>
-
-                {unidentified.length > 0 && (
-                    <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#fff7ed', borderRadius: '20px' }}>
-                        <p style={{ fontSize: '12px', fontWeight: '800', color: '#c2410c' }}>Técnicos sin DNI y no encontrados: ({unidentified.length})</p>
-                        <div style={{ fontSize: '11px', color: '#9a3412', marginTop: '8px' }}>
-                          {unidentified.slice(0, 5).join(', ')}{unidentified.length > 5 ? '...' : ''}
-                        </div>
-                    </div>
-                )}
               </div>
           )}
         </div>
