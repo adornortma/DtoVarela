@@ -146,7 +146,7 @@ const AnalysisDrawer = ({
       />
       <div style={{
         position: 'fixed', 
-        top: isOpen ? '5vh' : '100vh',
+        top: '5vh',
         right: '24px',
         width: 'calc(100% - 48px)',
         maxWidth: '450px', 
@@ -155,7 +155,9 @@ const AnalysisDrawer = ({
         borderRadius: '32px',
         boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
         zIndex: 6001, 
-        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        transform: `translateY(${isOpen ? '0' : '110%'})`,
+        visibility: isOpen ? 'visible' : 'hidden',
+        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex', 
         flexDirection: 'column',
         overflow: 'hidden'
@@ -360,7 +362,7 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
       />
       <div style={{
         position: 'fixed',
-        top: isOpen ? '5vh' : '100vh',
+        top: '5vh',
         right: '24px',
         width: 'calc(100% - 48px)',
         maxWidth: '450px',
@@ -369,7 +371,9 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
         borderRadius: '32px',
         boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
         zIndex: 5001,
-        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        transform: `translateY(${isOpen ? '0' : '110%'})`,
+        visibility: isOpen ? 'visible' : 'hidden',
+        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'
@@ -828,6 +832,7 @@ export default function DetalleDiario() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setIsDrawerOpen(false);
                           setSelectedAnalysisCell(cell);
                           setIsAnalysisOpen(true);
                         }}
@@ -903,6 +908,7 @@ export default function DetalleDiario() {
                           <tr 
                             key={tech.name} 
                             onClick={() => {
+                              setIsAnalysisOpen(false);
                               setSelectedTech(tech);
                               setIsDrawerOpen(true);
                             }}
