@@ -158,7 +158,11 @@ export default function CargaAdminPage() {
           recurso: row[idxRecurso] || 'SIN NOMBRE',
           resolucion: row[idxResolucion] || ''
         };
-      }).filter(r => r.recurso !== 'SIN NOMBRE');
+      }).filter(r => {
+        const isCancelled = ['CANCELADO', 'CANCELADA', 'DESESTIMADO', 'RECHAZADO'].includes(r.estado);
+        const isEmpty = r.recurso === 'SIN NOMBRE';
+        return !isCancelled && !isEmpty;
+      });
 
       if (toInsert.length > 0) {
         const { error } = await supabase.from('actuaciones').insert(toInsert);
@@ -560,8 +564,11 @@ export default function CargaAdminPage() {
               <h4 style={{ fontSize: '12px', fontWeight: '900', color: '#0369a1', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                  <Info size={14} /> Formato Requerido
               </h4>
-              <p style={{ fontSize: '11px', color: '#0c4a6e', fontWeight: '700', fontFamily: 'monospace' }}>
+              <p style={{ fontSize: '11px', color: '#0c4a6e', fontWeight: '700', fontFamily: 'monospace', marginBottom: '4px' }}>
                 TX_CELULA [TAB] fecha_Cita [TAB] ESTADO [TAB] RECURSO [TAB] RESOLUCION
+              </p>
+              <p style={{ fontSize: '10px', color: '#0369a1', fontWeight: '800' }}>
+                * El sistema filtrará automáticamente estados: CANCELADO, DESESTIMADO o RECHAZADO.
               </p>
             </div>
           )}
