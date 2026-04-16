@@ -28,7 +28,8 @@ import {
   MessageSquare,
   ArrowRight,
   Clock,
-  Zap
+  Zap,
+  List
 } from 'lucide-react';
 
 // --- Types ---
@@ -280,6 +281,8 @@ export default function SeguimientoBP() {
   const [session, setSession] = useState<BPSession>(INITIAL_DATA);
   const [kpiScale, setKpiScale] = useState<TimeScale>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
+  const [alarmScale, setAlarmScale] = useState<TimeScale>('weekly');
+  const [alarmView, setAlarmView] = useState<'table' | 'chart'>('table');
   const [modalWeek, setModalWeek] = useState<WeeklyKPI | null>(null);
   
   // Current logic: Find the first week that is not 'full' to be the "active" or "pending" one
@@ -510,75 +513,114 @@ export default function SeguimientoBP() {
            {/* BLOQUE 3: ALARMAS OPERATIVAS */}
            <section>
               <SectionHeader title="ALARMAS OPERATIVAS" icon={AlertCircle}>
+                 <ViewToggle 
+                   options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} 
+                   active={alarmView} 
+                   onChange={setAlarmView} 
+                 />
+                 <ViewToggle 
+                   options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} 
+                   active={alarmScale} 
+                   onChange={setAlarmScale} 
+                 />
                  <button 
                    onClick={() => setModalWeek(activeWeek)}
                    style={{ 
                      backgroundColor: '#019df4', color: 'white', padding: '10px 20px', 
-                     borderRadius: '14px', fontWeight: '950', fontSize: '13px', display: 'flex', 
-                     alignItems: 'center', gap: '8px', cursor: 'pointer'
+                     borderRadius: '14px', fontWeight: '950', fontSize: '12px', display: 'flex', 
+                     alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none'
                    }}
                  >
-                    <Plus size={18} /> Cargar alarmas de la semana
+                    <Plus size={16} /> Cargar alarmas
                  </button>
               </SectionHeader>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
-                 <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                       <thead>
-                          <tr style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
-                             <th style={{ padding: '14px', textAlign: 'left', fontWeight: '950', color: '#64748b' }}>SEM.</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>PT</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>FT</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>TA</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>MA</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>TE</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>RT</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>NE</th>
-                             <th style={{ padding: '14px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>TEA</th>
-                          </tr>
-                       </thead>
-                       <tbody>
-                          {session.history.filter(w => w.alarms).map(w => (
-                            <tr key={w.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                               <td style={{ padding: '14px', fontWeight: '900', color: '#64748b' }}>{w.weekLabel.split(' ')[1]}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.pt}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.ft}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.ta}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.ma}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.te}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.rt}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.ne}</td>
-                               <td style={{ padding: '14px', textAlign: 'center', fontWeight: '800' }}>{w.alarms?.tea}</td>
-                            </tr>
-                          ))}
-                       </tbody>
-                    </table>
-                 </div>
+              {alarmView === 'table' ? (
+                <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
+                   <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+                      <thead>
+                         <tr style={{ backgroundColor: 'white' }}>
+                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Semana</th>
+                            {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => (
+                              <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
+                            ))}
+                         </tr>
+                      </thead>
+                      <tbody>
+                         {session.history.filter(w => w.alarms).map((w) => {
+                           const a = w.alarms!;
+                           const values = [a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea];
+                           const maxVal = Math.max(...values);
+                           
+                           const getCellBox = (val: number) => {
+                             if (val === 0) return { bg: 'transparent', color: '#cbd5e1', weight: '700' };
+                             if (val === maxVal && val > 0) return { bg: '#fee2e2', color: '#991b1b', weight: '950' };
+                             return { bg: '#f8fafc', color: '#475569', weight: '900' };
+                           };
 
-                 <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '24px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                      <h3 style={{ fontSize: '14px', fontWeight: '950', color: '#0f172a' }}>Distribución {activeWeek.dateRange}</h3>
-                      <BarChart3 size={18} color="#94a3b8" />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                       {activeWeek.alarms ? Object.entries(activeWeek.alarms).map(([key, val]) => (
-                         <div key={key}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b' }}>
-                               <span>{key}</span>
-                               <span style={{ color: '#0f172a' }}>{val}</span>
-                            </div>
-                            <div style={{ height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                               <div style={{ height: '100%', width: `${Math.min((val / 20) * 100 + 2, 100)}%`, backgroundColor: '#019df4', borderRadius: '3px' }} />
-                            </div>
-                         </div>
-                       )) : <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>Sin alarmas cargadas para esta semana</p>}
-                    </div>
-                    <div style={{ marginTop: '20px', padding: '12px', borderRadius: '12px', backgroundColor: '#fdf2f2', border: '1px solid #fee2e2' }}>
-                       <p style={{ fontSize: '11px', color: '#991b1b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><AlertCircle size={14}/> Objetivo: Detectar predominancia de fallos</p>
-                    </div>
-                 </div>
-              </div>
+                           return (
+                             <tr key={w.id} style={{ backgroundColor: 'white' }}>
+                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRight: 'none', borderRadius: '16px 0 0 16px' }}>
+                                   <div style={{ fontWeight: '950', color: '#0f172a', fontSize: '14px' }}>{w.weekLabel}</div>
+                                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800' }}>{w.dateRange}</div>
+                                </td>
+                                {[a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => {
+                                  const style = getCellBox(v);
+                                  return (
+                                    <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}>
+                                       <div style={{ 
+                                         backgroundColor: style.bg, 
+                                         color: style.color, 
+                                         padding: '10px 0', 
+                                         borderRadius: '12px', 
+                                         fontWeight: style.weight as any, 
+                                         fontSize: '14px',
+                                         width: '55px',
+                                         margin: '0 auto',
+                                         border: style.bg !== 'transparent' ? '1px solid rgba(0,0,0,0.03)' : 'none'
+                                       }}>{v}</div>
+                                    </td>
+                                  );
+                                })}
+                             </tr>
+                           );
+                         })}
+                      </tbody>
+                   </table>
+                </div>
+              ) : (
+                <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', padding: '60px', height: '400px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '20px' }}>
+                  {(() => {
+                    const activeAlarms = activeWeek.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 };
+                    const data = [
+                      { label: 'PT', value: activeAlarms.pt },
+                      { label: 'FT', value: activeAlarms.ft },
+                      { label: 'TA', value: activeAlarms.ta },
+                      { label: 'MA', value: activeAlarms.ma },
+                      { label: 'TE', value: activeAlarms.te },
+                      { label: 'RT', value: activeAlarms.rt },
+                      { label: 'NE', value: activeAlarms.ne },
+                      { label: 'TEA', value: activeAlarms.tea },
+                    ];
+                    const max = Math.max(...data.map(d => d.value), 1);
+                    return data.map((d, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '950', color: d.value === Math.max(...data.map(x => x.value)) && d.value > 0 ? '#dc2626' : '#0f172a' }}>{d.value}</div>
+                        <div style={{ 
+                          width: '100%', 
+                          maxHeight: '280px',
+                          height: `${(d.value / max) * 240}px`, 
+                          backgroundColor: d.value === Math.max(...data.map(x => x.value)) && d.value > 0 ? '#dc2626' : '#94a3b8',
+                          borderRadius: '12px 12px 4px 4px',
+                          transition: 'height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          minHeight: d.value > 0 ? '4px' : '0'
+                        }} />
+                        <div style={{ fontSize: '12px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase' }}>{d.label}</div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
            </section>
 
            {/* BLOQUE 4: CHECK SEMANAL */}
