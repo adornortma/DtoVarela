@@ -140,6 +140,21 @@ const KpiCard = ({ label, value, trend, variation }: any) => (
   </div>
 );
 
+const TabButton = ({ active, label, icon: Icon, onClick }: any) => (
+  <button 
+    onClick={onClick}
+    style={{ 
+      display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '14px', border: 'none',
+      backgroundColor: active ? 'var(--movistar-blue)' : 'white',
+      color: active ? 'white' : '#64748b',
+      boxShadow: active ? '0 10px 15px -3px rgba(0,0,0,0.1)' : 'none',
+      cursor: 'pointer', fontSize: '14px', fontWeight: '950', transition: 'all 0.2s'
+    }}
+  >
+    <Icon size={18} /> {label}
+  </button>
+);
+
 const LoadWeekModal = ({ week, onClose, onSave }: any) => {
   const [formData, setFormData] = useState({
     alarms: { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 },
