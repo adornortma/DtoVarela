@@ -21,8 +21,6 @@ import {
   Hammer,
   ArrowUpRight,
   Filter,
-  Calendar,
-  Search,
   ChevronDown,
   Save,
   Plus,
@@ -31,7 +29,10 @@ import {
   ArrowRight,
   Clock,
   Zap,
-  List
+  List,
+  CalendarDays,
+  FileEdit,
+  RotateCcw
 } from 'lucide-react';
 
 // --- Types ---
@@ -73,9 +74,9 @@ interface WeeklyKPI {
 
 interface BPAction {
   id: string;
-  weekLabel: string;
+  weekLabel: string; // The range e.g. "07/04 - 13/04"
   observation: string;
-  date: string;
+  date: string; // Loading date e.g. "16/04/2026"
 }
 
 interface BPSession {
@@ -297,6 +298,55 @@ const AlarmsModal = ({ week, onClose, onSave }: any) => {
   );
 };
 
+const NewTrackingForm = ({ week, onClose, onSave }: { week: WeeklyKPI, onClose: () => void, onSave: (alarms: BPAlarmData, observation: string) => void }) => {
+  const [formData, setFormData] = useState<BPAlarmData>(week.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
+  const [observation, setObservation] = useState(week.observation || '');
+  
+  const inputs = [
+    { key: 'pt', label: 'PT' }, { key: 'ft', label: 'FT' }, { key: 'ta', label: 'TA' }, { key: 'ma', label: 'MA' },
+    { key: 'te', label: 'TE' }, { key: 'rt', label: 'RT' }, { key: 'ne', label: 'NE' }, { key: 'tea', label: 'TEA' },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <div>
+           <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', margin: 0 }}>Completar Seguimiento</h2>
+           <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '700', marginTop: '4px' }}>Semana: {week.weekLabel}</p>
+        </div>
+        <button onClick={onClose} style={{ padding: '10px', borderRadius: '14px', backgroundColor: '#f1f5f9', border: 'none' }}><X size={20}/></button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+         {inputs.map(inp => (
+           <div key={inp.key}>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: '900', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>{inp.label}</label>
+              <input 
+                type="number" value={formData[inp.key as keyof BPAlarmData]}
+                onChange={(e) => setFormData({...formData, [inp.key]: parseInt(e.target.value) || 0})}
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #f1f5f9', fontWeight: '800', outline: 'none' }}
+              />
+           </div>
+         ))}
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+          <label style={{ display: 'block', fontSize: '10px', fontWeight: '900', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>OBSERVACIÓN / FEEDBACK</label>
+          <textarea 
+            rows={4} value={observation} onChange={e => setObservation(e.target.value)}
+            placeholder="Ingrese el resumen de la semana..."
+            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1.5px solid #f1f5f9', fontWeight: '700', outline: 'none', resize: 'none' }}
+          />
+      </div>
+
+      <div style={{ display: 'flex', gap: '16px' }}>
+        <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950', cursor: 'pointer' }}>CANCELAR</button>
+        <button onClick={() => onSave(formData, observation)} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#0ea5e9', color: 'white', fontWeight: '950', cursor: 'pointer' }}>GUARDAR SEGUIMIENTO</button>
+      </div>
+    </div>
+  );
+};
+
 // --- BP Tracking Logic ---
 
 function BPTrackingContent() {
@@ -317,94 +367,122 @@ function BPTrackingContent() {
   const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
   const [observationText, setObservationText] = useState('');
 
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newTrackingDate, setNewTrackingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [duplicateMode, setDuplicateMode] = useState<'none' | 'warning' | 'form'>('none');
+  const [tempWeek, setTempWeek] = useState<WeeklyKPI | null>(null);
+
+  const getWeekRange = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const start = new Date(d.setDate(diff));
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  };
+
+  const formatDateRange = (start: Date, end: Date) => {
+    const f = (d: Date) => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+    return `${f(start)} - ${f(end)}`;
+  };
+
+  const fetchWeekData = async (techId: string, date: Date) => {
+    const { start, end } = getWeekRange(date);
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
+    const { data: metrics } = await supabase.from('metricas').select('*').eq('tecnico_id', techId).gte('fecha', startStr).lte('fecha', endStr);
+    const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', techId).eq('fecha_inicio', startStr).single();
+
+    const stats = metrics?.length ? {
+      resolucion: metrics.reduce((acc, m) => acc + (m.resolucion || 0), 0) / metrics.length,
+      reitero: metrics.reduce((acc, m) => acc + (m.reitero || 0), 0) / metrics.length,
+      puntualidad: metrics.reduce((acc, m) => acc + (m.puntualidad || 0), 0) / metrics.length,
+      productividad: metrics.reduce((acc, m) => acc + (m.productividad || 0), 0) / metrics.length
+    } : { resolucion: 0, reitero: 0, puntualidad: 0, productividad: 0 };
+
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      weekLabel: formatDateRange(start, end),
+      dateRange: startStr,
+      monthLabel: start.toLocaleString('es-ES', { month: 'long' }).toUpperCase(),
+      ...stats,
+      status: (tracking?.estado_carga || 'empty') as WeeklyLoadStatus,
+      alarms: tracking ? {
+        pt: tracking.alarma_pt, ft: tracking.alarma_ft, ta: tracking.alarma_ta, ma: tracking.alarma_ma,
+        te: tracking.alarma_te, rt: tracking.alarma_rt, ne: tracking.alarma_ne, tea: tracking.alarma_tea
+      } : null,
+      observation: tracking?.observacion_lider || '',
+      locked: tracking?.confirmado || false
+    };
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Tech Info
-      const { data: tech, error: techError } = await supabase
-        .from('tecnicos')
-        .select('*')
-        .eq('dni', dni)
-        .single();
+      const { data: tech } = await supabase.from('tecnicos').select('*').eq('dni', dni).single();
+      if (!tech) return;
 
-      if (techError || !tech) throw new Error('Técnico no encontrado');
+      const now = new Date();
+      const weeks: WeeklyKPI[] = [];
+      for(let i=0; i<5; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - (i*7));
+        weeks.push(await fetchWeekData(tech.id, d));
+      }
 
-      // 2. Fetch Weekly Metrics (already existing table)
-      // Group by week for logic
-      const { data: metrics } = await supabase
-        .from('metricas')
-        .select('*')
-        .eq('tecnico_id', tech.id)
-        .order('fecha', { ascending: false });
-
-      // 3. Fetch Tracking (alarms/obs) from our new table
-      const { data: tracking } = await supabase
-        .from('seguimiento_bp')
-        .select('*')
-        .eq('tecnico_id', tech.id);
-
-      // --- Mapeo a Estructura de UI ---
-      // Para efectos del demo/MVP agruparemos por semanas ficticias basadas en las métricas
-      // En producción esto vendría de una lógica de calendario real
-      const history: WeeklyKPI[] = (metrics || []).slice(0, 10).map((m, i) => {
-        const track = tracking?.find(t => t.fecha_inicio <= m.fecha && t.fecha_fin >= m.fecha);
-        return {
-          id: m.id,
-          weekLabel: `Semana ${10 - i}`,
-          dateRange: `${m.fecha}`,
-          monthLabel: 'MARZO', // Mock month
-          resolucion: m.resolucion,
-          reitero: m.reitero,
-          puntualidad: m.puntualidad,
-          productividad: m.productividad,
-          status: track ? (track.estado_carga as any) : 'empty',
-          alarms: track ? {
-            pt: track.alarma_pt || 0, ft: track.alarma_ft || 0, ta: track.alarma_ta || 0, ma: track.alarma_ma || 0,
-            te: track.alarma_te || 0, rt: track.alarma_rt || 0, ne: track.alarma_ne || 0, tea: track.alarma_tea || 0
-          } : null,
-          observation: track?.observacion_lider,
-          locked: track?.confirmado
-        };
-      });
-
-      const actions: BPAction[] = (tracking || [])
-        .filter(t => t.confirmado && t.observacion_lider)
-        .map(t => ({
-          id: t.id,
-          weekLabel: t.fecha_inicio,
-          observation: t.observacion_lider,
-          date: new Date(t.fecha_confirmacion).toLocaleDateString()
-        }));
-
-      // 5. Fetch Antecedentes
-      const { data: antData } = await supabase
-        .from('antecedentes_bp')
-        .select('*')
-        .eq('tecnico_id', tech.id)
-        .order('fecha', { ascending: false });
+      const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', tech.id).eq('confirmado', true).order('fecha_confirmacion', { ascending: false });
+      const { data: antData } = await supabase.from('antecedentes_bp').select('*').eq('tecnico_id', tech.id).order('fecha', { ascending: false });
 
       setSession({
         id: tech.id,
         techName: `${tech.nombre} ${tech.apellido}`,
         dni: tech.dni,
-        cell: metrics?.[0]?.celula || 'N/A',
+        cell: 'N/A',
         district: 'Varela',
-        status: 'critico', // Mock status check based on KPIs
-        history,
-        actions,
-        antecedentes: (antData || []).map(a => ({
-          id: a.id,
-          titulo: a.titulo,
-          fecha: a.fecha,
-          descripcion: a.descripcion
-        }))
+        status: 'seguimiento',
+        history: weeks,
+        actions: (tracking || []).map(t => ({
+          id: t.id,
+          weekLabel: formatDateRange(new Date(t.fecha_inicio), new Date(t.fecha_fin)),
+          observation: t.observacion_lider,
+          date: t.fecha_confirmacion
+        })),
+        antecedentes: (antData || []).map(a => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
-      
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
+  };
+
+  const handleOpenNewTracking = () => {
+    setNewTrackingDate(new Date().toISOString().split('T')[0]);
+    setDuplicateMode('none');
+    setShowNewModal(true);
+  };
+
+  const handleProcessDate = async () => {
+    if (!session) return;
+    const weekData = await fetchWeekData(session.id, new Date(newTrackingDate));
+    setTempWeek(weekData);
+    setDuplicateMode(weekData.locked ? 'warning' : 'form');
+  };
+
+  const handleSaveFullTracking = async (alarms: BPAlarmData, observation: string) => {
+    if (!session || !tempWeek) return;
+    const { error } = await supabase.from('seguimiento_bp').upsert({
+      tecnico_id: session.id,
+      fecha_inicio: tempWeek.dateRange,
+      fecha_fin: tempWeek.dateRange,
+      alarma_pt: alarms.pt, alarma_ft: alarms.ft, alarma_ta: alarms.ta, alarma_ma: alarms.ma,
+      alarma_te: alarms.te, alarma_rt: alarms.rt, alarma_ne: alarms.ne, alarma_tea: alarms.tea,
+      observacion_lider: observation, confirmado: true, estado_carga: 'full',
+      fecha_confirmacion: new Date().toISOString()
+    }, { onConflict: 'tecnico_id, fecha_inicio' });
+
+    if (error) alert(error.message);
+    else { setShowNewModal(false); fetchData(); }
   };
 
   useEffect(() => { fetchData(); }, [dni]);
@@ -731,7 +809,14 @@ function BPTrackingContent() {
               )}
            </div>
 
-           <SectionHeader title="HISTORIAL DE SEGUIMIENTO SEMANAL" icon={MessageSquare} />
+           <SectionHeader title="HISTORIAL DE SEGUIMIENTO SEMANAL" icon={MessageSquare}>
+              <button 
+                onClick={handleOpenNewTracking}
+                style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '10px 20px', borderRadius: '14px', fontWeight: '950', fontSize: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                 <Plus size={16} /> Nuevo Seguimiento
+              </button>
+           </SectionHeader>
            {session.actions.map((a) => (
              <div key={a.id} style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
                 <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: 'white', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} /></div>
@@ -761,28 +846,65 @@ function BPTrackingContent() {
 
       {selectedSnapshot && <SnapshotBottomSheet week={selectedSnapshot} onClose={() => setSelectedSnapshot(null)} />}
 
-      {showAntecedenteModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '480px', padding: '32px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', marginBottom: '24px' }}>Agregar Antecedente</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>TÍTULO</label>
-                <input type="text" value={antForm.titulo} onChange={e => setAntForm({...antForm, titulo: e.target.value})} placeholder="Ej: Cambio de zona" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '700' }} />
+      {showNewModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '100%', maxWidth: duplicateMode === 'form' ? '800px' : '480px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            
+            {duplicateMode === 'none' && (
+              <>
+                <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', marginBottom: '8px' }}>Nuevo Seguimiento</h2>
+                <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '700', marginBottom: '32px' }}>Seleccione el día para el cual desea registrar el seguimiento.</p>
+                <div style={{ marginBottom: '32px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>FECHA DE CARGA</label>
+                  <input 
+                    type="date" 
+                    value={newTrackingDate} 
+                    onChange={e => setNewTrackingDate(e.target.value)} 
+                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1.5px solid #e2e8f0', outline: 'none', fontWeight: '700', fontSize: '16px' }} 
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <button onClick={() => setShowNewModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950', cursor: 'pointer' }}>CANCELAR</button>
+                  <button onClick={handleProcessDate} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#0ea5e9', color: 'white', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    Siguiente <ArrowRight size={18} />
+                  </button>
+                </div>
+              </>
+            )}
+
+            {duplicateMode === 'warning' && tempWeek && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: '#fff7ed', color: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                  <AlertTriangle size={32} />
+                </div>
+                <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', marginBottom: '12px' }}>Semana ya registrada</h2>
+                <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '700', lineHeight: 1.5, marginBottom: '32px' }}>
+                   Ya existe un seguimiento para la semana <span style={{ color: '#0f172a' }}>{tempWeek.weekLabel}</span>. 
+                   ¿Qué desea hacer?
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button onClick={() => setDuplicateMode('form')} style={{ padding: '16px', borderRadius: '16px', backgroundColor: '#0ea5e9', color: 'white', fontWeight: '950', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <FileEdit size={18} /> Editar existente
+                  </button>
+                  <button onClick={() => {
+                    setTempWeek({...tempWeek, alarms: null, observation: ''});
+                    setDuplicateMode('form');
+                  }} style={{ padding: '16px', borderRadius: '16px', backgroundColor: '#fef2f2', color: '#ef4444', fontWeight: '950', border: '1px solid #fee2e2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <RotateCcw size={18} /> Sobrescribir
+                  </button>
+                </div>
+                <button onClick={() => setDuplicateMode('none')} style={{ marginTop: '24px', padding: '12px', border: 'none', backgroundColor: 'transparent', color: '#94a3b8', fontWeight: '950', cursor: 'pointer' }}>Volver</button>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>FECHA</label>
-                <input type="date" value={antForm.fecha} onChange={e => setAntForm({...antForm, fecha: e.target.value})} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '700' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>DESCRIPCIÓN</label>
-                <textarea rows={3} value={antForm.descripcion} onChange={e => setAntForm({...antForm, descripcion: e.target.value})} placeholder="Breve detalle..." style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '700' }} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
-              <button onClick={() => setShowAntecedenteModal(false)} style={{ flex: 1, padding: '14px', borderRadius: '14px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950', cursor: 'pointer' }}>CANCELAR</button>
-              <button onClick={handleAddAntecedente} style={{ flex: 2, padding: '14px', borderRadius: '14px', border: 'none', backgroundColor: '#019df4', color: 'white', fontWeight: '950', cursor: 'pointer' }}>GUARDAR</button>
-            </div>
+            )}
+
+            {duplicateMode === 'form' && tempWeek && (
+              <NewTrackingForm 
+                week={tempWeek} 
+                onClose={() => setShowNewModal(false)} 
+                onSave={handleSaveFullTracking} 
+              />
+            )}
+
           </div>
         </div>
       )}
