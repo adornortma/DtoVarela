@@ -14,9 +14,15 @@ import {
   User,
   BarChart3,
   Table as TableIcon,
+  CheckCircle2,
+  AlertTriangle,
+  CircleOff,
+  CalendarCheck
 } from 'lucide-react';
 
 // --- Types ---
+type WeeklyLoadStatus = 'full' | 'partial' | 'empty';
+
 interface BPAlarmData {
   pt: number; // Primera Tarde
   ft: number; // Fin Temprano
@@ -55,6 +61,7 @@ interface BPSession {
     reitero: number;
     resolucion: number;
     deriva: number;
+    status: WeeklyLoadStatus;
     alarms: BPAlarmData;
   }[];
   actions: BPEvent[];
@@ -77,51 +84,29 @@ const MOCK_BP_DATA: BPSession[] = [
     lastCheckStatus: 'empeoro',
     kpiHistory: [
       { 
-        week: 'S11', reitero: 12, resolucion: 85, deriva: 5, 
+        week: 'S11', reitero: 12, resolucion: 85, deriva: 5, status: 'full',
         alarms: { pt: 1, ft: 0, ta: 45, ma: 1, te: 50, rt: 2, ne: 1, tea: 15 } 
       },
       { 
-        week: 'S12', reitero: 14, resolucion: 82, deriva: 7, 
+        week: 'S12', reitero: 14, resolucion: 82, deriva: 7, status: 'full',
         alarms: { pt: 2, ft: 1, ta: 55, ma: 2, te: 48, rt: 4, ne: 2, tea: 20 } 
       },
       { 
-        week: 'S13', reitero: 18, resolucion: 78, deriva: 9, 
+        week: 'S13', reitero: 18, resolucion: 78, deriva: 9, status: 'full',
         alarms: { pt: 3, ft: 2, ta: 60, ma: 3, te: 45, rt: 8, ne: 4, tea: 25 } 
       },
       { 
-        week: 'S14', reitero: 19.5, resolucion: 72, deriva: 11, 
+        week: 'S14', reitero: 19.5, resolucion: 72, deriva: 11, status: 'partial',
         alarms: { pt: 4, ft: 3, ta: 75, ma: 4, te: 42, rt: 12, ne: 5, tea: 35 } 
       },
       { 
-        week: 'S15', reitero: 18.5, resolucion: 74, deriva: 9.5, 
-        alarms: { pt: 3, ft: 2, ta: 65, ma: 3, te: 44, rt: 10, ne: 4, tea: 30 } 
+        week: 'S15', reitero: 18.5, resolucion: 74, deriva: 9.5, status: 'empty',
+        alarms: { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 } 
       },
     ],
     actions: [
       { id: 'a1', type: 'action', date: '2026-03-25', title: 'Acción Técnica', description: 'Revisión de herramientas y materiales' },
       { id: 'a2', type: 'action', date: '2026-04-05', title: 'Acompañamiento', description: 'Veeduría en campo por líder de célula' },
-    ]
-  },
-  {
-    id: '2',
-    techName: 'GARCIA JUAN CARLOS',
-    dni: '28445123',
-    cell: 'VARELA 2',
-    district: 'Varela',
-    status: 'seguimiento',
-    mainKpi: 14.2,
-    trend: 'stable',
-    daysInBp: 45,
-    startDate: '2026-03-01',
-    lastCheckDate: '2026-04-14',
-    lastCheckStatus: 'igual',
-    kpiHistory: [
-      { week: 'S13', reitero: 14, resolucion: 81, deriva: 6, alarms: { pt: 0, ft: 0, ta: 40, ma: 0, te: 55, rt: 2, ne: 1, tea: 10 } },
-      { week: 'S14', reitero: 14.5, resolucion: 82, deriva: 5, alarms: { pt: 0, ft: 1, ta: 42, ma: 0, te: 54, rt: 1, ne: 1, tea: 12 } },
-      { week: 'S15', reitero: 14.2, resolucion: 83, deriva: 4, alarms: { pt: 1, ft: 0, ta: 41, ma: 0, te: 56, rt: 1, ne: 0, tea: 11 } },
-    ],
-    actions: [
-      { id: 'a1', type: 'action', date: '2026-03-20', title: 'Feedback Directo', description: 'Revisión mensual de objetivos' }
     ]
   }
 ];
@@ -139,6 +124,21 @@ const StatusBadge = ({ status }: { status: BPSession['status'] }) => {
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '14px', backgroundColor: bg, color, fontSize: '13px', fontWeight: '900', border: `1px solid ${dot}33` }}>
       <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dot }} />
       {label}
+    </div>
+  );
+};
+
+const WeekStatusIndicator = ({ status }: { status: WeeklyLoadStatus }) => {
+  const config = {
+    full: { label: 'Completa', color: '#10b981', Icon: CheckCircle2 },
+    partial: { label: 'Parcial', color: '#f59e0b', Icon: AlertTriangle },
+    empty: { label: 'Sin carga', color: '#ef4444', Icon: CircleOff }
+  };
+  const { label, color, Icon } = config[status];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color, fontSize: '11px', fontWeight: '900' }}>
+       <Icon size={14} />
+       <span>{label.toUpperCase()}</span>
     </div>
   );
 };
@@ -177,7 +177,26 @@ const MetricCard = ({
   );
 };
 
-const KpiChart = ({ history }: { history: BPSession['kpiHistory'] }) => {
+const ViewToggle = ({ mode, setMode }: { mode: 'chart' | 'table', setMode: (m: 'chart' | 'table') => void }) => (
+  <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '14px', gap: '4px' }}>
+    <button 
+        onClick={() => setMode('chart')}
+        style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: mode === 'chart' ? 'white' : 'transparent', color: mode === 'chart' ? '#1e293b' : '#64748b', fontSize: '12px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'chart' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
+    >
+        <BarChart3 size={16} /> Gráfico
+    </button>
+    <button 
+        onClick={() => setMode('table')}
+        style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: mode === 'table' ? 'white' : 'transparent', color: mode === 'table' ? '#1e293b' : '#64748b', fontSize: '12px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'table' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
+    >
+        <TableIcon size={16} /> Tabla
+    </button>
+  </div>
+);
+
+const KpiBlock = ({ history }: { history: BPSession['kpiHistory'] }) => {
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  
   const width = 1000;
   const height = 260;
   const padding = 60;
@@ -185,34 +204,74 @@ const KpiChart = ({ history }: { history: BPSession['kpiHistory'] }) => {
   const getX = (i: number) => (i / (history.length - 1)) * (width - 2 * padding) + padding;
 
   return (
-    <div style={{ width: '100%', overflowX: 'auto', backgroundColor: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #e2e8f0' }}>
-      <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
-          {[{ label: 'Reitero %', color: 'var(--movistar-blue)' }, { label: 'Resolución %', color: '#10b981' }, { label: 'Deriva %', color: '#f59e0b' }].map(k => (
-            <div key={k.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-               <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: k.color }} />
-               <span style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b' }}>{k.label}</span>
+    <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '32px', border: '1px solid #e2e8f0' }}>
+       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ backgroundColor: '#eff6ff', padding: '6px', borderRadius: '10px', color: 'var(--movistar-blue)' }}><Activity size={18} /></div>
+              <h2 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>Evolución de KPIs de Gestión</h2>
+          </div>
+          <ViewToggle mode={viewMode} setMode={setViewMode} />
+       </div>
+
+       {viewMode === 'chart' ? (
+         <div style={{ width: '100%', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
+                {[{ label: 'Reitero %', color: 'var(--movistar-blue)' }, { label: 'Resolución %', color: '#10b981' }, { label: 'Deriva %', color: '#f59e0b' }].map(k => (
+                  <div key={k.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: k.color }} />
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b' }}>{k.label}</span>
+                  </div>
+                ))}
             </div>
-          ))}
-      </div>
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
-        {[0, 50, 100].map(val => (
-          <g key={val}>
-            <line x1={padding} y1={getY(val)} x2={width - padding} y2={getY(val)} stroke="#f1f5f9" strokeWidth="1" />
-            <text x={padding - 10} y={getY(val)} textAnchor="end" alignmentBaseline="middle" fontSize="11" fill="#94a3b8" fontWeight="950">{val}%</text>
-          </g>
-        ))}
-        {/* Simplified paths */}
-        <path d={history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p.reitero)}`).join(' ')} fill="none" stroke="var(--movistar-blue)" strokeWidth="5" strokeLinecap="round" />
-        <path d={history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p.resolucion)}`).join(' ')} fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" />
-        <path d={history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p.deriva)}`).join(' ')} fill="none" stroke="#f59e0b" strokeWidth="5" strokeLinecap="round" />
-        
-        {history.map((p, i) => (
-          <g key={i}>
-            <text x={getX(i)} y={height - 5} textAnchor="middle" fontSize="12" fill="#1e293b" fontWeight="950">{p.week}</text>
-            <circle cx={getX(i)} cy={getY(p.reitero)} r="5" fill="white" stroke="var(--movistar-blue)" strokeWidth="3" />
-          </g>
-        ))}
-      </svg>
+            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+              {[0, 50, 100].map(val => (
+                <g key={val}>
+                  <line x1={padding} y1={getY(val)} x2={width - padding} y2={getY(val)} stroke="#f1f5f9" strokeWidth="1" />
+                  <text x={padding - 10} y={getY(val)} textAnchor="end" alignmentBaseline="middle" fontSize="11" fill="#94a3b8" fontWeight="950">{val}%</text>
+                </g>
+              ))}
+              <path d={history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p.reitero)}`).join(' ')} fill="none" stroke="var(--movistar-blue)" strokeWidth="5" strokeLinecap="round" />
+              <path d={history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p.resolucion)}`).join(' ')} fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" />
+              <path d={history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p.deriva)}`).join(' ')} fill="none" stroke="#f59e0b" strokeWidth="5" strokeLinecap="round" />
+              
+              {history.map((p, i) => (
+                <g key={i}>
+                  <text x={getX(i)} y={height - 5} textAnchor="middle" fontSize="12" fill="#1e293b" fontWeight="950">{p.week}</text>
+                  <circle cx={getX(i)} cy={getY(p.reitero)} r="5" fill="white" stroke="var(--movistar-blue)" strokeWidth="3" />
+                </g>
+              ))}
+            </svg>
+         </div>
+       ) : (
+         <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+               <thead>
+                  <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                     <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '950', color: '#94a3b8' }}>SEMANA</th>
+                     <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '11px', fontWeight: '950', color: '#1e293b' }}>REITERO</th>
+                     <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '11px', fontWeight: '950', color: '#1e293b' }}>RESOLUCIÓN</th>
+                     <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '11px', fontWeight: '950', color: '#1e293b' }}>DERIVA</th>
+                     <th style={{ padding: '12px 24px', textAlign: 'right', fontSize: '11px', fontWeight: '950', color: '#94a3b8' }}>ESTADO</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {history.map((p, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f8fafc' }}>
+                       <td style={{ padding: '16px 24px', fontWeight: '950', fontSize: '14px' }}>{p.week}</td>
+                       <td style={{ padding: '16px 24px', textAlign: 'center', fontWeight: '900', color: p.reitero > 15 ? '#ef4444' : '#1e293b', backgroundColor: p.reitero > 15 ? '#fef2f2' : 'transparent', borderRadius: '8px' }}>{p.reitero}%</td>
+                       <td style={{ padding: '16px 24px', textAlign: 'center', fontWeight: '900', color: p.resolucion < 75 ? '#ef4444' : '#10b981' }}>{p.resolucion}%</td>
+                       <td style={{ padding: '16px 24px', textAlign: 'center', fontWeight: '900' }}>{p.deriva}%</td>
+                       <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <WeekStatusIndicator status={p.status} />
+                          </div>
+                       </td>
+                    </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+       )}
     </div>
   );
 };
@@ -239,20 +298,7 @@ const AlarmBlock = ({ history }: { history: BPSession['kpiHistory'] }) => {
                <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '700' }}>Patrones operativos semanales cuantificados</p>
             </div>
          </div>
-         <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '14px', gap: '4px' }}>
-            <button 
-               onClick={() => setViewMode('chart')}
-               style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: viewMode === 'chart' ? 'white' : 'transparent', color: viewMode === 'chart' ? '#1e293b' : '#64748b', fontSize: '12px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: viewMode === 'chart' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
-            >
-               <BarChart3 size={16} /> Gráfico
-            </button>
-            <button 
-               onClick={() => setViewMode('table')}
-               style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: viewMode === 'table' ? 'white' : 'transparent', color: viewMode === 'table' ? '#1e293b' : '#64748b', fontSize: '12px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: viewMode === 'table' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
-            >
-               <TableIcon size={16} /> Tabla
-            </button>
-         </div>
+         <ViewToggle mode={viewMode} setMode={setViewMode} />
       </div>
 
       {viewMode === 'chart' ? (
@@ -266,23 +312,39 @@ const AlarmBlock = ({ history }: { history: BPSession['kpiHistory'] }) => {
               ))}
            </div>
            
-           <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', height: '200px' }}>
-              {history.map((week, idx) => (
-                <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                   <div style={{ width: '100%', height: '160px', display: 'flex', alignItems: 'flex-end', gap: '4px', justifyContent: 'center' }}>
-                      {metrics.slice(0, 4).map(m => (
-                        <div key={m.key} style={{ 
-                          width: '12px', 
-                          height: `${Math.min((week.alarms[m.key] / 15) * 100, 100)}%`, 
-                          backgroundColor: m.color, 
-                          borderRadius: '4px 4px 0 0',
-                          opacity: 0.9
-                        }} />
-                      ))}
-                   </div>
-                   <span style={{ fontSize: '12px', fontWeight: '950', color: '#1e293b' }}>{week.week}</span>
-                </div>
+           <div style={{ position: 'relative', height: '240px', width: '100%', paddingLeft: '40px' }}>
+              {/* Vertical Scale */}
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '200px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '11px', fontWeight: '950', color: '#94a3b8', textAlign: 'right', width: '30px' }}>
+                 <span>15</span>
+                 <span>10</span>
+                 <span>5</span>
+                 <span>0</span>
+              </div>
+              
+              {/* Grid Lines */}
+              {[0, 5, 10, 15].map(v => (
+                <div key={v} style={{ position: 'absolute', left: '40px', right: 0, bottom: `${(v / 15) * 200 + 40}px`, borderTop: '1px solid #f1f5f9', zIndex: 0 }} />
               ))}
+
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', height: '200px', position: 'relative', zIndex: 1 }}>
+                {history.map((week, idx) => (
+                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '100%', height: '160px', display: 'flex', alignItems: 'flex-end', gap: '4px', justifyContent: 'center' }}>
+                        {metrics.slice(0, 4).map(m => (
+                          <div key={m.key} title={`${m.full}: ${week.alarms[m.key]}`} style={{ 
+                            width: '12px', 
+                            height: `${Math.min((week.alarms[m.key] / 15) * 100, 100)}%`, 
+                            backgroundColor: m.color, 
+                            borderRadius: '4px 4px 0 0',
+                            opacity: 0.9,
+                            transition: 'height 0.3s ease'
+                          }} />
+                        ))}
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: '950', color: '#1e293b' }}>{week.week}</span>
+                  </div>
+                ))}
+              </div>
            </div>
         </div>
       ) : (
@@ -290,10 +352,11 @@ const AlarmBlock = ({ history }: { history: BPSession['kpiHistory'] }) => {
            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
               <thead>
                  <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                    <th style={{ padding: '12px', fontSize: '11px', fontWeight: '950', color: '#94a3b8', textAnchor: 'start', textAlign: 'left' }}>Semana</th>
+                    <th style={{ padding: '12px', fontSize: '11px', fontWeight: '950', color: '#94a3b8', textAlign: 'left' }}>Semana</th>
                     {metrics.map(m => (
                       <th key={m.key} title={m.full} style={{ padding: '12px', fontSize: '11px', fontWeight: '950', color: '#1e293b' }}>{m.label}</th>
                     ))}
+                    <th style={{ padding: '12px', fontSize: '11px', fontWeight: '950', color: '#94a3b8', textAlign: 'right' }}>ESTADO</th>
                  </tr>
               </thead>
               <tbody>
@@ -309,6 +372,9 @@ const AlarmBlock = ({ history }: { history: BPSession['kpiHistory'] }) => {
                            </td>
                          )
                        })}
+                       <td style={{ padding: '16px 12px', textAlign: 'right' }}>
+                          <WeekStatusIndicator status={week.status} />
+                       </td>
                     </tr>
                  ))}
               </tbody>
@@ -323,15 +389,7 @@ export default function SeguimientoBP() {
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedTech, setSelectedTech] = useState<BPSession | null>(null);
   const [isActionsDrawerOpen, setIsActionsDrawerOpen] = useState(false);
-
-  // --- Helpers for Metrics ---
-  const currentKpis = useMemo(() => {
-    if (!selectedTech || selectedTech.kpiHistory.length < 2) return null;
-    const history = selectedTech.kpiHistory;
-    const current = history[history.length - 1];
-    const previous = history[history.length - 2];
-    return { current, previous };
-  }, [selectedTech]);
+  const [isCompleteWeekModalOpen, setIsCompleteWeekModalOpen] = useState(false);
 
   // --- Handlers ---
   const handleTechClick = (tech: BPSession) => {
@@ -339,6 +397,14 @@ export default function SeguimientoBP() {
     setView('detail');
     window.scrollTo(0, 0);
   };
+
+  const currentKpis = useMemo(() => {
+    if (!selectedTech || selectedTech.kpiHistory.length < 2) return null;
+    const history = selectedTech.kpiHistory;
+    const current = history[history.length - 1];
+    const previous = history[history.length - 2];
+    return { current, previous };
+  }, [selectedTech]);
 
   return (
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 100px 40px', width: '100%' }}>
@@ -414,12 +480,11 @@ export default function SeguimientoBP() {
            </table>
         </div>
       ) : (
-        /* VISTA DETALLE ACTUALIZADA */
+        /* VISTA DETALLE */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
           {/* Bloque Superior de KPIs Actuales */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
-             {/* 1. Estado */}
              <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '24px', border: '1px solid #e2e8f0', display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: selectedTech?.status === 'critico' ? '#fee2e2' : (selectedTech?.status === 'mejora' ? '#dcfce7' : '#fef3c7'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedTech?.status === 'critico' ? '#ef4444' : (selectedTech?.status === 'mejora' ? '#10b981' : '#f59e0b') }}>
                     <AlertCircle size={24} strokeWidth={2.5} />
@@ -431,45 +496,26 @@ export default function SeguimientoBP() {
                 </div>
              </div>
              
-             {/* 2. Reitero Actual */}
-             <MetricCard 
-                label="Reitero Actual"
-                value={currentKpis?.current.reitero ?? 0}
-                previousValue={currentKpis?.previous.reitero ?? 0}
-                isLowerBetter={true}
-             />
-
-             {/* 3. Resolución Actual */}
-             <MetricCard 
-                label="Resolución Actual"
-                value={currentKpis?.current.resolucion ?? 0}
-                previousValue={currentKpis?.previous.resolucion ?? 0}
-                isLowerBetter={false}
-             />
-
-             {/* 4. Deriva Actual */}
-             <MetricCard 
-                label="Deriva Actual"
-                value={currentKpis?.current.deriva ?? 0}
-                previousValue={currentKpis?.previous.deriva ?? 0}
-                isLowerBetter={true}
-             />
+             <MetricCard label="Reitero Actual" value={currentKpis?.current.reitero ?? 0} previousValue={currentKpis?.previous.reitero ?? 0} />
+             <MetricCard label="Resolución Actual" value={currentKpis?.current.resolucion ?? 0} previousValue={currentKpis?.previous.resolucion ?? 0} isLowerBetter={false} />
+             <MetricCard label="Deriva Actual" value={currentKpis?.current.deriva ?? 0} previousValue={currentKpis?.previous.deriva ?? 0} />
           </div>
 
-          {/* Gráfico KPIs */}
-          <section>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ backgroundColor: '#eff6ff', padding: '6px', borderRadius: '10px', color: 'var(--movistar-blue)' }}><Activity size={18} /></div>
-                <h2 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>Evolución de KPIs de Gestión</h2>
-             </div>
-             <KpiChart history={selectedTech?.kpiHistory || []} />
-          </section>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+             <button 
+                onClick={() => setIsCompleteWeekModalOpen(true)}
+                style={{ backgroundColor: 'var(--movistar-blue)', border: 'none', padding: '12px 24px', borderRadius: '16px', color: 'white', fontSize: '14px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+             >
+                <CalendarCheck size={18} /> COMPLETAR SEMANA ACTUAL
+             </button>
+          </div>
 
-          {/* Análisis de Alarmas */}
+          <KpiBlock history={selectedTech?.kpiHistory || []} />
+
           <AlarmBlock history={selectedTech?.kpiHistory || []} />
 
           {/* Acciones Históricas */}
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
              <button 
                 onClick={() => setIsActionsDrawerOpen(true)}
                 style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', padding: '16px 32px', borderRadius: '24px', color: '#64748b', fontSize: '14px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
@@ -477,6 +523,56 @@ export default function SeguimientoBP() {
                 <History size={18} /> VER HISTORIAL DE ACCIONES Y NOTAS
              </button>
           </div>
+        </div>
+      )}
+
+      {/* Modal Completar Semana (New Action Flow) */}
+      {isCompleteWeekModalOpen && (
+        <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+           <div onClick={() => setIsCompleteWeekModalOpen(false)} style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)' }} />
+           <div style={{ position: 'relative', width: '100%', maxWidth: '600px', backgroundColor: 'white', borderRadius: '32px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
+                 <div>
+                    <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#1e293b' }}>Completar Seguimiento Semanal</h3>
+                    <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '700' }}>Semana S15 •STELLA SERGIO LEONEL</p>
+                 </div>
+                 <button onClick={() => setIsCompleteWeekModalOpen(false)} style={{ border: 'none', backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '12px', cursor: 'pointer' }}><X size={20} /></button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    {[
+                      { key: 'pt', label: 'PT (1ra Tarde)' },
+                      { key: 'ft', label: 'FT (Fin Temprano)' },
+                      { key: 'rt', label: 'RT (Retrabajo)' },
+                      { key: 'ne', label: 'NE (No Efectiva)' },
+                      { key: 'ta', label: 'TA (T. Almuerzo)' },
+                      { key: 'tea', label: 'TEA (T. e. Act.)' },
+                    ].map(m => (
+                      <div key={m.key}>
+                         <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginBottom: '6px' }}>{m.label}</label>
+                         <input type="number" defaultValue={0} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', fontWeight: '800' }} />
+                      </div>
+                    ))}
+                 </div>
+
+                 <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginBottom: '12px' }}>ESTADO DE LA SEMANA</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                       {['mejoró', 'igual', 'empeoró'].map(val => (
+                         <button key={val} style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', backgroundColor: 'white', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase', cursor: 'pointer' }}>{val}</button>
+                       ))}
+                    </div>
+                 </div>
+
+                 <button 
+                  onClick={() => setIsCompleteWeekModalOpen(false)}
+                  style={{ backgroundColor: 'var(--movistar-blue)', color: 'white', padding: '16px', borderRadius: '16px', border: 'none', fontSize: '15px', fontWeight: '950', marginTop: '20px', cursor: 'pointer' }}
+                 >
+                    GUARDAR SEMANA S15
+                 </button>
+              </div>
+           </div>
         </div>
       )}
 
