@@ -121,3 +121,15 @@ CREATE INDEX IF NOT EXISTS idx_actuaciones_fecha ON actuaciones(fecha_cita);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_normalizado ON tecnicos(nombre_normalizado);
 CREATE INDEX IF NOT EXISTS idx_seguimiento_bp_tecnico ON seguimiento_bp(tecnico_id);
 CREATE INDEX IF NOT EXISTS idx_seguimiento_bp_inicio ON seguimiento_bp(fecha_inicio);
+
+-- 9. Antecedentes (Contexto estructural del técnico)
+CREATE TABLE IF NOT EXISTS public.antecedentes_bp (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tecnico_id UUID REFERENCES public.tecnicos(id) ON DELETE CASCADE,
+    titulo TEXT NOT NULL,
+    fecha DATE NOT NULL,
+    descripcion TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_antecedentes_tech ON public.antecedentes_bp(tecnico_id);

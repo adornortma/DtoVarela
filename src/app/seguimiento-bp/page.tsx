@@ -160,52 +160,62 @@ const SubsectionHeader = ({ title, icon: Icon }: any) => (
 );
 
 const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () => void }) => (
-  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', zIndex: 10001, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-     <div style={{ backgroundColor: 'white', borderTopLeftRadius: '40px', borderTopRightRadius: '40px', width: '100%', maxWidth: '900px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 -20px 50px rgba(0,0,0,0.2)', padding: '40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+     <div style={{ backgroundColor: 'white', borderRadius: '40px', width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', padding: '40px', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
            <div>
-              <div style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '950', display: 'inline-block', marginBottom: '8px' }}>SNAPSHOT SEMANAL</div>
-              <h2 style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', margin: 0 }}>Semana {week.dateRange}</h2>
+              <div style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '950', display: 'inline-block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SNAPSHOT SEMANAL</div>
+              <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>Semana {week.dateRange}</h2>
            </div>
-           <button onClick={onClose} style={{ padding: '12px', borderRadius: '16px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer' }}><X size={24}/></button>
+           <button onClick={onClose} style={{ padding: '16px', borderRadius: '20px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}><X size={24}/></button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '48px' }}>
            <section>
               <SubsectionHeader title="KPIs EN ESE MOMENTO" icon={Activity} />
-              <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                  {[
                    { label: 'Resolución', val: week.resolucion, unit: '%', key: 'resolucion' },
                    { label: 'Reitero', val: week.reitero, unit: '%', key: 'reitero' },
                    { label: 'Puntualidad', val: week.puntualidad, unit: '%', key: 'puntualidad' },
                    { label: 'Productividad', val: week.productividad, unit: '', key: 'productividad' }
-                 ].map(s => (
-                   <div key={s.label} style={{ flex: 1, backgroundColor: '#f8fafc', padding: '16px', borderRadius: '20px', border: '1px solid #f1f5f9' }}>
-                      <p style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>{s.label}</p>
-                      <p style={{ margin: 0, fontSize: '20px', fontWeight: '950', color: '#1e293b' }}>{s.val !== null && s.val !== undefined ? (s.key === 'productividad' ? s.val.toFixed(2) : `${s.val.toFixed(1)}${s.unit}`) : '-'}</p>
-                   </div>
-                 ))}
+                 ].map(s => {
+                    const semaforo = getSemaforo(s.val, s.key);
+                    return (
+                      <div key={s.label} style={{ backgroundColor: semaforo.bg, padding: '24px', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.02)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <p style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</p>
+                            <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '2px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '950' }}>{semaforo.label}</div>
+                         </div>
+                         <p style={{ margin: 0, fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1px' }}>
+                            {s.val !== null && s.val !== undefined ? (s.key === 'productividad' ? s.val.toFixed(2) : `${s.val.toFixed(1)}${s.unit}`) : '-'}
+                         </p>
+                      </div>
+                    );
+                 })}
               </div>
            </section>
 
            <section>
               <SubsectionHeader title="ALARMAS DE ESA SEMANA" icon={AlertCircle} />
               {week.alarms ? (
-                <div style={{ backgroundColor: '#fafafa', borderRadius: '24px', padding: '24px', border: '1px solid #f1f5f9' }}>
-                   <table style={{ width: '100%', tableLayout: 'fixed' }}>
+                <div style={{ backgroundColor: '#fdfdfd', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.02)' }}>
+                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                         <tr>{['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '950', padding: '8px' }}>{h}</th>)}</tr>
+                         <tr>{['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '950', padding: '16px 8px' }}>{h}</th>)}</tr>
                       </thead>
                       <tbody>
-                         <tr>
+                         <tr style={{ borderTop: '1px solid #f1f5f9' }}>
                             {[week.alarms.pt, week.alarms.ft, week.alarms.ta, week.alarms.ma, week.alarms.te, week.alarms.rt, week.alarms.ne, week.alarms.tea].map((v, i) => (
-                              <td key={i} style={{ textAlign: 'center', padding: '8px', fontSize: '15px', fontWeight: '950', color: v > 0 ? '#0f172a' : '#cbd5e1' }}>{v}</td>
+                              <td key={i} style={{ textAlign: 'center', padding: '24px 8px' }}>
+                                 <div style={{ fontSize: '18px', fontWeight: '950', color: v > 0 ? '#0f172a' : '#cbd5e1' }}>{v}</div>
+                              </td>
                             ))}
                          </tr>
                       </tbody>
                    </table>
                 </div>
-              ) : <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px' }}>Sin registro de alarmas configurado.</p>}
+              ) : <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px', textAlign: 'center', padding: '40px' }}>Sin registro de alarmas configurado.</p>}
            </section>
         </div>
      </div>
