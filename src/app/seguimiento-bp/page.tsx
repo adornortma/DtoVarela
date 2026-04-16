@@ -49,6 +49,13 @@ interface BPAlarmData {
   tea: number;
 }
 
+interface BPAntecedente {
+  id: string;
+  titulo: string;
+  fecha: string;
+  descripcion: string;
+}
+
 interface WeeklyKPI {
   id: string;
   weekLabel: string;
