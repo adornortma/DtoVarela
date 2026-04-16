@@ -80,6 +80,7 @@ interface BPSession {
   status: 'critico' | 'seguimiento' | 'mejora';
   history: WeeklyKPI[];
   actions: BPAction[];
+  antecedentes: BPAntecedente[];
 }
 
 // --- Utils ---
@@ -141,6 +142,66 @@ const SectionHeader = ({ title, icon: Icon, children }: any) => (
       <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>{title}</h2>
     </div>
     <div style={{ display: 'flex', gap: '12px' }}>{children}</div>
+  </div>
+);
+
+const SubsectionHeader = ({ title, icon: Icon }: any) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+    <Icon size={16} color="#64748b" />
+    <span style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+  </div>
+);
+
+const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () => void }) => (
+  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', zIndex: 10001, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+     <div style={{ backgroundColor: 'white', borderTopLeftRadius: '40px', borderTopRightRadius: '40px', width: '100%', maxWidth: '900px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 -20px 50px rgba(0,0,0,0.2)', padding: '40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+           <div>
+              <div style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '950', display: 'inline-block', marginBottom: '8px' }}>SNAPSHOT SEMANAL</div>
+              <h2 style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', margin: 0 }}>Semana {week.dateRange}</h2>
+           </div>
+           <button onClick={onClose} style={{ padding: '12px', borderRadius: '16px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer' }}><X size={24}/></button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '40px' }}>
+           <section>
+              <SubsectionHeader title="KPIs EN ESE MOMENTO" icon={Activity} />
+              <div style={{ display: 'flex', gap: '16px' }}>
+                 {[
+                   { label: 'Resolución', val: week.resolucion, unit: '%', key: 'resolucion' },
+                   { label: 'Reitero', val: week.reitero, unit: '%', key: 'reitero' },
+                   { label: 'Puntualidad', val: week.puntualidad, unit: '%', key: 'puntualidad' },
+                   { label: 'Productividad', val: week.productividad, unit: '', key: 'productividad' }
+                 ].map(s => (
+                   <div key={s.label} style={{ flex: 1, backgroundColor: '#f8fafc', padding: '16px', borderRadius: '20px', border: '1px solid #f1f5f9' }}>
+                      <p style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>{s.label}</p>
+                      <p style={{ margin: 0, fontSize: '20px', fontWeight: '950', color: '#1e293b' }}>{s.val !== null && s.val !== undefined ? (s.key === 'productividad' ? s.val.toFixed(2) : `${s.val.toFixed(1)}${s.unit}`) : '-'}</p>
+                   </div>
+                 ))}
+              </div>
+           </section>
+
+           <section>
+              <SubsectionHeader title="ALARMAS DE ESA SEMANA" icon={AlertCircle} />
+              {week.alarms ? (
+                <div style={{ backgroundColor: '#fafafa', borderRadius: '24px', padding: '24px', border: '1px solid #f1f5f9' }}>
+                   <table style={{ width: '100%', tableLayout: 'fixed' }}>
+                      <thead>
+                         <tr>{['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '950', padding: '8px' }}>{h}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                         <tr>
+                            {[week.alarms.pt, week.alarms.ft, week.alarms.ta, week.alarms.ma, week.alarms.te, week.alarms.rt, week.alarms.ne, week.alarms.tea].map((v, i) => (
+                              <td key={i} style={{ textAlign: 'center', padding: '8px', fontSize: '15px', fontWeight: '950', color: v > 0 ? '#0f172a' : '#cbd5e1' }}>{v}</td>
+                            ))}
+                         </tr>
+                      </tbody>
+                   </table>
+                </div>
+              ) : <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px' }}>Sin registro de alarmas configurado.</p>}
+           </section>
+        </div>
+     </div>
   </div>
 );
 
@@ -232,6 +293,10 @@ function BPTrackingContent() {
   const [alarmScale, setAlarmScale] = useState<TimeScale>('weekly');
   const [alarmView, setAlarmView] = useState<'table' | 'chart'>('table');
   const [modalWeek, setModalWeek] = useState<WeeklyKPI | null>(null);
+  const [selectedSnapshot, setSelectedSnapshot] = useState<WeeklyKPI | null>(null);
+  const [showAntecedenteModal, setShowAntecedenteModal] = useState(false);
+  const [antForm, setAntForm] = useState({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' });
+  const [isAntExpanded, setIsAntExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
   const [observationText, setObservationText] = useState('');
 
@@ -294,6 +359,13 @@ function BPTrackingContent() {
           date: new Date(t.fecha_confirmacion).toLocaleDateString()
         }));
 
+      // 5. Fetch Antecedentes
+      const { data: antData } = await supabase
+        .from('antecedentes_bp')
+        .select('*')
+        .eq('tecnico_id', tech.id)
+        .order('fecha', { ascending: false });
+
       setSession({
         id: tech.id,
         techName: `${tech.nombre} ${tech.apellido}`,
@@ -302,7 +374,13 @@ function BPTrackingContent() {
         district: 'Varela',
         status: 'critico', // Mock status check based on KPIs
         history,
-        actions
+        actions,
+        antecedentes: (antData || []).map(a => ({
+          id: a.id,
+          titulo: a.titulo,
+          fecha: a.fecha,
+          descripcion: a.descripcion
+        }))
       });
       
     } catch (err) {
@@ -352,13 +430,14 @@ function BPTrackingContent() {
 
     const { error } = await supabase
       .from('seguimiento_bp')
-      .update({
+      .upsert({
+        tecnico_id: session.id,
+        fecha_inicio: activeWeek.dateRange,
+        fecha_fin: activeWeek.dateRange,
         observacion_lider: observationText,
         confirmado: true,
         fecha_confirmacion: new Date().toISOString()
-      })
-      .eq('tecnico_id', session.id)
-      .eq('fecha_inicio', activeWeek.dateRange);
+      }, { onConflict: 'tecnico_id, fecha_inicio' });
 
     if (error) {
       alert('Error confirmando check: ' + error.message);
@@ -366,6 +445,29 @@ function BPTrackingContent() {
       alert('Seguimiento guardado con éxito!');
       fetchData();
     }
+  };
+
+  const handleAddAntecedente = async () => {
+    if (!antForm.titulo || !antForm.descripcion) return alert('Por favor complete todos los campos');
+    
+    const { error } = await supabase.from('antecedentes_bp').insert({
+      tecnico_id: session?.id,
+      titulo: antForm.titulo,
+      fecha: antForm.fecha,
+      descripcion: antForm.descripcion
+    });
+
+    if (error) alert('Error: ' + error.message);
+    else {
+      setShowAntecedenteModal(false);
+      setAntForm({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' });
+      fetchData();
+    }
+  };
+
+  const openSnapshot = (weekLabel: string) => {
+    const week = session?.history.find(w => w.dateRange === weekLabel);
+    if (week) setSelectedSnapshot(week);
   };
 
   if (loading) return (
@@ -570,16 +672,68 @@ function BPTrackingContent() {
       ) : (
         /* HISTORIAL TIMELINE */
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-           <SectionHeader title="HISTORIAL DE ACCIONES" icon={History} />
+           
+           {/* SECCIÓN ANTECEDENTES */}
+           <div style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div 
+                onClick={() => setIsAntExpanded(!isAntExpanded)}
+                style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              >
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#f0f9ff', color: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <History size={20} />
+                    </div>
+                    <div>
+                       <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#0f172a', margin: 0 }}>ANTECEDENTES</h3>
+                       <p style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginTop: '2px' }}>Contexto estructural del técnico</p>
+                    </div>
+                 </div>
+                 <div style={{ transform: isAntExpanded ? 'rotate(180deg)' : 'none', transition: 'all 0.3s' }}><Plus size={20} /></div>
+              </div>
+              
+              {isAntExpanded && (
+                <div style={{ padding: '0 32px 32px 32px', borderTop: '1px solid #f1f5f9', paddingTop: '32px' }}>
+                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                      {session.antecedentes.length > 0 ? session.antecedentes.map(ant => (
+                        <div key={ant.id} style={{ padding: '16px 20px', borderRadius: '16px', backgroundColor: '#fdfdfd', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                           <div>
+                              <div style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b' }}>{ant.titulo}</div>
+                              <div style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>{ant.descripcion}</div>
+                           </div>
+                           <div style={{ fontSize: '12px', fontWeight: '950', color: '#94a3b8' }}>{ant.fecha}</div>
+                        </div>
+                      )) : <p style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>No hay antecedentes registrados.</p>}
+                   </div>
+                   <button 
+                     onClick={() => setShowAntecedenteModal(true)}
+                     style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '2px dashed #cbd5e1', backgroundColor: 'transparent', color: '#64748b', fontWeight: '950', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+                     onMouseEnter={e => e.currentTarget.style.borderColor = '#019df4'}
+                     onMouseLeave={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                   >+ Agregar antecedente</button>
+                </div>
+              )}
+           </div>
+
+           <SectionHeader title="HISTORIAL DE SEGUIMIENTO SEMANAL" icon={MessageSquare} />
            {session.actions.map((a) => (
              <div key={a.id} style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: 'white', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={18} /></div>
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1 }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8' }}>SEMANA {a.weekLabel}</span>
-                      <span style={{ fontSize: '12px', fontWeight: '800' }}>{a.date}</span>
+                <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: 'white', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} /></div>
+                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1, position: 'relative' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SEMANA {a.weekLabel}</span>
+                        <div style={{ marginTop: '8px' }}>
+                           <button 
+                             onClick={() => openSnapshot(a.weekLabel)}
+                             style={{ display: 'flex', alignItems: 'center', gap: '6px', border: 'none', backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px', fontWeight: '950' }}
+                           >
+                             <BarChart3 size={14} /> Ver Snapshot
+                           </button>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>{a.date}</span>
                    </div>
-                   <p style={{ fontSize: '15px', color: '#334155', fontWeight: '700' }}>{a.observation}</p>
+                   <p style={{ fontSize: '15px', color: '#334155', fontWeight: '700', lineHeight: 1.6, margin: 0 }}>{a.observation}</p>
                 </div>
              </div>
            ))}
@@ -587,6 +741,34 @@ function BPTrackingContent() {
       )}
 
       {modalWeek && <AlarmsModal week={modalWeek} onClose={() => setModalWeek(null)} onSave={handleSaveAlarms} />}
+
+      {selectedSnapshot && <SnapshotBottomSheet week={selectedSnapshot} onClose={() => setSelectedSnapshot(null)} />}
+
+      {showAntecedenteModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '480px', padding: '32px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', marginBottom: '24px' }}>Agregar Antecedente</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>TÍTULO</label>
+                <input type="text" value={antForm.titulo} onChange={e => setAntForm({...antForm, titulo: e.target.value})} placeholder="Ej: Cambio de zona" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '700' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>FECHA</label>
+                <input type="date" value={antForm.fecha} onChange={e => setAntForm({...antForm, fecha: e.target.value})} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '700' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>DESCRIPCIÓN</label>
+                <textarea rows={3} value={antForm.descripcion} onChange={e => setAntForm({...antForm, descripcion: e.target.value})} placeholder="Breve detalle..." style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '700' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
+              <button onClick={() => setShowAntecedenteModal(false)} style={{ flex: 1, padding: '14px', borderRadius: '14px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950', cursor: 'pointer' }}>CANCELAR</button>
+              <button onClick={handleAddAntecedente} style={{ flex: 2, padding: '14px', borderRadius: '14px', border: 'none', backgroundColor: '#019df4', color: 'white', fontWeight: '950', cursor: 'pointer' }}>GUARDAR</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
