@@ -165,7 +165,6 @@ const SubsectionHeader = ({ title, icon: Icon }: any) => (
   </div>
 );
 
-
 const ViewToggle = ({ options, active, onChange }: any) => (
   <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
     {options.map((opt: any) => (
@@ -187,27 +186,6 @@ const ViewToggle = ({ options, active, onChange }: any) => (
   </div>
 );
 
-// --- Sparkline Component ---
-const Sparkline = ({ data, color = '#019df4' }: { data: number[], color?: string }) => {
-  if (data.length < 2) return null;
-  const max = Math.max(...data, 1);
-  const width = 100;
-  const height = 30;
-  const points = data.map((v, i) => ({
-    x: (i / (data.length - 1)) * width,
-    y: height - (v / max) * height + 2
-  }));
-
-  const pathD = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
-
-  return (
-    <svg width={width} height={height + 4} style={{ overflow: 'visible' }}>
-      <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill={color} />
-    </svg>
-  );
-};
-
 // --- Alarms Dashboard ---
 const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mode: AnalyticMode }) => {
     const activeWeek = history[0];
@@ -215,6 +193,14 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
     
     const keys = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'] as const;
     const labels: Record<string, string> = { pt:'PT', ft:'FT', ta:'TA', ma:'MA', te:'TE', rt:'RT', ne:'NE', tea:'TEA' };
+
+    // Hierarchy colors for 4-week mode
+    const fourWeekColors = [
+        '#019df4', // Week 0 (Current) - Most Recent (Rightmost)
+        '#7dd3fc', // Week -1
+        '#bae6fd', // Week -2
+        '#e2e8f0'  // Week -3 (Oldest - Leftmost)
+    ];
 
     // --- Data processing ---
     const getComparisonData = (cur: BPAlarmData | null, prev: BPAlarmData | null) => {
@@ -295,15 +281,38 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#019df4' }} />
-                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Actual</span>
-                    </div>
-                    {['compare-week', 'monthly'].includes(mode) && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#e2e8f0' }} />
-                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Anterior</span>
-                        </div>
+                    {mode === 'last-4-weeks' ? (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: fourWeekColors[3] }} />
+                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>W-3</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: fourWeekColors[2] }} />
+                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>W-2</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: fourWeekColors[1] }} />
+                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>W-1</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: fourWeekColors[0] }} />
+                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>Actual</span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#019df4' }} />
+                                <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Actual</span>
+                            </div>
+                            {['compare-week', 'monthly'].includes(mode) && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#e2e8f0' }} />
+                                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Anterior</span>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -314,49 +323,87 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
     const renderBars = (data: any[]) => {
         const maxVal = Math.max(...data.map(d => Math.max(d.cur, d.prev, 5)));
         return (
-            <div style={{ height: '320px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '24px' }}>
-                {data.map(d => (
-                    <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', height: '100%', position: 'relative' }}>
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '4px', width: '100%' }}>
-                            {(mode === 'compare-week' || mode === 'monthly') && (
-                                <div style={{ width: '50%', height: `${(d.prev / maxVal) * 100}%`, backgroundColor: '#e2e8f0', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s' }} title={`Anterior: ${d.prev}`} />
-                            )}
-                            <div style={{ width: (mode === 'compare-week' || mode === 'monthly') ? '50%' : '100%', height: `${(d.cur / maxVal) * 100}%`, backgroundColor: '#019df4', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.1)' }} title={`Actual: ${d.cur}`} />
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '16px', fontWeight: '950', color: '#0f172a' }}>{d.cur}</div>
-                            <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{d.label}</div>
-                        </div>
+            <div style={{ padding: '0 20px 0 40px', position: 'relative' }}>
+                {/* Y-Axis Scale Labels */}
+                {[0, 25, 50, 75, 100].map(p => (
+                    <div key={p} style={{ position: 'absolute', left: 0, top: `${100 - p}%`, transform: 'translateY(-50%)', fontSize: '10px', fontWeight: '900', color: '#94a3b8' }}>
+                        {Math.round((p / 100) * maxVal)}
                     </div>
                 ))}
+                
+                {/* Horizontal Grid Lines */}
+                {[0, 25, 50, 75, 100].map(p => (
+                    <div key={p} style={{ position: 'absolute', left: '30px', right: 0, top: `${100 - p}%`, borderTop: '1px solid #f8fafc', height: 0 }} />
+                ))}
+                
+                <div style={{ height: '320px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '24px', position: 'relative', zIndex: 1 }}>
+                    {data.map(d => (
+                        <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', height: '100%', position: 'relative' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '4px', width: '100%' }}>
+                                {(mode === 'compare-week' || mode === 'monthly') && (
+                                    <div style={{ width: '50%', height: `${(d.prev / maxVal) * 100}%`, backgroundColor: '#e2e8f0', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s' }} />
+                                )}
+                                <div style={{ width: (mode === 'compare-week' || mode === 'monthly') ? '50%' : '100%', height: `${(d.cur / maxVal) * 100}%`, backgroundColor: '#019df4', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.1)' }} />
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '16px', fontWeight: '950', color: '#0f172a' }}>{d.cur}</div>
+                                <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{d.label}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     };
 
-    const renderSparklines = () => {
+    const render4WeekGroupedBars = () => {
+        const last4 = history.slice(0, 4).reverse(); // From oldest to newest
+        const maxVal = Math.max(...keys.map(k => Math.max(...last4.map(w => w.alarms ? w.alarms[k] : 0))), 5);
+
         return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '40px' }}>
-                {keys.map(k => {
-                    const vals = getLast4WeeksAlarms(k);
-                    const last = vals[vals.length - 1];
-                    const first = vals[0];
-                    const diff = last - first;
-                    return (
-                        <div key={k} style={{ padding: '24px', backgroundColor: '#fcfcfc', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <span style={{ fontSize: '12px', fontWeight: '950', color: '#64748b' }}>{labels[k]}</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8' }}>
-                                    {diff > 0 ? <TrendingUp size={14}/> : diff < 0 ? <TrendingDown size={14}/> : <Minus size={14}/>}
-                                    <span style={{ fontSize: '12px', fontWeight: '950' }}>{Math.abs(diff)}</span>
-                                </div>
+            <div style={{ padding: '0 20px 0 40px', position: 'relative' }}>
+                {/* Y-Axis Scale Labels */}
+                {[0, 25, 50, 75, 100].map(p => (
+                    <div key={p} style={{ position: 'absolute', left: 0, top: `${100 - p}%`, transform: 'translateY(-50%)', fontSize: '10px', fontWeight: '900', color: '#94a3b8' }}>
+                        {Math.round((p / 100) * maxVal)}
+                    </div>
+                ))}
+
+                {/* Horizontal Grid Lines */}
+                {[0, 25, 50, 75, 100].map(p => (
+                    <div key={p} style={{ position: 'absolute', left: '30px', right: 0, top: `${100 - p}%`, borderTop: '1px solid #f8fafc', height: 0 }} />
+                ))}
+
+                <div style={{ height: '350px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '32px', position: 'relative', zIndex: 1 }}>
+                    {keys.map(k => (
+                        <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', height: '100%' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '3px', width: '100%' }}>
+                                {last4.map((w, idx) => {
+                                    const val = w.alarms ? w.alarms[k] : 0;
+                                    // Map idx (0: oldest, 3: newest) to colors (3: oldest, 0: newest)
+                                    const colorIdx = 3 - idx; 
+                                    return (
+                                        <div 
+                                            key={idx} 
+                                            style={{ 
+                                                width: '25%', 
+                                                height: `${(val / maxVal) * 100}%`, 
+                                                backgroundColor: fourWeekColors[colorIdx], 
+                                                borderRadius: '3px 3px 1px 1px',
+                                                transition: 'all 0.8s'
+                                            }} 
+                                            title={`${w.weekLabel}: ${val}`}
+                                        />
+                                    );
+                                })}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a' }}>{last}</div>
-                                <Sparkline data={vals} />
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '15px', fontWeight: '950', color: '#0f172a' }}>{last4[3].alarms ? last4[3].alarms[k] : 0}</div>
+                                <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{labels[k]}</div>
                             </div>
                         </div>
-                    );
-                })}
+                    ))}
+                </div>
             </div>
         );
     };
@@ -389,7 +436,7 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
                 {mode === 'current' && renderBars(getComparisonData(activeWeek?.alarms || null, null))}
                 {mode === 'compare-week' && renderBars(getComparisonData(activeWeek?.alarms || null, prevWeek?.alarms || null))}
                 {mode === 'monthly' && renderBars(getMonthlyData().data)}
-                {mode === 'last-4-weeks' && renderSparklines()}
+                {mode === 'last-4-weeks' && render4WeekGroupedBars()}
             </div>
         </div>
     );
