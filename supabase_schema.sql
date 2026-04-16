@@ -88,7 +88,36 @@ CREATE TABLE IF NOT EXISTS public.dias_operativos (
     created_at timestamptz DEFAULT now()
 );
 
+-- 8. Seguimiento BP (Semanal por Técnico)
+CREATE TABLE IF NOT EXISTS public.seguimiento_bp (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    tecnico_id uuid REFERENCES public.tecnicos(id) ON DELETE CASCADE,
+    fecha_inicio date NOT NULL,
+    fecha_fin date NOT NULL,
+    
+    -- Alarmas Operativas
+    alarma_pt integer DEFAULT 0, -- Primera Tarde
+    alarma_ft integer DEFAULT 0, -- Fin Temprano
+    alarma_ta integer DEFAULT 0, -- Tiempo Almuerzo
+    alarma_ma integer DEFAULT 0, -- Momento Almuerzo
+    alarma_te integer DEFAULT 0, -- Tiempo Ejecucion
+    alarma_rt integer DEFAULT 0, -- Retrabajo
+    alarma_ne integer DEFAULT 0, -- No Efectiva
+    alarma_tea integer DEFAULT 0, -- Tiempo Entre Actuaciones
+    
+    -- Gestión
+    observacion_lider text,
+    estado_carga text DEFAULT 'empty', -- 'full', 'partial', 'empty'
+    confirmado boolean DEFAULT false,
+    fecha_confirmacion timestamptz,
+    created_at timestamptz DEFAULT now(),
+    
+    UNIQUE(tecnico_id, fecha_inicio)
+);
+
 -- Índices Sugeridos
 CREATE INDEX IF NOT EXISTS idx_metricas_fecha ON metricas(fecha);
 CREATE INDEX IF NOT EXISTS idx_actuaciones_fecha ON actuaciones(fecha_cita);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_normalizado ON tecnicos(nombre_normalizado);
+CREATE INDEX IF NOT EXISTS idx_seguimiento_bp_tecnico ON seguimiento_bp(tecnico_id);
+CREATE INDEX IF NOT EXISTS idx_seguimiento_bp_inicio ON seguimiento_bp(fecha_inicio);

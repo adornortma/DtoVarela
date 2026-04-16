@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { 
   ChevronRight, 
   TrendingUp, 
@@ -37,14 +39,14 @@ type WeeklyLoadStatus = 'full' | 'partial' | 'empty';
 type TimeScale = 'monthly' | 'weekly';
 
 interface BPAlarmData {
-  pt: number; // Primera Tarde
-  ft: number; // Fin Temprano
-  ta: number; // Tiempo Almuerzo
-  ma: number; // Momento Almuerzo
-  te: number; // Tiempo Ejecución
-  rt: number; // Retrabajo
-  ne: number; // No Efectiva
-  tea: number; // Tiempo Entre Actuaciones
+  pt: number;
+  ft: number;
+  ta: number;
+  ma: number;
+  te: number;
+  rt: number;
+  ne: number;
+  tea: number;
 }
 
 interface WeeklyKPI {
@@ -80,36 +82,12 @@ interface BPSession {
   actions: BPAction[];
 }
 
-// --- Mock Data ---
-const INITIAL_DATA: BPSession = {
-  id: '1',
-  techName: 'STELLA SERGIO LEONEL',
-  dni: '37653458',
-  cell: 'VARELA 1',
-  district: 'Varela',
-  status: 'critico',
-  history: [
-    { id: 'w1', weekLabel: 'Semana 1', dateRange: '03/03 - 09/03', monthLabel: 'MARZO', resolucion: 86, reitero: 11, puntualidad: 82, productividad: 3.2, status: 'full', alarms: { pt: 0, ft: 0, ta: 40, ma: 0, te: 52, rt: 1, ne: 0, tea: 12 }, observation: 'Se observa buena disposición pero falta ajuste en rutas.', locked: true },
-    { id: 'w2', weekLabel: 'Semana 2', dateRange: '10/03 - 16/03', monthLabel: 'MARZO', resolucion: 84, reitero: 12.5, puntualidad: 78, productividad: 3.1, status: 'full', alarms: { pt: 1, ft: 0, ta: 42, ma: 1, te: 50, rt: 2, ne: 1, tea: 14 }, observation: 'Incremento leve en reiteros por fallas en cierres.', locked: true },
-    { id: 'w3', weekLabel: 'Semana 3', dateRange: '17/03 - 23/03', monthLabel: 'MARZO', resolucion: 82, reitero: 14, puntualidad: 75, productividad: 2.9, status: 'full', alarms: { pt: 2, ft: 1, ta: 50, ma: 2, te: 48, rt: 4, ne: 2, tea: 18 }, observation: 'Se refuerza proceso de validación con cliente.', locked: true },
-    { id: 'w4', weekLabel: 'Semana 4', dateRange: '24/03 - 30/03', monthLabel: 'MARZO', resolucion: 78, reitero: 16.5, puntualidad: 70, productividad: 2.7, status: 'full', alarms: { pt: 3, ft: 2, ta: 60, ma: 3, te: 45, rt: 7, ne: 3, tea: 22 }, observation: 'Tendencia negativa en puntualidad.', locked: true },
-    { id: 'w5', weekLabel: 'Semana 5', dateRange: '31/03 - 06/04', monthLabel: 'ABRIL', resolucion: 75, reitero: 18, puntualidad: 68, productividad: 2.5, status: 'full', alarms: { pt: 4, ft: 2, ta: 65, ma: 4, te: 43, rt: 10, ne: 4, tea: 28 }, observation: 'Caso crítico. Se requiere intervención urgente.', locked: true },
-    { id: 'w6', weekLabel: 'Semana 6', dateRange: '07/04 - 13/04', monthLabel: 'ABRIL', resolucion: 72, reitero: 19.5, puntualidad: 65, productividad: 2.3, status: 'partial', alarms: null },
-    { id: 'w7', weekLabel: 'Semana 7', dateRange: '14/04 - 20/04', monthLabel: 'ABRIL', resolucion: 74, reitero: 18.5, puntualidad: 67, productividad: 2.4, status: 'empty', alarms: null },
-  ],
-  actions: [
-    { id: 'a1', weekLabel: '31/03 - 06/04', observation: 'Caso crítico. Se requiere intervención urgente.', date: '2026-04-07' },
-    { id: 'a2', weekLabel: '24/03 - 30/03', observation: 'Tendencia negativa en puntualidad.', date: '2026-03-31' },
-    { id: 'a3', weekLabel: '17/03 - 23/03', observation: 'Se refuerza proceso de validación con cliente.', date: '2026-03-24' },
-  ]
-};
-
 // --- Utils ---
 const getSemaforo = (value: number, kpi: string) => {
   if (kpi === 'resolucion') {
-    if (value >= 75) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' }; // Green
-    if (value >= 70) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' }; // Yellow
-    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' }; // Red
+    if (value >= 75) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
+    if (value >= 70) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
   if (kpi === 'reitero') {
     if (value <= 4.5) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
@@ -140,26 +118,16 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
   const semaforo = getSemaforo(numValue, kpiKey);
 
   return (
-    <div style={{ 
-      backgroundColor: semaforo.bg, 
-      borderRadius: '24px', 
-      padding: '24px', 
-      border: '1px solid rgba(0,0,0,0.05)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-      flex: 1,
-      transition: 'all 0.3s ease'
-    }}>
+    <div style={{ backgroundColor: semaforo.bg, borderRadius: '24px', padding: '24px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', flex: 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <p style={{ fontSize: '11px', fontWeight: '950', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8 }}>{title}</p>
-        <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-           {semaforo.label}
-        </div>
+        <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950' }}>{semaforo.label}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>{typeof value === 'number' && kpiKey !== 'productividad' ? `${value.toFixed(1)}%` : value}</h4>
+        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'productividad' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: trendColor }}>
            {isUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-           <span style={{ fontSize: '14px', fontWeight: '950' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(variation < 0.1 && variation > -0.1 ? 2 : 1)}%`}</span>
+           <span style={{ fontSize: '14px', fontWeight: '950' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(1)}%`}</span>
         </div>
       </div>
     </div>
@@ -169,9 +137,7 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
 const SectionHeader = ({ title, icon: Icon, children }: any) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{ backgroundColor: '#0f172a', padding: '10px', borderRadius: '14px', color: 'white' }}>
-        <Icon size={20} />
-      </div>
+      <div style={{ backgroundColor: '#0f172a', padding: '10px', borderRadius: '14px', color: 'white' }}><Icon size={20} /></div>
       <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>{title}</h2>
     </div>
     <div style={{ display: 'flex', gap: '12px' }}>{children}</div>
@@ -185,18 +151,11 @@ const ViewToggle = ({ options, active, onChange }: any) => (
         key={opt.value}
         onClick={() => onChange(opt.value)}
         style={{
-          padding: '8px 16px',
-          borderRadius: '9px',
-          border: 'none',
+          padding: '8px 16px', borderRadius: '9px', border: 'none',
           backgroundColor: active === opt.value ? 'white' : 'transparent',
           color: active === opt.value ? '#0f172a' : '#64748b',
-          fontSize: '12px',
-          fontWeight: '900',
-          boxShadow: active === opt.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px'
+          fontSize: '12px', fontWeight: '900', boxShadow: active === opt.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
         }}
       >
         {opt.icon && <opt.icon size={14} />}
@@ -207,66 +166,38 @@ const ViewToggle = ({ options, active, onChange }: any) => (
 );
 
 const AlarmsModal = ({ week, onClose, onSave }: any) => {
-  const [formData, setFormData] = useState<BPAlarmData>({
-    pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0
-  });
-
+  const [formData, setFormData] = useState<BPAlarmData>(week.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
   const inputs = [
-    { key: 'pt', label: 'Primera Tarde' },
-    { key: 'ft', label: 'Fin Temprano' },
-    { key: 'ta', label: 'Tiempo Almuerzo' },
-    { key: 'ma', label: 'Momento Almuerzo' },
-    { key: 'te', label: 'Tiempo Ejecución' },
-    { key: 'rt', label: 'Retrabajo' },
-    { key: 'ne', label: 'No Efectiva' },
-    { key: 'tea', label: 'Tiempo Entre Actuaciones' },
+    { key: 'pt', label: 'PT' }, { key: 'ft', label: 'FT' }, { key: 'ta', label: 'TA' }, { key: 'ma', label: 'MA' },
+    { key: 'te', label: 'TE' }, { key: 'rt', label: 'RT' }, { key: 'ne', label: 'NE' }, { key: 'tea', label: 'TEA' },
   ];
-
-  const handleSave = () => {
-    // Basic validation: all fields required and non-negative
-    const emptyValues = Object.values(formData).some(v => v === undefined || v === null);
-    if (emptyValues) {
-       alert('Todos los campos son obligatorios');
-       return;
-    }
-    onSave(formData);
-  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '580px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '580px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
         <div style={{ padding: '32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>Carga de Alarmas</h2>
-            <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700' }}>Semana: {week.dateRange}</p>
+            <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700' }}>{week.dateRange}</p>
           </div>
           <button onClick={onClose} style={{ padding: '10px', borderRadius: '14px', backgroundColor: '#f1f5f9', color: '#64748b' }}><X size={20}/></button>
         </div>
-        
-        <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxHeight: '60vh', overflowY: 'auto' }}>
+        <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
            {inputs.map(inp => (
              <div key={inp.key}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>{inp.label}</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>{inp.label}</label>
                 <input 
-                  type="number"
-                  min="0"
-                  value={formData[inp.key as keyof BPAlarmData]}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (val < 0) return;
-                    setFormData({...formData, [inp.key]: val || 0})
-                  }}
-                  placeholder="0"
+                  type="number" value={formData[inp.key as keyof BPAlarmData]}
+                  onChange={(e) => setFormData({...formData, [inp.key]: parseInt(e.target.value) || 0})}
                   style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '2.5px solid #f1f5f9', fontSize: '15px', fontWeight: '900', outline: 'none' }}
                 />
              </div>
            ))}
         </div>
-
         <div style={{ padding: '32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '16px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', fontWeight: '950', color: '#64748b', backgroundColor: '#f1f5f9' }}>CANCELAR</button>
-          <button onClick={handleSave} style={{ flex: 2, padding: '16px', borderRadius: '16px', fontWeight: '950', color: 'white', backgroundColor: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <Save size={18} /> GUARDAR ALARMAS
+          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', fontWeight: '950', color: '#64748b', backgroundColor: '#f1f5f9' }}>CERRAR</button>
+          <button onClick={() => onSave(formData)} style={{ flex: 2, padding: '16px', borderRadius: '16px', fontWeight: '950', color: 'white', backgroundColor: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <Save size={18} /> GUARDAR
           </button>
         </div>
       </div>
@@ -274,69 +205,162 @@ const AlarmsModal = ({ week, onClose, onSave }: any) => {
   );
 };
 
-// --- Main Page ---
+// --- BP Tracking Logic ---
 
-export default function SeguimientoBP() {
-  const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
-  const [session, setSession] = useState<BPSession>(INITIAL_DATA);
+function BPTrackingContent() {
+  const searchParams = useSearchParams();
+  const dni = searchParams.get('dni') || '37653458'; // Fallback for demo
+  
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<BPSession | null>(null);
   const [kpiScale, setKpiScale] = useState<TimeScale>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
   const [alarmScale, setAlarmScale] = useState<TimeScale>('weekly');
   const [alarmView, setAlarmView] = useState<'table' | 'chart'>('table');
   const [modalWeek, setModalWeek] = useState<WeeklyKPI | null>(null);
-  
-  // Current logic: Find the first week that is not 'full' to be the "active" or "pending" one
-  const activeWeekIndex = useMemo(() => {
-    const idx = session.history.findIndex(w => w.status !== 'full');
-    return idx === -1 ? session.history.length - 1 : idx;
-  }, [session]);
+  const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
+  const [observationText, setObservationText] = useState('');
 
-  const activeWeek = session.history[activeWeekIndex];
-  const [observationText, setObservationText] = useState(activeWeek?.observation || '');
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch Tech Info
+      const { data: tech, error: techError } = await supabase
+        .from('tecnicos')
+        .select('*')
+        .eq('dni', dni)
+        .single();
 
-  // Variation calculation for Bloque 1
-  const prevWeek = session.history[activeWeekIndex - 1] || activeWeek;
+      if (techError || !tech) throw new Error('Técnico no encontrado');
 
-  const handleSaveAlarms = (data: BPAlarmData) => {
-    if (!modalWeek) return;
-    const newHistory = session.history.map(w => {
-      if (w.id === modalWeek.id) {
-        return { ...w, alarms: data, status: 'full' as WeeklyLoadStatus };
-      }
-      return w;
-    });
-    setSession({ ...session, history: newHistory });
-    setModalWeek(null);
-  };
+      // 2. Fetch Weekly Metrics (already existing table)
+      // Group by week for logic
+      const { data: metrics } = await supabase
+        .from('metricas')
+        .select('*')
+        .eq('tecnico_id', tech.id)
+        .order('fecha', { ascending: false });
 
-  const handleConfirmCheck = () => {
-    if (!activeWeek.alarms) {
-      alert('Debes cargar las alarmas de la semana antes de confirmar el check.');
-      return;
+      // 3. Fetch Tracking (alarms/obs) from our new table
+      const { data: tracking } = await supabase
+        .from('seguimiento_bp')
+        .select('*')
+        .eq('tecnico_id', tech.id);
+
+      // --- Mapeo a Estructura de UI ---
+      // Para efectos del demo/MVP agruparemos por semanas ficticias basadas en las métricas
+      // En producción esto vendría de una lógica de calendario real
+      const history: WeeklyKPI[] = (metrics || []).slice(0, 10).map((m, i) => {
+        const track = tracking?.find(t => t.fecha_inicio <= m.fecha && t.fecha_fin >= m.fecha);
+        return {
+          id: m.id,
+          weekLabel: `Semana ${10 - i}`,
+          dateRange: `${m.fecha}`,
+          monthLabel: 'MARZO', // Mock month
+          resolucion: m.resolucion,
+          reitero: m.reitero,
+          puntualidad: m.puntualidad,
+          productividad: m.productividad,
+          status: track ? (track.estado_carga as any) : 'empty',
+          alarms: track ? {
+            pt: track.alarma_pt, ft: track.alarma_ft, ta: track.alarma_ta, ma: track.alarma_ma,
+            te: track.alarma_te, rt: track.alarma_rt, ne: track.alarma_ne, tea: track.alarma_tea
+          } : null,
+          observation: track?.observacion_lider,
+          locked: track?.confirmado
+        };
+      });
+
+      const actions: BPAction[] = (tracking || [])
+        .filter(t => t.confirmado && t.observacion_lider)
+        .map(t => ({
+          id: t.id,
+          weekLabel: t.fecha_inicio,
+          observation: t.observacion_lider,
+          date: new Date(t.fecha_confirmacion).toLocaleDateString()
+        }));
+
+      setSession({
+        id: tech.id,
+        techName: `${tech.nombre} ${tech.apellido}`,
+        dni: tech.dni,
+        cell: metrics?.[0]?.celula || 'N/A',
+        district: 'Varela',
+        status: 'critico', // Mock status check based on KPIs
+        history,
+        actions
+      });
+      
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    const newAction: BPAction = {
-      id: Math.random().toString(36).substr(2, 9),
-      weekLabel: activeWeek.dateRange,
-      observation: observationText,
-      date: new Date().toLocaleDateString('es-ES')
-    };
-    
-    // Update history with observation and lock it
-    const newHistory = session.history.map((w, i) => {
-      if (i === activeWeekIndex) {
-        return { ...w, observation: observationText, locked: true };
-      }
-      return w;
-    });
-
-    setSession({
-      ...session,
-      history: newHistory,
-      actions: [newAction, ...session.actions]
-    });
-    
-    alert('Check semanal confirmado y guardado con éxito.');
   };
+
+  useEffect(() => { fetchData(); }, [dni]);
+
+  const activeWeek = session?.history[0]; // Logic for latest pending week
+  
+  useEffect(() => {
+    if (activeWeek) setObservationText(activeWeek.observation || '');
+  }, [activeWeek]);
+
+  const handleSaveAlarms = async (data: BPAlarmData) => {
+    if (!session || !activeWeek) return;
+    
+    const { error } = await supabase
+      .from('seguimiento_bp')
+      .upsert({
+        tecnico_id: session.id,
+        fecha_inicio: activeWeek.dateRange, // Simplified for MVP
+        fecha_fin: activeWeek.dateRange,
+        alarma_pt: data.pt, alarma_ft: data.ft, alarma_ta: data.ta, alarma_ma: data.ma,
+        alarma_te: data.te, alarma_rt: data.rt, alarma_ne: data.ne, alarma_tea: data.tea,
+        estado_carga: 'full'
+      }, { onConflict: 'tecnico_id, fecha_inicio' });
+
+    if (error) {
+      alert('Error guardando alarmas: ' + error.message);
+    } else {
+      setModalWeek(null);
+      fetchData();
+    }
+  };
+
+  const handleConfirmCheck = async () => {
+    if (!session || !activeWeek || !activeWeek.alarms) return;
+
+    const { error } = await supabase
+      .from('seguimiento_bp')
+      .update({
+        observacion_lider: observationText,
+        confirmado: true,
+        fecha_confirmacion: new Date().toISOString()
+      })
+      .eq('tecnico_id', session.id)
+      .eq('fecha_inicio', activeWeek.dateRange);
+
+    if (error) {
+      alert('Error confirmando check: ' + error.message);
+    } else {
+      alert('Seguimiento guardado con éxito!');
+      fetchData();
+    }
+  };
+
+  if (loading) return (
+    <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+       <div style={{ textAlign: 'center' }}>
+          <Activity size={48} className="animate-spin" color="#019df4" />
+          <p style={{ marginTop: '16px', fontWeight: '950', color: '#0f172a' }}>Cargando expediente...</p>
+       </div>
+    </div>
+  );
+
+  if (!session) return <div>No se encontró información para el técnico.</div>;
+
+  const prevWeek = session.history[1] || session.history[0];
 
   return (
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 120px 40px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
@@ -364,8 +388,7 @@ export default function SeguimientoBP() {
                 { value: 'data', label: 'ANÁLISIS OPERATIVO', icon: Activity },
                 { value: 'actions', label: 'HISTORIAL DE SEGUIMIENTO', icon: History }
               ]} 
-              active={activeTab} 
-              onChange={setActiveTab} 
+              active={activeTab} onChange={setActiveTab} 
             />
          </div>
       </header>
@@ -377,10 +400,10 @@ export default function SeguimientoBP() {
            <section>
               <SectionHeader title="KPIs ACTUALES" icon={Zap} />
               <div style={{ display: 'flex', gap: '20px' }}>
-                 <StatCard title="Resolución %" value={activeWeek.resolucion} previousValue={prevWeek.resolucion} kpiKey="resolucion" />
-                 <StatCard title="Reitero %" value={activeWeek.reitero} previousValue={prevWeek.reitero} kpiKey="reitero" />
-                 <StatCard title="Puntualidad %" value={activeWeek.puntualidad} previousValue={prevWeek.puntualidad} kpiKey="puntualidad" />
-                 <StatCard title="Productividad" value={activeWeek.productividad} previousValue={prevWeek.productividad} kpiKey="productividad" />
+                 <StatCard title="Resolución %" value={activeWeek?.resolucion || 0} previousValue={prevWeek?.resolucion || 0} kpiKey="resolucion" />
+                 <StatCard title="Reitero %" value={activeWeek?.reitero || 0} previousValue={prevWeek?.reitero || 0} kpiKey="reitero" />
+                 <StatCard title="Puntualidad %" value={activeWeek?.puntualidad || 0} previousValue={prevWeek?.puntualidad || 0} kpiKey="puntualidad" />
+                 <StatCard title="Productividad" value={activeWeek?.productividad || 0} previousValue={prevWeek?.productividad || 0} kpiKey="productividad" />
               </div>
            </section>
 
@@ -389,13 +412,11 @@ export default function SeguimientoBP() {
               <SectionHeader title="KPIs HISTÓRICOS" icon={TrendingUp}>
                  <ViewToggle 
                    options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} 
-                   active={kpiView} 
-                   onChange={setKpiView} 
+                   active={kpiView} onChange={setKpiView} 
                  />
                  <ViewToggle 
                    options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} 
-                   active={kpiScale} 
-                   onChange={setKpiScale} 
+                   active={kpiScale} onChange={setKpiScale} 
                  />
               </SectionHeader>
 
@@ -403,78 +424,29 @@ export default function SeguimientoBP() {
                 <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                       <thead>
-                         <tr style={{ backgroundColor: 'white' }}>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Semana</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Resolución</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Reiteros</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Puntualidad</th>
-                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Productividad</th>
+                         <tr>
+                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase' }}>Fecha</th>
+                            {['Resolución', 'Reiteros', 'Puntualidad', 'Prod.'].map(h => (
+                              <th key={h} style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase' }}>{h}</th>
+                            ))}
                          </tr>
                       </thead>
                       <tbody>
                          {session.history.map((w) => {
-                           const resStyle = getSemaforo(w.resolucion, 'resolucion');
-                           const reiStyle = getSemaforo(w.reitero, 'reitero');
-                           const punStyle = getSemaforo(w.puntualidad, 'puntualidad');
-                           const proStyle = getSemaforo(w.productividad, 'productividad');
+                           const resS = getSemaforo(w.resolucion, 'resolucion');
+                           const reiS = getSemaforo(w.reitero, 'reitero');
                            return (
-                             <tr key={w.id} style={{ backgroundColor: 'white' }}>
-                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRight: 'none', borderRadius: '16px 0 0 16px' }}>
-                                   <div style={{ fontWeight: '950', color: '#0f172a', fontSize: '14px' }}>{w.weekLabel}</div>
-                                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800' }}>{w.dateRange}</div>
+                             <tr key={w.id}>
+                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
+                                   <div style={{ fontWeight: '950', color: '#0f172a' }}>{w.dateRange}</div>
                                 </td>
-                                <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                                   <div style={{ 
-                                     backgroundColor: resStyle.bg, 
-                                     color: resStyle.color, 
-                                     padding: '10px 0', 
-                                     borderRadius: '12px', 
-                                     fontWeight: '950', 
-                                     fontSize: '14px',
-                                     width: '140px',
-                                     margin: '0 auto',
-                                     border: '1px solid rgba(0,0,0,0.03)'
-                                   }}>{w.resolucion.toFixed(2)}%</div>
-                                </td>
-                                <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                                   <div style={{ 
-                                     backgroundColor: reiStyle.bg, 
-                                     color: reiStyle.color, 
-                                     padding: '10px 0', 
-                                     borderRadius: '12px', 
-                                     fontWeight: '950', 
-                                     fontSize: '14px',
-                                     width: '140px',
-                                     margin: '0 auto',
-                                     border: '1px solid rgba(0,0,0,0.03)'
-                                   }}>{w.reitero.toFixed(2)}%</div>
-                                </td>
-                                <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                                   <div style={{ 
-                                     backgroundColor: punStyle.bg, 
-                                     color: punStyle.color, 
-                                     padding: '10px 0', 
-                                     borderRadius: '12px', 
-                                     fontWeight: '950', 
-                                     fontSize: '14px',
-                                     width: '140px',
-                                     margin: '0 auto',
-                                     border: '1px solid rgba(0,0,0,0.03)'
-                                   }}>{w.puntualidad.toFixed(2)}%</div>
-                                </td>
-                                <td style={{ padding: '16px 24px', textAlign: 'center', border: '1px solid #f1f5f9', borderLeft: 'none', borderRadius: '0 16px 16px 0' }}>
-                                   <div style={{ 
-                                     backgroundColor: proStyle.bg, 
-                                     color: proStyle.color, 
-                                     padding: '10px 0', 
-                                     borderRadius: '12px', 
-                                     fontWeight: '950', 
-                                     fontSize: '14px',
-                                     width: '140px',
-                                     margin: '0 auto',
-                                     border: '1px solid rgba(0,0,0,0.03)'
-                                   }}>{w.productividad.toFixed(2)}</div>
-                                </td>
+                                {[w.resolucion, w.reitero, w.puntualidad, w.productividad].map((v, i) => (
+                                  <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 3 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 3 ? '0 16px 16px 0' : '0' }}>
+                                     <div style={{ backgroundColor: getSemaforo(v, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).bg, color: getSemaforo(v, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>
+                                        {i === 3 ? v.toFixed(2) : `${v.toFixed(1)}%`}
+                                     </div>
+                                  </td>
+                                ))}
                              </tr>
                            );
                          })}
@@ -483,29 +455,7 @@ export default function SeguimientoBP() {
                 </div>
               ) : (
                 <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '32px', height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                   {/* Visual represention of line chart */}
-                   <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                     <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#059669' }} /> <span style={{ fontSize: '11px', fontWeight: '800' }}>Resolución</span></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#dc2626' }} /> <span style={{ fontSize: '11px', fontWeight: '800' }}>Reitero</span></div>
-                     </div>
-                     <svg width="100%" height="200" viewBox="0 0 800 200" style={{ overflow: 'visible' }}>
-                        {/* Grid */}
-                        {[0, 50, 100, 150, 200].map(y => <line key={y} x1="0" y1={y} x2="800" y2={y} stroke="#f1f5f9" strokeWidth="1" />)}
-                        {/* Resolución Line */}
-                        <path d={session.history.map((w, i) => `${i === 0 ? 'M' : 'L'} ${(i * 120)},${180 - (w.resolucion - 50) * 3}`).join(' ')} fill="none" stroke="#059669" strokeWidth="4" strokeLinecap="round" />
-                        {/* Reitero Line */}
-                        <path d={session.history.map((w, i) => `${i === 0 ? 'M' : 'L'} ${(i * 120)},${180 - (w.reitero) * 6}`).join(' ')} fill="none" stroke="#dc2626" strokeWidth="4" strokeLinecap="round" />
-                        {/* Points */}
-                        {session.history.map((w, i) => (
-                          <g key={i}>
-                            <circle cx={(i * 120)} cy={180 - (w.resolucion - 50) * 3} r="5" fill="#059669" />
-                            <circle cx={(i * 120)} cy={180 - (w.reitero) * 6} r="5" fill="#dc2626" />
-                            <text x={(i * 120)} y="200" textAnchor="middle" fontSize="10" fill="#94a3b8" fontWeight="800">{w.weekLabel.split(' ')[1]}</text>
-                          </g>
-                        ))}
-                     </svg>
-                   </div>
+                   <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Gráfico dinámico en desarrollo...</p>
                 </div>
               )}
            </section>
@@ -513,23 +463,11 @@ export default function SeguimientoBP() {
            {/* BLOQUE 3: ALARMAS OPERATIVAS */}
            <section>
               <SectionHeader title="ALARMAS OPERATIVAS" icon={AlertCircle}>
-                 <ViewToggle 
-                   options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} 
-                   active={alarmView} 
-                   onChange={setAlarmView} 
-                 />
-                 <ViewToggle 
-                   options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} 
-                   active={alarmScale} 
-                   onChange={setAlarmScale} 
-                 />
+                 <ViewToggle options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} active={alarmView} onChange={setAlarmView} />
+                 <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={alarmScale} onChange={setAlarmScale} />
                  <button 
-                   onClick={() => setModalWeek(activeWeek)}
-                   style={{ 
-                     backgroundColor: '#019df4', color: 'white', padding: '10px 20px', 
-                     borderRadius: '14px', fontWeight: '950', fontSize: '12px', display: 'flex', 
-                     alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none'
-                   }}
+                   onClick={() => activeWeek && setModalWeek(activeWeek)}
+                   style={{ backgroundColor: '#019df4', color: 'white', padding: '10px 20px', borderRadius: '14px', fontWeight: '950', fontSize: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                  >
                     <Plus size={16} /> Cargar alarmas
                  </button>
@@ -539,49 +477,23 @@ export default function SeguimientoBP() {
                 <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                       <thead>
-                         <tr style={{ backgroundColor: 'white' }}>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Semana</th>
-                            {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => (
-                              <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
-                            ))}
+                         <tr>
+                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>Fecha</th>
+                            {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
                          </tr>
                       </thead>
                       <tbody>
                          {session.history.filter(w => w.alarms).map((w) => {
                            const a = w.alarms!;
-                           const values = [a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea];
-                           const maxVal = Math.max(...values);
-                           
-                           const getCellBox = (val: number) => {
-                             if (val === 0) return { bg: 'transparent', color: '#cbd5e1', weight: '700' };
-                             if (val === maxVal && val > 0) return { bg: '#fee2e2', color: '#991b1b', weight: '950' };
-                             return { bg: '#f8fafc', color: '#475569', weight: '900' };
-                           };
-
+                           const maxVal = Math.max(a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea);
                            return (
-                             <tr key={w.id} style={{ backgroundColor: 'white' }}>
-                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRight: 'none', borderRadius: '16px 0 0 16px' }}>
-                                   <div style={{ fontWeight: '950', color: '#0f172a', fontSize: '14px' }}>{w.weekLabel}</div>
-                                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800' }}>{w.dateRange}</div>
-                                </td>
-                                {[a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => {
-                                  const style = getCellBox(v);
-                                  return (
-                                    <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}>
-                                       <div style={{ 
-                                         backgroundColor: style.bg, 
-                                         color: style.color, 
-                                         padding: '10px 0', 
-                                         borderRadius: '12px', 
-                                         fontWeight: style.weight as any, 
-                                         fontSize: '14px',
-                                         width: '55px',
-                                         margin: '0 auto',
-                                         border: style.bg !== 'transparent' ? '1px solid rgba(0,0,0,0.03)' : 'none'
-                                       }}>{v}</div>
-                                    </td>
-                                  );
-                                })}
+                             <tr key={w.id}>
+                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}><div style={{ fontWeight: '950', color: '#0f172a' }}>{w.dateRange}</div></td>
+                                {[a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => (
+                                  <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}>
+                                     <div style={{ backgroundColor: v === maxVal && v > 0 ? '#fee2e2' : '#f8fafc', color: v === maxVal && v > 0 ? '#991b1b' : '#475569', padding: '10px 0', borderRadius: '12px', fontWeight: '950', fontSize: '14px', width: '55px', margin: '0 auto' }}>{v}</div>
+                                  </td>
+                                ))}
                              </tr>
                            );
                          })}
@@ -590,35 +502,13 @@ export default function SeguimientoBP() {
                 </div>
               ) : (
                 <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', padding: '60px', height: '400px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '20px' }}>
-                  {(() => {
-                    const activeAlarms = activeWeek.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 };
-                    const data = [
-                      { label: 'PT', value: activeAlarms.pt },
-                      { label: 'FT', value: activeAlarms.ft },
-                      { label: 'TA', value: activeAlarms.ta },
-                      { label: 'MA', value: activeAlarms.ma },
-                      { label: 'TE', value: activeAlarms.te },
-                      { label: 'RT', value: activeAlarms.rt },
-                      { label: 'NE', value: activeAlarms.ne },
-                      { label: 'TEA', value: activeAlarms.tea },
-                    ];
-                    const max = Math.max(...data.map(d => d.value), 1);
-                    return data.map((d, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '950', color: d.value === Math.max(...data.map(x => x.value)) && d.value > 0 ? '#dc2626' : '#0f172a' }}>{d.value}</div>
-                        <div style={{ 
-                          width: '100%', 
-                          maxHeight: '280px',
-                          height: `${(d.value / max) * 240}px`, 
-                          backgroundColor: d.value === Math.max(...data.map(x => x.value)) && d.value > 0 ? '#dc2626' : '#94a3b8',
-                          borderRadius: '12px 12px 4px 4px',
-                          transition: 'height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                          minHeight: d.value > 0 ? '4px' : '0'
-                        }} />
-                        <div style={{ fontSize: '12px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase' }}>{d.label}</div>
-                      </div>
-                    ));
-                  })()}
+                   {activeWeek?.alarms ? Object.entries(activeWeek.alarms).map(([k, v], i) => (
+                     <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '950' }}>{v}</div>
+                        <div style={{ width: '100%', height: `${(v / 50) * 200}px`, backgroundColor: '#94a3b8', borderRadius: '12px 12px 4px 4px' }} />
+                        <div style={{ fontSize: '12px', fontWeight: '950', color: '#64748b' }}>{k.toUpperCase()}</div>
+                     </div>
+                   )) : <p>Cargue alarmas para visualizar</p>}
                 </div>
               )}
            </section>
@@ -626,96 +516,52 @@ export default function SeguimientoBP() {
            {/* BLOQUE 4: CHECK SEMANAL */}
            <section style={{ backgroundColor: '#f0f9ff', padding: '40px', borderRadius: '32px', border: '1.5px dashed #bae6fd' }}>
               <SectionHeader title="CHECK SEMANAL" icon={MessageSquare} />
-              
               <div style={{ marginBottom: '24px' }}>
-                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#0369a1', marginBottom: '12px' }}>Observaciones del líder ({activeWeek.dateRange})</label>
-                 <textarea 
-                   rows={4}
-                   value={observationText}
-                   onChange={(e) => setObservationText(e.target.value)}
-                   placeholder="Ingrese el feedback del seguimiento, compromisos del técnico o detalles del acompañamiento..."
-                   style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}
-                 />
+                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#0369a1', marginBottom: '12px' }}>Observaciones del líder</label>
+                 <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} placeholder="Ingrese feedback..." style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none', fontSize: '14px', fontWeight: '700' }} />
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px' }}>
-                  {!activeWeek.alarms && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e11d48', fontSize: '13px', fontWeight: '800' }}>
-                       <AlertTriangle size={18} /> Pendiente carga de alarmas para confirmar
-                    </div>
-                  )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px' }}>
+                  {!activeWeek?.alarms && <div style={{ color: '#e11d48', fontSize: '13px', fontWeight: '800' }}>Pendiente carga de alarmas</div>}
                   <button 
-                    onClick={handleConfirmCheck}
-                    disabled={activeWeek.locked || !activeWeek.alarms}
-                    style={{ 
-                      backgroundColor: activeWeek.locked ? '#94a3b8' : '#0ea5e9', 
-                      color: 'white', padding: '16px 32px', borderRadius: '16px', 
-                      fontWeight: '950', fontSize: '14px', cursor: (activeWeek.locked || !activeWeek.alarms) ? 'default' : 'pointer',
-                      boxShadow: '0 10px 20px -5px rgba(14, 165, 233, 0.3)',
-                      display: 'flex', alignItems: 'center', gap: '8px'
-                    }}
+                    onClick={handleConfirmCheck} disabled={activeWeek?.locked || !activeWeek?.alarms}
+                    style={{ backgroundColor: activeWeek?.locked ? '#94a3b8' : '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', cursor: 'pointer' }}
                   >
-                     <CheckCircle2 size={18} />
-                     {activeWeek.locked ? 'Check Semanal Confirmado' : 'Confirmar check semanal'}
+                     {activeWeek?.locked ? 'Check Confirmado' : 'Confirmar seguimiento'}
                   </button>
               </div>
            </section>
-
         </div>
       ) : (
-        /* HISTORIAL DE ACCIONES (Timeline) */
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        /* HISTORIAL TIMELINE */
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
            <SectionHeader title="HISTORIAL DE ACCIONES" icon={History} />
-           {session.actions.map((action, i) => (
-             <div key={action.id} style={{ display: 'flex', gap: '32px', position: 'relative' }}>
-                {i < session.actions.length - 1 && (
-                  <div style={{ position: 'absolute', left: '20px', top: '40px', bottom: '-32px', width: '2px', backgroundColor: '#e2e8f0' }} />
-                )}
-                <div style={{ 
-                  width: '42px', height: '42px', borderRadius: '14px', backgroundColor: 'white', 
-                  border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  zIndex: 2, color: '#019df4'
-                }}>
-                   <Clock size={18} />
-                </div>
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1, boxShadow: '0 4px 6px -4px rgba(0,0,0,0.05)' }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semana {action.weekLabel}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '12px', fontWeight: '800' }}>
-                         <Calendar size={14} /> {action.date}
-                      </div>
+           {session.actions.map((a) => (
+             <div key={a.id} style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: 'white', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={18} /></div>
+                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8' }}>SEMANA {a.weekLabel}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '800' }}>{a.date}</span>
                    </div>
-                   <p style={{ fontSize: '15px', color: '#334155', fontWeight: '700', lineHeight: '1.6', margin: 0 }}>
-                      {action.observation}
-                   </p>
-                   <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#019df4', fontSize: '12px', fontWeight: '900', backgroundColor: '#f0f9ff', padding: '6px 12px', borderRadius: '10px' }}>
-                          <CheckCircle2 size={14} /> Registro Trazable
-                       </div>
-                   </div>
+                   <p style={{ fontSize: '15px', color: '#334155', fontWeight: '700' }}>{a.observation}</p>
                 </div>
              </div>
            ))}
-           {session.actions.length === 0 && (
-             <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
-                <History size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-                <p style={{ fontWeight: '800' }}>Aún no hay acciones registradas</p>
-             </div>
-           )}
         </div>
       )}
 
-      {/* Modals */}
       {modalWeek && <AlarmsModal week={modalWeek} onClose={() => setModalWeek(null)} onSave={handleSaveAlarms} />}
-
-      <style jsx global>{`
-        * { box-sizing: border-box; transition: color 0.2s, background-color 0.2s; }
-        body { background-color: #f8fafc; }
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-      `}</style>
     </div>
   );
 }
+
+export function BPTrackingPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <BPTrackingContent />
+    </Suspense>
+  );
+}
+
+// Wrapper default export
+export default BPTrackingPage;

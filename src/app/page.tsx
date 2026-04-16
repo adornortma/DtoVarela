@@ -54,6 +54,7 @@ interface MetricData {
 interface ItemRow {
   id?: string;
   name: string;
+  dni?: string;
   metrics: Record<string, MetricData>;
   isCell: boolean;
   technicians?: ItemRow[];
@@ -598,6 +599,7 @@ export default function Home() {
           *,
           tecnicos (
             id,
+            dni,
             nombre,
             apellido
           )
@@ -678,6 +680,7 @@ export default function Home() {
         tech = {
           id: techId,
           name: techName,
+          dni: m.tecnicos?.dni,
           isCell: false,
           metrics: {
             resolucion: createEmptyMetricData(month, year),
