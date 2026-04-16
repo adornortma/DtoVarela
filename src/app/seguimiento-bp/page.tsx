@@ -157,6 +157,14 @@ const SectionHeader = ({ title, icon: Icon, children }: any) => (
   </div>
 );
 
+const SubsectionHeader = ({ title, icon: Icon }: any) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+    <Icon size={16} color="#64748b" />
+    <span style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+  </div>
+);
+
+
 const ViewToggle = ({ options, active, onChange }: any) => (
   <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
     {options.map((opt: any) => (
