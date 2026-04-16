@@ -41,6 +41,7 @@ import {
 // --- Types ---
 type WeeklyLoadStatus = 'full' | 'partial' | 'empty';
 type AnalyticMode = 'current' | 'compare-week' | 'last-4-weeks' | 'monthly';
+type TimeScale = 'weekly' | 'monthly';
 
 interface BPAlarmData {
   pt: number;
