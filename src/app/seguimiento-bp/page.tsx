@@ -75,6 +75,7 @@ interface WeeklyKPI {
 interface BPAction {
   id: string;
   weekLabel: string; // The range e.g. "07/04 - 13/04"
+  dateRange: string; // Raw start date for snapshot lookup
   observation: string;
   date: string; // Loading date e.g. "16/04/2026"
 }
