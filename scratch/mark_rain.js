@@ -9,7 +9,8 @@ async function markRainy() {
     .from('dias_operativos')
     .upsert([
       { fecha: '2026-04-06', lluvia: true },
-      { fecha: '2026-04-07', lluvia: true }
+      { fecha: '2026-04-07', lluvia: true },
+      { fecha: '2026-04-15', lluvia: true }
     ]);
 
   if (error) {

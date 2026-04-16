@@ -17,7 +17,9 @@ import {
   MapPin,
   User,
   ArrowUpRight,
-  ExternalLink
+  ExternalLink,
+  CloudRain,
+  CloudOff
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -692,6 +694,26 @@ export default function DetalleDiario() {
     setExpandedCells(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
+  const toggleRain = async () => {
+    if (!selectedDate) return;
+    try {
+      const newStatus = !isRainy;
+      const { error } = await supabase
+        .from('dias_operativos')
+        .upsert({ 
+          fecha: selectedDate, 
+          lluvia: newStatus,
+          created_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      setIsRainy(newStatus);
+      fetchRainyDays();
+    } catch (e) {
+      console.error('Error toggling rain:', e);
+    }
+  };
+
   const dayInfo = formatDateLong(selectedDate);
 
   const handlePrevDay = () => {
@@ -773,6 +795,29 @@ export default function DetalleDiario() {
               style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#1e293b', border: 'none', cursor: 'pointer' }}
             >
               <ChevronRight size={20} strokeWidth={3} />
+            </button>
+
+            <button
+              onClick={toggleRain}
+              title={isRainy ? "Quitar marca de lluvia" : "Marcar como día de lluvia"}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '16px',
+                border: 'none',
+                backgroundColor: isRainy ? '#eff6ff' : '#f8fafc',
+                color: isRainy ? '#2563eb' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontWeight: '800',
+                fontSize: '13px',
+                boxShadow: isRainy ? '0 0 0 1px #dbeafe' : 'none'
+              }}
+            >
+              {isRainy ? <CloudRain size={18} /> : <CloudOff size={18} />}
+              <span>{isRainy ? 'Día de Lluvia' : 'Sin Lluvia'}</span>
             </button>
           </div>
         </div>
