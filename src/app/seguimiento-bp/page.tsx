@@ -32,12 +32,15 @@ import {
   List,
   CalendarDays,
   FileEdit,
-  RotateCcw
+  RotateCcw,
+  Minus,
+  Search,
+  BarChart
 } from 'lucide-react';
 
 // --- Types ---
 type WeeklyLoadStatus = 'full' | 'partial' | 'empty';
-type TimeScale = 'monthly' | 'weekly';
+type AnalyticMode = 'current' | 'compare-week' | 'last-4-weeks' | 'monthly';
 
 interface BPAlarmData {
   pt: number;
@@ -74,10 +77,10 @@ interface WeeklyKPI {
 
 interface BPAction {
   id: string;
-  weekLabel: string; // The range e.g. "07/04 - 13/04"
-  dateRange: string; // Raw start date for snapshot lookup
+  weekLabel: string;
+  dateRange: string;
   observation: string;
-  date: string; // Loading date e.g. "16/04/2026"
+  date: string;
 }
 
 interface BPSession {
@@ -154,76 +157,6 @@ const SectionHeader = ({ title, icon: Icon, children }: any) => (
   </div>
 );
 
-const SubsectionHeader = ({ title, icon: Icon }: any) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-    <Icon size={16} color="#64748b" />
-    <span style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
-  </div>
-);
-
-const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () => void }) => (
-  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-     <div style={{ backgroundColor: 'white', borderRadius: '40px', width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', padding: '40px', position: 'relative' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
-           <div>
-              <div style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '950', display: 'inline-block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SNAPSHOT SEMANAL</div>
-              <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>Semana {week.dateRange}</h2>
-           </div>
-           <button onClick={onClose} style={{ padding: '16px', borderRadius: '20px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}><X size={24}/></button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '48px' }}>
-           <section>
-              <SubsectionHeader title="KPIs EN ESE MOMENTO" icon={Activity} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-                 {[
-                   { label: 'Resolución', val: week.resolucion, unit: '%', key: 'resolucion' },
-                   { label: 'Reitero', val: week.reitero, unit: '%', key: 'reitero' },
-                   { label: 'Puntualidad', val: week.puntualidad, unit: '%', key: 'puntualidad' },
-                   { label: 'Productividad', val: week.productividad, unit: '', key: 'productividad' }
-                 ].map(s => {
-                    const semaforo = getSemaforo(s.val, s.key);
-                    return (
-                      <div key={s.label} style={{ backgroundColor: semaforo.bg, padding: '24px', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.02)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <p style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</p>
-                            <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '2px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '950' }}>{semaforo.label}</div>
-                         </div>
-                         <p style={{ margin: 0, fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1px' }}>
-                            {s.val !== null && s.val !== undefined ? (s.key === 'productividad' ? s.val.toFixed(2) : `${s.val.toFixed(1)}${s.unit}`) : '-'}
-                         </p>
-                      </div>
-                    );
-                 })}
-              </div>
-           </section>
-
-           <section>
-              <SubsectionHeader title="ALARMAS DE ESA SEMANA" icon={AlertCircle} />
-              {week.alarms ? (
-                <div style={{ backgroundColor: '#fdfdfd', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.02)' }}>
-                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                         <tr>{['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '950', padding: '16px 8px' }}>{h}</th>)}</tr>
-                      </thead>
-                      <tbody>
-                         <tr style={{ borderTop: '1px solid #f1f5f9' }}>
-                            {[week.alarms.pt, week.alarms.ft, week.alarms.ta, week.alarms.ma, week.alarms.te, week.alarms.rt, week.alarms.ne, week.alarms.tea].map((v, i) => (
-                              <td key={i} style={{ textAlign: 'center', padding: '24px 8px' }}>
-                                 <div style={{ fontSize: '18px', fontWeight: '950', color: v > 0 ? '#0f172a' : '#cbd5e1' }}>{v}</div>
-                              </td>
-                            ))}
-                         </tr>
-                      </tbody>
-                   </table>
-                </div>
-              ) : <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px', textAlign: 'center', padding: '40px' }}>Sin registro de alarmas configurado.</p>}
-           </section>
-        </div>
-     </div>
-  </div>
-);
-
 const ViewToggle = ({ options, active, onChange }: any) => (
   <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
     {options.map((opt: any) => (
@@ -234,232 +167,354 @@ const ViewToggle = ({ options, active, onChange }: any) => (
           padding: '8px 16px', borderRadius: '9px', border: 'none',
           backgroundColor: active === opt.value ? 'white' : 'transparent',
           color: active === opt.value ? '#0f172a' : '#64748b',
-          fontSize: '12px', fontWeight: '900', boxShadow: active === opt.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+          fontSize: '11px', fontWeight: '900', boxShadow: active === opt.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
         }}
       >
-        {opt.icon && <opt.icon size={14} />}
+        {opt.icon && <opt.icon size={13} />}
         {opt.label}
       </button>
     ))}
   </div>
 );
 
-const AlarmsModal = ({ week, onClose, onSave }: any) => {
-  const [formData, setFormData] = useState<BPAlarmData>(week.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
-  const inputs = [
-    { key: 'pt', label: 'PT' }, { key: 'ft', label: 'FT' }, { key: 'ta', label: 'TA' }, { key: 'ma', label: 'MA' },
-    { key: 'te', label: 'TE' }, { key: 'rt', label: 'RT' }, { key: 'ne', label: 'NE' }, { key: 'tea', label: 'TEA' },
-  ];
+// --- Sparkline Component ---
+const Sparkline = ({ data, color = '#019df4' }: { data: number[], color?: string }) => {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const width = 100;
+  const height = 30;
+  const points = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * width,
+    y: height - (v / max) * height + 2
+  }));
 
-  const [selectedDate, setSelectedDate] = useState(week.dateRange || new Date().toISOString().split('T')[0]);
+  const pathD = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '580px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-        <div style={{ padding: '32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>Carga de Alarmas</h2>
-            <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700' }}>Seleccione la fecha de inicio</p>
-          </div>
-          <button onClick={onClose} style={{ padding: '10px', borderRadius: '14px', backgroundColor: '#f1f5f9', color: '#64748b' }}><X size={20}/></button>
-        </div>
-        
-        <div style={{ padding: '32px 32px 0 32px' }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#0f172a', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semana (Fecha de inicio)</label>
-          <input 
-            type="date" 
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '2.5px solid #019df4', fontSize: '15px', fontWeight: '900', outline: 'none', backgroundColor: '#f0f9ff', color: '#019df4' }}
-          />
-        </div>
-
-        <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-           {inputs.map(inp => (
-             <div key={inp.key}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>{inp.label}</label>
-                <input 
-                  type="number" value={formData[inp.key as keyof BPAlarmData]}
-                  onChange={(e) => setFormData({...formData, [inp.key]: parseInt(e.target.value) || 0})}
-                  style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '2.5px solid #f1f5f9', fontSize: '15px', fontWeight: '900', outline: 'none', color: '#1e293b' }}
-                />
-             </div>
-           ))}
-        </div>
-
-        <div style={{ padding: '32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '16px', backgroundColor: '#f8fafc' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', fontWeight: '950', color: '#64748b', backgroundColor: 'white', border: '1px solid #e2e8f0' }}>CERRAR</button>
-          <button onClick={() => onSave(formData, selectedDate)} style={{ flex: 2, padding: '16px', borderRadius: '16px', fontWeight: '950', color: 'white', backgroundColor: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.3)' }}>
-            <Save size={18} /> GUARDAR
-          </button>
-        </div>
-      </div>
-    </div>
+    <svg width={width} height={height + 4} style={{ overflow: 'visible' }}>
+      <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill={color} />
+    </svg>
   );
 };
 
-const NewTrackingForm = ({ week, onClose, onSave }: { week: WeeklyKPI, onClose: () => void, onSave: (alarms: BPAlarmData, observation: string) => void }) => {
-  const [formData, setFormData] = useState<BPAlarmData>(week.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
-  const [observation, setObservation] = useState(week.observation || '');
-  
-  const inputs = [
-    { key: 'pt', label: 'PT' }, { key: 'ft', label: 'FT' }, { key: 'ta', label: 'TA' }, { key: 'ma', label: 'MA' },
-    { key: 'te', label: 'TE' }, { key: 'rt', label: 'RT' }, { key: 'ne', label: 'NE' }, { key: 'tea', label: 'TEA' },
-  ];
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-           <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', margin: 0 }}>Completar Seguimiento</h2>
-           <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '700', marginTop: '4px' }}>Semana: {week.weekLabel}</p>
-        </div>
-        <button onClick={onClose} style={{ padding: '10px', borderRadius: '14px', backgroundColor: '#f1f5f9', border: 'none' }}><X size={20}/></button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
-         {inputs.map(inp => (
-           <div key={inp.key}>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: '900', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>{inp.label}</label>
-              <input 
-                type="number" value={formData[inp.key as keyof BPAlarmData]}
-                onChange={(e) => setFormData({...formData, [inp.key]: parseInt(e.target.value) || 0})}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #f1f5f9', fontWeight: '800', outline: 'none' }}
-              />
-           </div>
-         ))}
-      </div>
-
-      <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '10px', fontWeight: '900', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>OBSERVACIÓN / FEEDBACK</label>
-          <textarea 
-            rows={4} value={observation} onChange={e => setObservation(e.target.value)}
-            placeholder="Ingrese el resumen de la semana..."
-            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1.5px solid #f1f5f9', fontWeight: '700', outline: 'none', resize: 'none' }}
-          />
-      </div>
-
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950', cursor: 'pointer' }}>CANCELAR</button>
-        <button onClick={() => onSave(formData, observation)} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#0ea5e9', color: 'white', fontWeight: '950', cursor: 'pointer' }}>GUARDAR SEGUIMIENTO</button>
-      </div>
-    </div>
-  );
-};
-
-const AlarmsComparisonChart = ({ current, previous, compare }: { current: BPAlarmData | null, previous: BPAlarmData | null, compare: boolean }) => {
-    if (!current) return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontStyle: 'italic' }}>No hay alarmas cargadas para esta semana.</div>;
+// --- Alarms Dashboard ---
+const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mode: AnalyticMode }) => {
+    const activeWeek = history[0];
+    const prevWeek = history[1];
     
-    const keys = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
+    const keys = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'] as const;
     const labels: Record<string, string> = { pt:'PT', ft:'FT', ta:'TA', ma:'MA', te:'TE', rt:'RT', ne:'NE', tea:'TEA' };
-    
-    const diffs = keys.map(k => {
-        const curV = current[k as keyof BPAlarmData] || 0;
-        const prevV = previous ? (previous[k as keyof BPAlarmData] || 0) : 0;
-        return { key: k, label: labels[k], diff: curV - prevV, curV, prevV };
-    });
 
-    const relevantChanges = diffs
-        .filter(d => d.diff !== 0)
-        .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
-        .slice(0, 3);
+    // --- Data processing ---
+    const getComparisonData = (cur: BPAlarmData | null, prev: BPAlarmData | null) => {
+        return keys.map(k => {
+            const c = cur ? cur[k] : 0;
+            const p = prev ? prev[k] : 0;
+            return { key: k, label: labels[k], cur: c, prev: p, diff: c - p };
+        });
+    };
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', width: '100%', padding: '32px' }}>
-            {compare && (
-                <div style={{ padding: '24px 32px', backgroundColor: '#f8fafc', borderRadius: '24px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Detección de cambios relevantes</div>
-                        <div style={{ display: 'flex', gap: '32px' }}>
-                            {relevantChanges.length > 0 ? relevantChanges.map(change => (
-                                <div key={change.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>{change.label}</span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: change.diff > 0 ? '#ef4444' : '#10b981', fontWeight: '950', fontSize: '15px' }}>
-                                        {change.diff > 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
-                                        {change.diff > 0 ? `+${change.diff}` : change.diff}
-                                    </div>
-                                </div>
-                            )) : <span style={{ fontSize: '14px', fontStyle: 'italic', color: '#94a3b8' }}>Estable (sin variaciones)</span>}
+    const getMonthlyData = () => {
+        const months = [...new Set(history.map(w => w.monthLabel))];
+        const curMonth = months[0];
+        const prevMonth = months[1];
+
+        const aggregate = (mLabel: string) => {
+            const weeks = history.filter(w => w.monthLabel === mLabel);
+            const totals = { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 };
+            weeks.forEach(w => {
+                if (w.alarms) {
+                    keys.forEach(k => totals[k] += (w.alarms![k] || 0));
+                }
+            });
+            return totals;
+        };
+
+        const curTotals = aggregate(curMonth);
+        const prevTotals = prevMonth ? aggregate(prevMonth) : null;
+        
+        return {
+            curLabel: curMonth,
+            prevLabel: prevMonth || 'N/A',
+            data: getComparisonData(curTotals, prevTotals)
+        };
+    };
+
+    const getLast4WeeksAlarms = (k: keyof BPAlarmData) => {
+        return history.slice(0, 4).reverse().map(w => w.alarms ? w.alarms[k] : 0);
+    };
+
+    // --- Summary Logic ---
+    const renderSummary = () => {
+        let relevant: any[] = [];
+        let title = "Detección de cambios relevantes";
+
+        if (mode === 'current' || mode === 'compare-week') {
+            relevant = getComparisonData(activeWeek?.alarms || null, prevWeek?.alarms || null)
+                .filter(d => d.diff !== 0)
+                .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 3);
+        } else if (mode === 'monthly') {
+            const mData = getMonthlyData();
+            relevant = mData.data.filter(d => d.diff !== 0)
+                .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 3);
+            title = `Comparativa Mensual: ${mData.curLabel} vs ${mData.prevLabel}`;
+        } else if (mode === 'last-4-weeks') {
+            relevant = keys.map(k => {
+                const vals = getLast4WeeksAlarms(k);
+                const diff = vals[vals.length - 1] - vals[0];
+                return { label: labels[k], diff, key: k };
+            }).filter(d => d.diff !== 0).slice(0, 3);
+            title = "Tendencias en últimas 4 semanas";
+        }
+
+        return (
+            <div style={{ padding: '24px 32px', backgroundColor: '#f8fafc', borderRadius: '24px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                <div>
+                   <div style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</div>
+                   <div style={{ display: 'flex', gap: '32px' }}>
+                      {relevant.length > 0 ? relevant.map(r => (
+                        <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                           <span style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>{r.label}</span>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: r.diff > 0 ? '#ef4444' : r.diff < 0 ? '#10b981' : '#94a3b8', fontWeight: '950', fontSize: '15px' }}>
+                              {r.diff > 0 ? <TrendingUp size={16}/> : r.diff < 0 ? <TrendingDown size={16}/> : <Minus size={16} />}
+                              {Math.abs(r.diff)}
+                           </div>
                         </div>
+                      )) : <span style={{ fontSize: '14px', fontStyle: 'italic', color: '#94a3b8' }}>Sin variaciones detectadas</span>}
+                   </div>
+                </div>
+                <div style={{ display: 'flex', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#019df4' }} />
+                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Actual</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    {['compare-week', 'monthly'].includes(mode) && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#019df4' }} />
-                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Actual</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#e2e8f0' }} />
+                            <div style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#e2e8f0' }} />
                             <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Anterior</span>
                         </div>
-                    </div>
+                    )}
                 </div>
-            )}
+            </div>
+        );
+    };
 
-            <div style={{ height: '320px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '24px', paddingBottom: '40px', borderBottom: '1px solid #f1f5f9' }}>
+    // --- Specific Chart Renderers ---
+    const renderBars = (data: any[]) => {
+        const maxVal = Math.max(...data.map(d => Math.max(d.cur, d.prev, 5)));
+        return (
+            <div style={{ height: '320px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '24px' }}>
+                {data.map(d => (
+                    <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', height: '100%', position: 'relative' }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '4px', width: '100%' }}>
+                            {(mode === 'compare-week' || mode === 'monthly') && (
+                                <div style={{ width: '50%', height: `${(d.prev / maxVal) * 100}%`, backgroundColor: '#e2e8f0', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s' }} title={`Anterior: ${d.prev}`} />
+                            )}
+                            <div style={{ width: (mode === 'compare-week' || mode === 'monthly') ? '50%' : '100%', height: `${(d.cur / maxVal) * 100}%`, backgroundColor: '#019df4', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.1)' }} title={`Actual: ${d.cur}`} />
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '16px', fontWeight: '950', color: '#0f172a' }}>{d.cur}</div>
+                            <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{d.label}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const renderSparklines = () => {
+        return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '40px' }}>
                 {keys.map(k => {
-                    const curV = current[k as keyof BPAlarmData] || 0;
-                    const prevV = previous ? (previous[k as keyof BPAlarmData] || 0) : 0;
-                    const maxV = Math.max(...keys.map(key => Math.max(current[key as keyof BPAlarmData] || 0, previous ? (previous[key as keyof BPAlarmData] || 0) : 0, 5)));
-
+                    const vals = getLast4WeeksAlarms(k);
+                    const last = vals[vals.length - 1];
+                    const first = vals[0];
+                    const diff = last - first;
                     return (
-                        <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', height: '100%' }}>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '4px', width: '100%', position: 'relative' }}>
-                                {compare && previous && (
-                                    <div 
-                                        style={{ 
-                                            width: '50%', 
-                                            height: `${(prevV / maxV) * 100}%`, 
-                                            backgroundColor: '#e2e8f0', 
-                                            borderRadius: '6px 6px 2px 2px',
-                                            transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-                                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
-                                        }} 
-                                    />
-                                )}
-                                <div 
-                                    style={{ 
-                                        width: compare && previous ? '50%' : '100%', 
-                                        height: `${(curV / maxV) * 100}%`, 
-                                        backgroundColor: '#019df4', 
-                                        borderRadius: '6px 6px 2px 2px',
-                                        transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        boxShadow: '0 4px 6px -1px rgba(1, 157, 244, 0.1)'
-                                    }} 
-                                    title={`${labels[k]}: ${curV}`}
-                                />
+                        <div key={k} style={{ padding: '24px', backgroundColor: '#fcfcfc', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: '950', color: '#64748b' }}>{labels[k]}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8' }}>
+                                    {diff > 0 ? <TrendingUp size={14}/> : diff < 0 ? <TrendingDown size={14}/> : <Minus size={14}/>}
+                                    <span style={{ fontSize: '12px', fontWeight: '950' }}>{Math.abs(diff)}</span>
+                                </div>
                             </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '16px', fontWeight: '950', color: '#0f172a' }}>{curV}</div>
-                                <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{labels[k]}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a' }}>{last}</div>
+                                <Sparkline data={vals} />
                             </div>
                         </div>
                     );
                 })}
             </div>
-            
-            {compare && !previous && (
-                <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#fff7ed', borderRadius: '16px', border: '1px solid #ffedd5', color: '#c2410c', fontWeight: '900', fontSize: '13px' }}>
-                    <AlertTriangle size={18} style={{ marginBottom: '-4px', marginRight: '8px', display: 'inline' }}/>
-                    Sin historial previo disponible para realizar la comparación.
-                </div>
-            )}
+        );
+    };
+
+    const renderDateContext = () => {
+        if (mode === 'current') return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Semana actual: <span style={{ color: '#019df4' }}>{activeWeek?.weekLabel}</span></div>;
+        if (mode === 'compare-week') return (
+            <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b', display: 'flex', gap: '16px' }}>
+                <div>Semana actual: <span style={{ color: '#019df4' }}>{activeWeek?.weekLabel}</span></div>
+                <div style={{ color: '#cbd5e1' }}>vs</div>
+                <div>Semana anterior: <span style={{ color: '#94a3b8' }}>{prevWeek?.weekLabel}</span></div>
+            </div>
+        );
+        if (mode === 'last-4-weeks') {
+            const range = history.slice(0, 4).reverse().map(w => w.weekLabel.split(' - ')[0]).join(' · ');
+            return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Últimas 4 semanas: <span style={{ color: '#019df4' }}>{range}</span></div>;
+        }
+        if (mode === 'monthly') {
+            const m = getMonthlyData();
+            return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Mensual: <span style={{ color: '#019df4' }}>{m.curLabel}</span> vs <span style={{ color: '#94a3b8' }}>{m.prevLabel}</span></div>;
+        }
+        return null;
+    };
+
+    return (
+        <div style={{ padding: '32px' }}>
+            {renderDateContext()}
+            {renderSummary()}
+            <div style={{ marginTop: '20px' }}>
+                {mode === 'current' && renderBars(getComparisonData(activeWeek?.alarms || null, null))}
+                {mode === 'compare-week' && renderBars(getComparisonData(activeWeek?.alarms || null, prevWeek?.alarms || null))}
+                {mode === 'monthly' && renderBars(getMonthlyData().data)}
+                {mode === 'last-4-weeks' && renderSparklines()}
+            </div>
         </div>
     );
 };
 
-// --- BP Tracking Logic ---
+// --- Modal and BottomSheet Components ---
+
+const StatItem = ({ label, value, kpiKey }: { label: string, value: number, kpiKey: string }) => {
+    const semaforo = getSemaforo(value, kpiKey);
+    return (
+      <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+        <p style={{ fontSize: '10px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</p>
+        <div style={{ fontSize: '20px', fontWeight: '950', color: semaforo.color }}>{kpiKey === 'productividad' ? value.toFixed(2) : `${value.toFixed(1)}%`}</div>
+      </div>
+    );
+};
+
+const AlarmRow = ({ label, value }: { label: string, value: number }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+      <span style={{ fontSize: '13px', fontWeight: '800', color: '#475569' }}>{label}</span>
+      <span style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b' }}>{value}</span>
+    </div>
+);
+
+const AlarmsModal = ({ week, onClose, onSave }: any) => {
+    const [data, setData] = useState<BPAlarmData>(week.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
+    return (
+      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '500px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '24px', fontWeight: '950' }}>Carga de Alarmas</h3>
+            <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} /></button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {Object.keys(data).map(k => (
+              <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '950', color: '#64748b' }}>{k.toUpperCase()}</label>
+                <input type="number" value={(data as any)[k]} onChange={(e) => setData({ ...data, [k]: parseInt(e.target.value) || 0 })} style={{ padding: '12px', borderRadius: '12px', border: '1.5px solid #f1f5f9', outline: 'none' }} />
+              </div>
+            ))}
+          </div>
+          <button onClick={() => onSave(data, week.dateRange)} style={{ width: '100%', marginTop: '32px', padding: '16px', borderRadius: '16px', backgroundColor: '#019df4', color: 'white', fontWeight: '950', border: 'none', cursor: 'pointer' }}>Guardar Cambios</button>
+        </div>
+      </div>
+    );
+};
+
+const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () => void }) => {
+    return (
+      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.2)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '600px', padding: '40px', position: 'relative' }}>
+          <button onClick={onClose} style={{ position: 'absolute', top: '32px', right: '32px', border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} /></button>
+          <div style={{ marginBottom: '32px' }}>
+             <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>Snapshot Semanal</h3>
+             <p style={{ color: '#64748b', fontWeight: '800' }}>Semana: {week.weekLabel}</p>
+          </div>
+          
+          <div style={{ gridTemplateColumns: 'repeat(4, 1fr)', display: 'grid', gap: '16px', marginBottom: '40px' }}>
+             <StatItem label="Resolución" value={week.resolucion} kpiKey="resolucion" />
+             <StatItem label="Reitero" value={week.reitero} kpiKey="reitero" />
+             <StatItem label="Puntualidad" value={week.puntualidad} kpiKey="puntualidad" />
+             <StatItem label="Productividad" value={week.productividad} kpiKey="productividad" />
+          </div>
+  
+          <div>
+            <SubsectionHeader title="Alarmas Registradas" icon={AlertTriangle} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+               <div>
+                  <AlarmRow label="PT (Productividad Total)" value={week.alarms?.pt || 0} />
+                  <AlarmRow label="FT (Faltas Totales)" value={week.alarms?.ft || 0} />
+                  <AlarmRow label="TA (Tareas Atrasadas)" value={week.alarms?.ta || 0} />
+                  <AlarmRow label="MA (Malas Atenciones)" value={week.alarms?.ma || 0} />
+               </div>
+               <div>
+                  <AlarmRow label="TE (Tiempos Excedidos)" value={week.alarms?.te || 0} />
+                  <AlarmRow label="RT (Reiteros Críticos)" value={week.alarms?.rt || 0} />
+                  <AlarmRow label="NE (No Encontrados)" value={week.alarms?.ne || 0} />
+                  <AlarmRow label="TEA (Tareas por Agenda)" value={week.alarms?.tea || 0} />
+               </div>
+            </div>
+          </div>
+  
+          {week.observation && (
+            <div style={{ marginTop: '32px', padding: '24px', backgroundColor: '#f0f9ff', borderRadius: '24px', border: '1px solid #bae6fd' }}>
+              <p style={{ fontSize: '11px', fontWeight: '950', color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>Observación del Líder</p>
+              <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', color: '#1e293b' }}>{week.observation}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+};
+
+const NewTrackingForm = ({ week, onClose, onSave }: any) => {
+    const [alarms, setAlarms] = useState<BPAlarmData>({ pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
+    const [obs, setObs] = useState('');
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ fontSize: '20px', fontWeight: '950' }}>Completar Seguimiento</h3>
+            <p style={{ fontSize: '14px', color: '#64748b' }}>Semana: {week.weekLabel}</p>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: 'none' }}><X /></button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          {Object.keys(alarms).map(k => (
+            <div key={k}>
+              <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>{k.toUpperCase()}</label>
+              <input type="number" value={(alarms as any)[k]} onChange={e => setAlarms({...alarms, [k]: parseInt(e.target.value) || 0})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+            </div>
+          ))}
+        </div>
+        <div>
+          <label style={{ fontWeight: '950', fontSize: '13px', display: 'block', marginBottom: '12px' }}>Observación</label>
+          <textarea rows={4} value={obs} onChange={e => setObs(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} />
+        </div>
+        <button onClick={() => onSave(alarms, obs)} style={{ padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none' }}>Guardar Registro</button>
+      </div>
+    );
+};
+
+// --- Main Tracking Component ---
 
 function BPTrackingContent() {
   const searchParams = useSearchParams();
-  const dni = searchParams.get('dni') || '37653458'; // Fallback for demo
+  const dni = searchParams.get('dni') || '37653458'; 
   
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<BPSession | null>(null);
   const [kpiScale, setKpiScale] = useState<TimeScale>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
-  const [alarmScale, setAlarmScale] = useState<TimeScale>('weekly');
   const [alarmView, setAlarmView] = useState<'table' | 'chart'>('table');
+  const [alarmMode, setAlarmMode] = useState<AnalyticMode>('current');
   const [modalWeek, setModalWeek] = useState<WeeklyKPI | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<WeeklyKPI | null>(null);
   const [showAntecedenteModal, setShowAntecedenteModal] = useState(false);
@@ -467,7 +522,6 @@ function BPTrackingContent() {
   const [isAntExpanded, setIsAntExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
   const [observationText, setObservationText] = useState('');
-  const [compareAlarms, setCompareAlarms] = useState(false);
 
   const [showNewModal, setShowNewModal] = useState(false);
   const [newTrackingDate, setNewTrackingDate] = useState(new Date().toISOString().split('T')[0]);
@@ -530,7 +584,7 @@ function BPTrackingContent() {
 
       const now = new Date();
       const weeks: WeeklyKPI[] = [];
-      for(let i=0; i<5; i++) {
+      for(let i=0; i<6; i++) {
         const d = new Date(now);
         d.setDate(now.getDate() - (i*7));
         weeks.push(await fetchWeekData(tech.id, d));
@@ -592,7 +646,7 @@ function BPTrackingContent() {
 
   useEffect(() => { fetchData(); }, [dni]);
 
-  const activeWeek = session?.history[0]; // Logic for latest pending week
+  const activeWeek = session?.history[0]; 
   
   useEffect(() => {
     if (activeWeek) setObservationText(activeWeek.observation || '');
@@ -600,16 +654,11 @@ function BPTrackingContent() {
 
   const handleSaveAlarms = async (data: BPAlarmData, date?: string) => {
     if (!session || !activeWeek) return;
-    
     const targetDate = date || activeWeek.dateRange;
-
     const { start, end } = getWeekRange(new Date(targetDate));
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
-
-    const { error } = await supabase
-      .from('seguimiento_bp')
-      .upsert({
+    const { error } = await supabase.from('seguimiento_bp').upsert({
         tecnico_id: session.id,
         fecha_inicio: startStr, 
         fecha_fin: endStr,
@@ -617,70 +666,42 @@ function BPTrackingContent() {
         alarma_te: data.te, alarma_rt: data.rt, alarma_ne: data.ne, alarma_tea: data.tea,
         estado_carga: 'full'
       }, { onConflict: 'tecnico_id, fecha_inicio' });
-
-    if (error) {
-      alert('Error guardando alarmas: ' + error.message);
-    } else {
-      setModalWeek(null);
-      fetchData();
-    }
+    if (error) alert('Error: ' + error.message);
+    else { setModalWeek(null); fetchData(); }
   };
 
   const handleConfirmCheck = async () => {
     if (!session || !activeWeek) return;
-
-    const confirm = window.confirm("¿Estás seguro? ¿Se actualizaron todas las alarmas operativas para este técnico?");
+    const confirm = window.confirm("¿Estás seguro?");
     if (!confirm) return;
-
     const { start, end } = getWeekRange(new Date(activeWeek.dateRange));
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
-
-    const { error } = await supabase
-      .from('seguimiento_bp')
-      .upsert({
+    const { error } = await supabase.from('seguimiento_bp').upsert({
         tecnico_id: session.id,
-        fecha_inicio: startStr,
-        fecha_fin: endStr,
+        fecha_inicio: start.toISOString().split('T')[0],
+        fecha_fin: end.toISOString().split('T')[0],
         observacion_lider: observationText,
         confirmado: true,
         fecha_confirmacion: new Date().toISOString()
       }, { onConflict: 'tecnico_id, fecha_inicio' });
-
-    if (error) {
-      alert('Error confirmando check: ' + error.message);
-    } else {
-      alert('Seguimiento guardado con éxito!');
-      fetchData();
-    }
+    if (error) alert('Error: ' + error.message);
+    else { alert('Guardado!'); fetchData(); }
   };
 
   const handleAddAntecedente = async () => {
-    if (!antForm.titulo || !antForm.descripcion) return alert('Por favor complete todos los campos');
-    
+    if (!antForm.titulo || !antForm.descripcion) return alert('Campos obligatorios');
     const { error } = await supabase.from('antecedentes_bp').insert({
       tecnico_id: session?.id,
       titulo: antForm.titulo,
       fecha: antForm.fecha,
       descripcion: antForm.descripcion
     });
-
     if (error) alert('Error: ' + error.message);
-    else {
-      setShowAntecedenteModal(false);
-      setAntForm({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' });
-      fetchData();
-    }
+    else { setShowAntecedenteModal(false); setAntForm({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' }); fetchData(); }
   };
 
   const openSnapshot = async (dateRange: string) => {
     let week = session?.history.find(w => w.dateRange === dateRange);
-    
-    if (!week && session) {
-      // Si no está en las últimas 5 semanas, lo buscamos específicamente
-      week = await fetchWeekData(session.id, new Date(dateRange));
-    }
-    
+    if (!week && session) week = await fetchWeekData(session.id, new Date(dateRange));
     if (week) setSelectedSnapshot(week);
   };
 
@@ -693,20 +714,18 @@ function BPTrackingContent() {
     </div>
   );
 
-  if (!session) return <div>No se encontró información para el técnico.</div>;
+  if (!session) return <div>No se encontró información.</div>;
 
-  const prevWeek = session.history[1] || session.history[0];
+  const prevWeekRow = session.history[1] || session.history[0];
 
   return (
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 120px 40px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
       
-      {/* Header */}
       <header style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: '#94a3b8', fontSize: '13px', fontWeight: '800' }}>
-            <span>Panel de Gestión</span><ChevronRight size={14} />
-            <span style={{ color: '#019df4', fontWeight: '950' }}>Detalle Seguimiento BP</span>
+            <span>Panel</span><ChevronRight size={14} />
+            <span style={{ color: '#019df4', fontWeight: '950' }}>BP Detalle</span>
          </div>
-
          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
                <div style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -714,104 +733,71 @@ function BPTrackingContent() {
                </div>
                <div>
                   <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', margin: 0 }}>{session.techName}</h1>
-                  <p style={{ fontSize: '14px', fontWeight: '800', color: '#64748b', marginTop: '4px' }}>DNI: {session.dni} • Célula: {session.cell} • Distrito: {session.district}</p>
+                  <p style={{ fontSize: '14px', fontWeight: '800', color: '#64748b', marginTop: '4px' }}>DNI: {session.dni} • Varela</p>
                </div>
             </div>
-            
-            <ViewToggle 
-              options={[
-                { value: 'data', label: 'ANÁLISIS OPERATIVO', icon: Activity },
-                { value: 'actions', label: 'HISTORIAL DE SEGUIMIENTO', icon: History }
-              ]} 
-              active={activeTab} onChange={setActiveTab} 
-            />
+            <ViewToggle options={[{ value: 'data', label: 'ANÁLISIS', icon: Activity }, { value: 'actions', label: 'HISTORIAL', icon: History }]} active={activeTab} onChange={setActiveTab} />
          </div>
       </header>
 
       {activeTab === 'data' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
            
-           {/* BLOQUE 1: KPIs ACTUALES */}
            <section>
               <SectionHeader title="KPIs ACTUALES" icon={Zap} />
               <div style={{ display: 'flex', gap: '20px' }}>
-                 <StatCard title="Resolución %" value={activeWeek?.resolucion || 0} previousValue={prevWeek?.resolucion || 0} kpiKey="resolucion" />
-                 <StatCard title="Reitero %" value={activeWeek?.reitero || 0} previousValue={prevWeek?.reitero || 0} kpiKey="reitero" />
-                 <StatCard title="Puntualidad %" value={activeWeek?.puntualidad || 0} previousValue={prevWeek?.puntualidad || 0} kpiKey="puntualidad" />
-                 <StatCard title="Productividad" value={activeWeek?.productividad || 0} previousValue={prevWeek?.productividad || 0} kpiKey="productividad" />
+                 <StatCard title="Resolución %" value={activeWeek?.resolucion || 0} previousValue={prevWeekRow?.resolucion || 0} kpiKey="resolucion" />
+                 <StatCard title="Reitero %" value={activeWeek?.reitero || 0} previousValue={prevWeekRow?.reitero || 0} kpiKey="reitero" />
+                 <StatCard title="Puntualidad %" value={activeWeek?.puntualidad || 0} previousValue={prevWeekRow?.puntualidad || 0} kpiKey="puntualidad" />
+                 <StatCard title="Productividad" value={activeWeek?.productividad || 0} previousValue={prevWeekRow?.productividad || 0} kpiKey="productividad" />
               </div>
            </section>
 
-           {/* BLOQUE 2: KPIs HISTÓRICOS */}
            <section>
               <SectionHeader title="KPIs HISTÓRICOS" icon={TrendingUp}>
-                 <ViewToggle 
-                   options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} 
-                   active={kpiView} onChange={setKpiView} 
-                 />
-                 <ViewToggle 
-                   options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} 
-                   active={kpiScale} onChange={setKpiScale} 
-                 />
+                 <ViewToggle options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} active={kpiView} onChange={setKpiView} />
               </SectionHeader>
-
               {kpiView === 'table' ? (
                 <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                       <thead>
                          <tr>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase' }}>Fecha</th>
-                            {['Resolución', 'Reiteros', 'Puntualidad', 'Prod.'].map(h => (
-                              <th key={h} style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase' }}>{h}</th>
-                            ))}
+                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>FECHA</th>
+                            {['Resolución', 'Reiteros', 'Puntualidad', 'Prod.'].map(h => <th key={h} style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
                          </tr>
                       </thead>
                       <tbody>
-                         {session.history.map((w) => {
-                           const resS = getSemaforo(w.resolucion, 'resolucion');
-                           const reiS = getSemaforo(w.reitero, 'reitero');
-                           return (
-                             <tr key={w.id}>
-                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
-                                   <div style={{ fontWeight: '950', color: '#0f172a' }}>{w.dateRange}</div>
+                         {session.history.slice(0, 5).map((w) => (
+                           <tr key={w.id}>
+                              <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}><div style={{ fontWeight: '950' }}>{w.dateRange}</div></td>
+                              {[w.resolucion, w.reitero, w.puntualidad, w.productividad].map((v, i) => (
+                                <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 3 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 3 ? '0 16px 16px 0' : '0' }}>
+                                  <div style={{ backgroundColor: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).bg, color: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>{i === 3 ? v.toFixed(2) : `${v.toFixed(1)}%`}</div>
                                 </td>
-                                {[w.resolucion, w.reitero, w.puntualidad, w.productividad].map((v, i) => (
-                                  <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 3 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 3 ? '0 16px 16px 0' : '0' }}>
-                                    <div style={{ backgroundColor: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).bg, color: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>
-                                       {v !== null && v !== undefined ? (i === 3 ? v.toFixed(2) : `${v.toFixed(1)}%`) : '-'}
-                                    </div>
-                                  </td>
-                                ))}
-                             </tr>
-                           );
-                         })}
+                              ))}
+                           </tr>
+                         ))}
                       </tbody>
                    </table>
                 </div>
-              ) : (
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '32px', height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                   <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Gráfico dinámico en desarrollo...</p>
-                </div>
-              )}
+              ) : <div style={{ height: '350px' }} />}
            </section>
 
-           {/* BLOQUE 3: ALARMAS OPERATIVAS */}
            <section>
               <SectionHeader title="ALARMAS OPERATIVAS" icon={AlertCircle}>
-                  <ViewToggle options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} active={alarmView} onChange={setAlarmView} />
+                  <ViewToggle options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Dashboard', icon: BarChart3 }]} active={alarmView} onChange={setAlarmView} />
                   {alarmView === 'chart' && (
                     <ViewToggle 
-                      options={[{ value: false, label: 'Semana Actual' }, { value: true, label: 'Comparar con Anterior', icon: RotateCcw }]} 
-                      active={compareAlarms} onChange={setCompareAlarms} 
+                      options={[
+                        { value: 'current', label: 'Semana Actual' }, 
+                        { value: 'compare-week', label: 'C. Semanal', icon: RotateCcw },
+                        { value: 'last-4-weeks', label: 'Evolución 4S', icon: TrendingUp },
+                        { value: 'monthly', label: 'C. Mensual', icon: CalendarDays }
+                      ]} 
+                      active={alarmMode} onChange={setAlarmMode} 
                     />
                   )}
-                  <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={alarmScale} onChange={setAlarmScale} />
-                  <button 
-                    onClick={() => activeWeek && setModalWeek(activeWeek)}
-                    style={{ backgroundColor: '#019df4', color: 'white', padding: '10px 20px', borderRadius: '14px', fontWeight: '950', fontSize: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                  >
-                     <Plus size={16} /> Cargar alarmas
-                  </button>
+                  <button onClick={() => activeWeek && setModalWeek(activeWeek)} style={{ backgroundColor: '#019df4', color: 'white', padding: '10px 20px', borderRadius: '14px', fontWeight: '950', fontSize: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}><Plus size={14} /> Cargar</button>
               </SectionHeader>
 
               {alarmView === 'table' ? (
@@ -819,31 +805,22 @@ function BPTrackingContent() {
                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                       <thead>
                          <tr>
-                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>Fecha</th>
+                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>FECHA</th>
                             {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
                          </tr>
                       </thead>
                       <tbody>
-                         {session.history.map((w) => {
+                         {session.history.slice(0, 5).map((w) => {
                            const a = w.alarms;
-                           const maxVal = a ? Math.max(a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea) : 0;
                            return (
                              <tr key={w.id} onClick={() => setModalWeek(w)} style={{ cursor: 'pointer' }}>
                                 <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <div style={{ fontWeight: '950', color: '#0f172a' }}>{w.dateRange}</div>
-                                      {!a && <div style={{ backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '950' }}>PENDIENTE</div>}
+                                      <div style={{ fontWeight: '950' }}>{w.dateRange}</div>
+                                      {!a && <div style={{ backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '950' }}>PED.</div>}
                                    </div>
                                 </td>
-                                {a ? [a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => (
-                                  <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}>
-                                     <div style={{ backgroundColor: v === maxVal && v > 0 ? '#fee2e2' : '#f8fafc', color: v === maxVal && v > 0 ? '#991b1b' : '#475569', padding: '10px 0', borderRadius: '12px', fontWeight: '950', fontSize: '14px', width: '55px', margin: '0 auto' }}>{v}</div>
-                                  </td>
-                                )) : (
-                                  <td colSpan={8} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0' }}>
-                                     <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '700', fontStyle: 'italic' }}>Haz clic para cargar alarmas</div>
-                                  </td>
-                                )}
+                                {a ? [a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}><div style={{ fontWeight: '950', fontSize: '14px' }}>{v}</div></td>) : <td colSpan={8} style={{ textAlign: 'center' }}>-</td>}
                              </tr>
                            );
                          })}
@@ -851,114 +828,60 @@ function BPTrackingContent() {
                    </table>
                 </div>
               ) : (
-                <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', padding: '24px' }}>
-                    <AlarmsComparisonChart 
-                      current={activeWeek?.alarms || null} 
-                      previous={prevWeek?.alarms || null} 
-                      compare={compareAlarms} 
-                    />
+                <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
+                    <AlarmsAnalyticalDashboard history={session.history} mode={alarmMode} />
                 </div>
               )}
            </section>
 
-           {/* BLOQUE 4: CHECK SEMANAL */}
            <section style={{ backgroundColor: '#f0f9ff', padding: '40px', borderRadius: '32px', border: '1.5px dashed #bae6fd' }}>
               <SectionHeader title={`CHECK SEMANAL - ${activeWeek?.dateRange || 'Pendiente'}`} icon={MessageSquare} />
               <div style={{ marginBottom: '24px' }}>
-                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#0369a1', marginBottom: '12px' }}>Observaciones del líder</label>
-                 <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} placeholder="Ingrese feedback..." style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none', fontSize: '14px', fontWeight: '700' }} />
+                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#0369a1', marginBottom: '12px' }}>Observaciones</label>
+                 <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px' }}>
-                  <button 
-                    onClick={handleConfirmCheck}
-                    style={{ 
-                      backgroundColor: '#0ea5e9', 
-                      color: 'white', 
-                      padding: '16px 32px', 
-                      borderRadius: '16px', 
-                      fontWeight: '950', 
-                      cursor: 'pointer',
-                      border: 'none',
-                      boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.4)'
-                    }}
-                  >
-                     {activeWeek?.locked ? 'Confirmar nuevamente' : 'Confirmar seguimiento'}
-                  </button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={handleConfirmCheck} style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer' }}>{activeWeek?.locked ? 'Reconfirmar' : 'Confirmar'}</button>
               </div>
            </section>
         </div>
       ) : (
-        /* HISTORIAL TIMELINE */
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-           
-           {/* SECCIÓN ANTECEDENTES */}
            <div style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <div 
-                onClick={() => setIsAntExpanded(!isAntExpanded)}
-                style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-              >
+              <div onClick={() => setIsAntExpanded(!isAntExpanded)} style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#f0f9ff', color: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <History size={20} />
-                    </div>
-                    <div>
-                       <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#0f172a', margin: 0 }}>ANTECEDENTES</h3>
-                       <p style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginTop: '2px' }}>Contexto estructural del técnico</p>
-                    </div>
+                    <History size={20} />
+                    <h3 style={{ fontSize: '18px', fontWeight: '950' }}>ANTECEDENTES</h3>
                  </div>
-                 <div style={{ transform: isAntExpanded ? 'rotate(180deg)' : 'none', transition: 'all 0.3s' }}><Plus size={20} /></div>
+                 <ChevronDown size={20} />
               </div>
-              
               {isAntExpanded && (
                 <div style={{ padding: '0 32px 32px 32px', borderTop: '1px solid #f1f5f9', paddingTop: '32px' }}>
-                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '16px', marginBottom: '24px' }}>
-                      {session.antecedentes.length > 0 ? session.antecedentes.map(ant => (
-                        <div key={ant.id} style={{ padding: '16px 20px', borderRadius: '16px', backgroundColor: '#fdfdfd', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                           <div>
-                              <div style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b' }}>{ant.titulo}</div>
-                              <div style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>{ant.descripcion}</div>
-                           </div>
-                           <div style={{ fontSize: '12px', fontWeight: '950', color: '#94a3b8' }}>{ant.fecha}</div>
-                        </div>
-                      )) : <p style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>No hay antecedentes registrados.</p>}
-                   </div>
-                   <button 
-                     onClick={() => setShowAntecedenteModal(true)}
-                     style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '2px dashed #cbd5e1', backgroundColor: 'transparent', color: '#64748b', fontWeight: '950', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
-                     onMouseEnter={e => e.currentTarget.style.borderColor = '#019df4'}
-                     onMouseLeave={e => e.currentTarget.style.borderColor = '#cbd5e1'}
-                   >+ Agregar antecedente</button>
+                   {session.antecedentes.map(ant => (
+                     <div key={ant.id} style={{ padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                        <div><div style={{ fontWeight: '950' }}>{ant.titulo}</div><div style={{ fontSize: '13px' }}>{ant.descripcion}</div></div>
+                        <div style={{ fontSize: '12px' }}>{ant.fecha}</div>
+                     </div>
+                   ))}
+                   <button onClick={() => setShowAntecedenteModal(true)} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '2px dashed #cbd5e1', backgroundColor: 'transparent' }}>+ Agregar</button>
                 </div>
               )}
            </div>
-
-           <SectionHeader title="HISTORIAL DE SEGUIMIENTO SEMANAL" icon={MessageSquare}>
-              <button 
-                onClick={handleOpenNewTracking}
-                style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '10px 20px', borderRadius: '14px', fontWeight: '950', fontSize: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                 <Plus size={16} /> Nuevo Seguimiento
-              </button>
-           </SectionHeader>
-           {session.actions.map((a) => (
+           <SectionHeader title="HISTORIAL" icon={MessageSquare}><button onClick={handleOpenNewTracking} style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '10px 20px', borderRadius: '14px', border: 'none' }}>+ Nuevo</button></SectionHeader>
+           {session.actions.map(a => (
              <div key={a.id} style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: 'white', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} /></div>
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1, position: 'relative' }}>
+                <Clock size={18} />
+                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1 }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                       <div>
-                        <span style={{ fontSize: '10px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SEMANA {a.weekLabel}</span>
-                        <div style={{ marginTop: '8px' }}>
-                           <button 
-                             onClick={() => openSnapshot(a.dateRange)}
-                             style={{ display: 'flex', alignItems: 'center', gap: '6px', border: 'none', backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px', fontWeight: '950' }}
-                           >
-                             <BarChart3 size={14} /> Ver Snapshot
-                           </button>
-                        </div>
+                        <span style={{ fontSize: '10px', fontWeight: '950' }}>SEMANA {a.weekLabel}</span>
+                        <button onClick={() => openSnapshot(a.dateRange)} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', color: '#019df4', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
+                            <BarChart size={14} /> Ver Snapshot
+                        </button>
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>{a.date}</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>{a.date}</span>
                    </div>
-                   <p style={{ fontSize: '15px', color: '#334155', fontWeight: '700', lineHeight: 1.6, margin: 0 }}>{a.observation}</p>
+                   <p style={{ margin: 0, fontSize: '15px', color: '#334155' }}>{a.observation}</p>
                 </div>
              </div>
            ))}
@@ -966,93 +889,48 @@ function BPTrackingContent() {
       )}
 
       {modalWeek && <AlarmsModal week={modalWeek} onClose={() => setModalWeek(null)} onSave={handleSaveAlarms} />}
-
       {selectedSnapshot && <SnapshotBottomSheet week={selectedSnapshot} onClose={() => setSelectedSnapshot(null)} />}
-
       {showNewModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '100%', maxWidth: duplicateMode === 'form' ? '800px' : '480px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '600px', padding: '40px' }}>
             {duplicateMode === 'none' && (
               <>
-                <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', marginBottom: '8px' }}>Nuevo Seguimiento</h2>
-                <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '700', marginBottom: '32px' }}>Seleccione el día para el cual desea registrar el seguimiento.</p>
-                <div style={{ marginBottom: '32px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>FECHA DE CARGA</label>
-                  <input 
-                    type="date" 
-                    value={newTrackingDate} 
-                    onChange={e => setNewTrackingDate(e.target.value)} 
-                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1.5px solid #e2e8f0', outline: 'none', fontWeight: '700', fontSize: '16px' }} 
-                  />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: '950' }}>Nuevo Seguimiento</h2>
+                    <button onClick={() => setShowNewModal(false)} style={{ border: 'none', background: 'none' }}><X /></button>
                 </div>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <button onClick={() => setShowNewModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950', cursor: 'pointer' }}>CANCELAR</button>
-                  <button onClick={handleProcessDate} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#0ea5e9', color: 'white', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    Siguiente <ArrowRight size={18} />
-                  </button>
-                </div>
+                <label style={{ fontSize: '13px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Seleccionar Fecha</label>
+                <input type="date" value={newTrackingDate} onChange={e => setNewTrackingDate(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '16px' }} />
+                <button onClick={handleProcessDate} style={{ width: '100%', marginTop: '24px', padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none' }}>Siguiente</button>
               </>
             )}
-
-            {duplicateMode === 'warning' && tempWeek && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: '#fff7ed', color: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                  <AlertTriangle size={32} />
+            {duplicateMode === 'warning' && (
+                <div style={{ textAlign: 'center' }}>
+                    <AlertTriangle size={48} color="#ef4444" style={{ margin: '0 auto 24px' }} />
+                    <h2 style={{ fontSize: '20px', fontWeight: '950' }}>Semana ya bloqueada</h2>
+                    <p style={{ color: '#64748b', marginBottom: '32px' }}>Ya existe un registro confirmado para la semana del {tempWeek?.weekLabel}. ¿Deseas editarlo?</p>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <button onClick={() => setShowNewModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'white', fontWeight: '900' }}>Cancelar</button>
+                        <button onClick={() => setDuplicateMode('form')} style={{ flex: 1, padding: '16px', borderRadius: '16px', backgroundColor: '#ef4444', color: 'white', border: 'none', fontWeight: '900' }}>Reemplazar</button>
+                    </div>
                 </div>
-                <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', marginBottom: '12px' }}>Semana ya registrada</h2>
-                <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '700', lineHeight: 1.5, marginBottom: '32px' }}>
-                   Ya existe un seguimiento para la semana <span style={{ color: '#0f172a' }}>{tempWeek.weekLabel}</span>. 
-                   ¿Qué desea hacer?
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button onClick={() => setDuplicateMode('form')} style={{ padding: '16px', borderRadius: '16px', backgroundColor: '#0ea5e9', color: 'white', fontWeight: '950', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <FileEdit size={18} /> Editar existente
-                  </button>
-                  <button onClick={() => {
-                    setTempWeek({...tempWeek, alarms: null, observation: ''});
-                    setDuplicateMode('form');
-                  }} style={{ padding: '16px', borderRadius: '16px', backgroundColor: '#fef2f2', color: '#ef4444', fontWeight: '950', border: '1px solid #fee2e2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <RotateCcw size={18} /> Sobrescribir
-                  </button>
-                </div>
-                <button onClick={() => setDuplicateMode('none')} style={{ marginTop: '24px', padding: '12px', border: 'none', backgroundColor: 'transparent', color: '#94a3b8', fontWeight: '950', cursor: 'pointer' }}>Volver</button>
-              </div>
             )}
-
-            {duplicateMode === 'form' && tempWeek && (
-              <NewTrackingForm 
-                week={tempWeek} 
-                onClose={() => setShowNewModal(false)} 
-                onSave={handleSaveFullTracking} 
-              />
-            )}
-
+            {duplicateMode === 'form' && tempWeek && <NewTrackingForm week={tempWeek} onClose={() => setShowNewModal(false)} onSave={handleSaveFullTracking} />}
           </div>
         </div>
       )}
-
       {showAntecedenteModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10006, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '100%', maxWidth: '480px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', marginBottom: '32px' }}>Agregar Antecedente</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-               <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>TÍTULO</label>
-                  <input type="text" value={antForm.titulo} onChange={e => setAntForm({...antForm, titulo: e.target.value})} placeholder="Ej: Cambio de zona" style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1.5px solid #f1f5f9', outline: 'none' }} />
-               </div>
-               <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>FECHA</label>
-                  <input type="date" value={antForm.fecha} onChange={e => setAntForm({...antForm, fecha: e.target.value})} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1.5px solid #f1f5f9', outline: 'none' }} />
-               </div>
-               <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px' }}>DESCRIPCIÓN</label>
-                  <textarea rows={3} value={antForm.descripcion} onChange={e => setAntForm({...antForm, descripcion: e.target.value})} placeholder="Detalles del hito..." style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1.5px solid #f1f5f9', outline: 'none', resize: 'none' }} />
-               </div>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10006, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '40px', width: '450px' }}>
+            <h2 style={{ marginBottom: '24px' }}>Agregar Antecedente</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <input type="text" placeholder="Título (ej: Cambio de Zona)" value={antForm.titulo} onChange={e => setAntForm({...antForm, titulo: e.target.value})} style={{ padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} />
+                <input type="date" value={antForm.fecha} onChange={e => setAntForm({...antForm, fecha: e.target.value})} style={{ padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} />
+                <textarea placeholder="Descripción detallada..." value={antForm.descripcion} onChange={e => setAntForm({...antForm, descripcion: e.target.value})} style={{ padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} rows={4} />
             </div>
-            <div style={{ display: 'flex', gap: '16px', marginTop: '40px' }}>
-               <button onClick={() => setShowAntecedenteModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: '950' }}>CANCELAR</button>
-               <button onClick={handleAddAntecedente} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', backgroundColor: '#019df4', color: 'white', fontWeight: '950' }}>GUARDAR</button>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
+                <button onClick={() => setShowAntecedenteModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'white' }}>Cancelar</button>
+                <button onClick={handleAddAntecedente} style={{ flex: 1, padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', border: 'none' }}>Guardar</button>
             </div>
           </div>
         </div>
@@ -1069,5 +947,4 @@ export function BPTrackingPage() {
   );
 }
 
-// Wrapper default export
 export default BPTrackingPage;
