@@ -263,8 +263,8 @@ function BPTrackingContent() {
           productividad: m.productividad,
           status: track ? (track.estado_carga as any) : 'empty',
           alarms: track ? {
-            pt: track.alarma_pt, ft: track.alarma_ft, ta: track.alarma_ta, ma: track.alarma_ma,
-            te: track.alarma_te, rt: track.alarma_rt, ne: track.alarma_ne, tea: track.alarma_tea
+            pt: track.alarma_pt || 0, ft: track.alarma_ft || 0, ta: track.alarma_ta || 0, ma: track.alarma_ma || 0,
+            te: track.alarma_te || 0, rt: track.alarma_rt || 0, ne: track.alarma_ne || 0, tea: track.alarma_tea || 0
           } : null,
           observation: track?.observacion_lider,
           locked: track?.confirmado
@@ -442,9 +442,9 @@ function BPTrackingContent() {
                                 </td>
                                 {[w.resolucion, w.reitero, w.puntualidad, w.productividad].map((v, i) => (
                                   <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 3 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 3 ? '0 16px 16px 0' : '0' }}>
-                                     <div style={{ backgroundColor: getSemaforo(v, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).bg, color: getSemaforo(v, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>
-                                        {i === 3 ? v.toFixed(2) : `${v.toFixed(1)}%`}
-                                     </div>
+                                    <div style={{ backgroundColor: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).bg, color: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>
+                                       {v !== null && v !== undefined ? (i === 3 ? v.toFixed(2) : `${v.toFixed(1)}%`) : '-'}
+                                    </div>
                                   </td>
                                 ))}
                              </tr>
