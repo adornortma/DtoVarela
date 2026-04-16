@@ -345,7 +345,10 @@ function BPTrackingContent() {
   };
 
   const handleConfirmCheck = async () => {
-    if (!session || !activeWeek || !activeWeek.alarms) return;
+    if (!session || !activeWeek) return;
+
+    const confirm = window.confirm("¿Estás seguro? ¿Se actualizaron todas las alarmas operativas para este técnico?");
+    if (!confirm) return;
 
     const { error } = await supabase
       .from('seguimiento_bp')
@@ -546,10 +549,9 @@ function BPTrackingContent() {
                  <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} placeholder="Ingrese feedback..." style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none', fontSize: '14px', fontWeight: '700' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px' }}>
-                  {!activeWeek?.alarms && <div style={{ color: '#e11d48', fontSize: '13px', fontWeight: '800' }}>Pendiente carga de alarmas</div>}
                   <button 
-                    onClick={handleConfirmCheck} disabled={activeWeek?.locked || !activeWeek?.alarms}
-                    style={{ backgroundColor: activeWeek?.locked ? '#94a3b8' : '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', cursor: 'pointer' }}
+                    onClick={handleConfirmCheck} disabled={activeWeek?.locked}
+                    style={{ backgroundColor: activeWeek?.locked ? '#94a3b8' : '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', cursor: activeWeek?.locked ? 'not-allowed' : 'pointer', border: 'none' }}
                   >
                      {activeWeek?.locked ? 'Check Confirmado' : 'Confirmar seguimiento'}
                   </button>
