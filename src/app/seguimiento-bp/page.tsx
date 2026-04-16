@@ -172,16 +172,29 @@ const AlarmsModal = ({ week, onClose, onSave }: any) => {
     { key: 'te', label: 'TE' }, { key: 'rt', label: 'RT' }, { key: 'ne', label: 'NE' }, { key: 'tea', label: 'TEA' },
   ];
 
+  const [selectedDate, setSelectedDate] = useState(week.dateRange || new Date().toISOString().split('T')[0]);
+
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '580px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '580px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
         <div style={{ padding: '32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>Carga de Alarmas</h2>
-            <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700' }}>{week.dateRange}</p>
+            <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700' }}>Seleccione la fecha de inicio</p>
           </div>
           <button onClick={onClose} style={{ padding: '10px', borderRadius: '14px', backgroundColor: '#f1f5f9', color: '#64748b' }}><X size={20}/></button>
         </div>
+        
+        <div style={{ padding: '32px 32px 0 32px' }}>
+          <label style={{ display: 'block', fontSize: '11px', fontWeight: '950', color: '#0f172a', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semana (Fecha de inicio)</label>
+          <input 
+            type="date" 
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '2.5px solid #019df4', fontSize: '15px', fontWeight: '900', outline: 'none', backgroundColor: '#f0f9ff', color: '#019df4' }}
+          />
+        </div>
+
         <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
            {inputs.map(inp => (
              <div key={inp.key}>
@@ -189,14 +202,15 @@ const AlarmsModal = ({ week, onClose, onSave }: any) => {
                 <input 
                   type="number" value={formData[inp.key as keyof BPAlarmData]}
                   onChange={(e) => setFormData({...formData, [inp.key]: parseInt(e.target.value) || 0})}
-                  style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '2.5px solid #f1f5f9', fontSize: '15px', fontWeight: '900', outline: 'none' }}
+                  style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '2.5px solid #f1f5f9', fontSize: '15px', fontWeight: '900', outline: 'none', color: '#1e293b' }}
                 />
              </div>
            ))}
         </div>
-        <div style={{ padding: '32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '16px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', fontWeight: '950', color: '#64748b', backgroundColor: '#f1f5f9' }}>CERRAR</button>
-          <button onClick={() => onSave(formData)} style={{ flex: 2, padding: '16px', borderRadius: '16px', fontWeight: '950', color: 'white', backgroundColor: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+
+        <div style={{ padding: '32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '16px', backgroundColor: '#f8fafc' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '16px', borderRadius: '16px', fontWeight: '950', color: '#64748b', backgroundColor: 'white', border: '1px solid #e2e8f0' }}>CERRAR</button>
+          <button onClick={() => onSave(formData, selectedDate)} style={{ flex: 2, padding: '16px', borderRadius: '16px', fontWeight: '950', color: 'white', backgroundColor: '#019df4', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.3)' }}>
             <Save size={18} /> GUARDAR
           </button>
         </div>
@@ -306,15 +320,17 @@ function BPTrackingContent() {
     if (activeWeek) setObservationText(activeWeek.observation || '');
   }, [activeWeek]);
 
-  const handleSaveAlarms = async (data: BPAlarmData) => {
+  const handleSaveAlarms = async (data: BPAlarmData, date?: string) => {
     if (!session || !activeWeek) return;
     
+    const targetDate = date || activeWeek.dateRange;
+
     const { error } = await supabase
       .from('seguimiento_bp')
       .upsert({
         tecnico_id: session.id,
-        fecha_inicio: activeWeek.dateRange, // Simplified for MVP
-        fecha_fin: activeWeek.dateRange,
+        fecha_inicio: targetDate, 
+        fecha_fin: targetDate,
         alarma_pt: data.pt, alarma_ft: data.ft, alarma_ta: data.ta, alarma_ma: data.ma,
         alarma_te: data.te, alarma_rt: data.rt, alarma_ne: data.ne, alarma_tea: data.tea,
         estado_carga: 'full'
@@ -483,17 +499,26 @@ function BPTrackingContent() {
                          </tr>
                       </thead>
                       <tbody>
-                         {session.history.filter(w => w.alarms).map((w) => {
-                           const a = w.alarms!;
-                           const maxVal = Math.max(a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea);
+                         {session.history.map((w) => {
+                           const a = w.alarms;
+                           const maxVal = a ? Math.max(a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea) : 0;
                            return (
-                             <tr key={w.id}>
-                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}><div style={{ fontWeight: '950', color: '#0f172a' }}>{w.dateRange}</div></td>
-                                {[a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => (
+                             <tr key={w.id} onClick={() => setModalWeek(w)} style={{ cursor: 'pointer' }}>
+                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
+                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <div style={{ fontWeight: '950', color: '#0f172a' }}>{w.dateRange}</div>
+                                      {!a && <div style={{ backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '950' }}>PENDIENTE</div>}
+                                   </div>
+                                </td>
+                                {a ? [a.pt, a.ft, a.ta, a.ma, a.te, a.rt, a.ne, a.tea].map((v, i) => (
                                   <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}>
                                      <div style={{ backgroundColor: v === maxVal && v > 0 ? '#fee2e2' : '#f8fafc', color: v === maxVal && v > 0 ? '#991b1b' : '#475569', padding: '10px 0', borderRadius: '12px', fontWeight: '950', fontSize: '14px', width: '55px', margin: '0 auto' }}>{v}</div>
                                   </td>
-                                ))}
+                                )) : (
+                                  <td colSpan={8} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0' }}>
+                                     <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '700', fontStyle: 'italic' }}>Haz clic para cargar alarmas</div>
+                                  </td>
+                                )}
                              </tr>
                            );
                          })}
