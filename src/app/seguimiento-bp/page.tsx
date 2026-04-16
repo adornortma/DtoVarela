@@ -106,19 +106,24 @@ const INITIAL_DATA: BPSession = {
 // --- Utils ---
 const getSemaforo = (value: number, kpi: string) => {
   if (kpi === 'resolucion') {
-    if (value >= 80) return { color: '#059669', bg: '#ecfdf5', label: 'Excelente' };
-    if (value >= 75) return { color: '#d97706', bg: '#fffbeb', label: 'En Umbral' };
-    return { color: '#dc2626', bg: '#fef2f2', label: 'Crítico' };
+    if (value >= 75) return { color: '#065f46', bg: '#d1fae5' }; // Green
+    if (value >= 70) return { color: '#854d0e', bg: '#fef3c7' }; // Yellow
+    return { color: '#991b1b', bg: '#fee2e2' }; // Red
   }
   if (kpi === 'reitero') {
-    if (value <= 12) return { color: '#059669', bg: '#ecfdf5' };
-    if (value <= 15) return { color: '#d97706', bg: '#fffbeb' };
-    return { color: '#dc2626', bg: '#fef2f2' };
+    if (value <= 4.5) return { color: '#065f46', bg: '#d1fae5' };
+    if (value <= 6) return { color: '#854d0e', bg: '#fef3c7' };
+    return { color: '#991b1b', bg: '#fee2e2' };
   }
   if (kpi === 'puntualidad') {
-    if (value >= 85) return { color: '#059669', bg: '#ecfdf5' };
-    if (value >= 75) return { color: '#d97706', bg: '#fffbeb' };
-    return { color: '#dc2626', bg: '#fef2f2' };
+    if (value >= 80) return { color: '#065f46', bg: '#d1fae5' };
+    if (value >= 75) return { color: '#854d0e', bg: '#fef3c7' };
+    return { color: '#991b1b', bg: '#fee2e2' };
+  }
+  if (kpi === 'productividad') {
+    if (value >= 6) return { color: '#065f46', bg: '#d1fae5' };
+    if (value >= 5.2) return { color: '#854d0e', bg: '#fef3c7' };
+    return { color: '#991b1b', bg: '#fee2e2' };
   }
   return { color: '#64748b', bg: '#f1f5f9' };
 };
@@ -391,15 +396,15 @@ export default function SeguimientoBP() {
               </SectionHeader>
 
               {kpiView === 'table' ? (
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
+                   <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                       <thead>
-                         <tr style={{ borderBottom: '2px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
-                            <th style={{ padding: '18px 24px', textAlign: 'left', fontSize: '11px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase' }}>Semana</th>
-                            <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '11px', color: '#0f172a', fontWeight: '950', textTransform: 'uppercase' }}>Resolución</th>
-                            <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '11px', color: '#0f172a', fontWeight: '950', textTransform: 'uppercase' }}>Reitero</th>
-                            <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '11px', color: '#0f172a', fontWeight: '950', textTransform: 'uppercase' }}>Puntualidad</th>
-                            <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '11px', color: '#0f172a', fontWeight: '950', textTransform: 'uppercase' }}>Productividad</th>
+                         <tr style={{ backgroundColor: 'white' }}>
+                            <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Semana</th>
+                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Resolución</th>
+                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Reiteros</th>
+                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Puntualidad</th>
+                            <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '1px' }}>Productividad</th>
                          </tr>
                       </thead>
                       <tbody>
@@ -407,22 +412,65 @@ export default function SeguimientoBP() {
                            const resStyle = getSemaforo(w.resolucion, 'resolucion');
                            const reiStyle = getSemaforo(w.reitero, 'reitero');
                            const punStyle = getSemaforo(w.puntualidad, 'puntualidad');
+                           const proStyle = getSemaforo(w.productividad, 'productividad');
                            return (
-                             <tr key={w.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '18px 24px' }}>
+                             <tr key={w.id} style={{ backgroundColor: 'white' }}>
+                                <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRight: 'none', borderRadius: '16px 0 0 16px' }}>
                                    <div style={{ fontWeight: '950', color: '#0f172a', fontSize: '14px' }}>{w.weekLabel}</div>
-                                   <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700' }}>{w.dateRange}</div>
+                                   <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '800' }}>{w.dateRange}</div>
                                 </td>
-                                <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                                   <div style={{ backgroundColor: resStyle.bg, color: resStyle.color, padding: '6px 12px', borderRadius: '10px', display: 'inline-block', fontWeight: '950', fontSize: '13px' }}>{w.resolucion.toFixed(1)}%</div>
+                                <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                                   <div style={{ 
+                                     backgroundColor: resStyle.bg, 
+                                     color: resStyle.color, 
+                                     padding: '10px 0', 
+                                     borderRadius: '12px', 
+                                     fontWeight: '950', 
+                                     fontSize: '14px',
+                                     width: '140px',
+                                     margin: '0 auto',
+                                     border: '1px solid rgba(0,0,0,0.03)'
+                                   }}>{w.resolucion.toFixed(2)}%</div>
                                 </td>
-                                <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                                   <div style={{ backgroundColor: reiStyle.bg, color: reiStyle.color, padding: '6px 12px', borderRadius: '10px', display: 'inline-block', fontWeight: '950', fontSize: '13px' }}>{w.reitero.toFixed(1)}%</div>
+                                <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                                   <div style={{ 
+                                     backgroundColor: reiStyle.bg, 
+                                     color: reiStyle.color, 
+                                     padding: '10px 0', 
+                                     borderRadius: '12px', 
+                                     fontWeight: '950', 
+                                     fontSize: '14px',
+                                     width: '140px',
+                                     margin: '0 auto',
+                                     border: '1px solid rgba(0,0,0,0.03)'
+                                   }}>{w.reitero.toFixed(2)}%</div>
                                 </td>
-                                <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                                   <div style={{ backgroundColor: punStyle.bg, color: punStyle.color, padding: '6px 12px', borderRadius: '10px', display: 'inline-block', fontWeight: '950', fontSize: '13px' }}>{w.puntualidad.toFixed(1)}%</div>
+                                <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                                   <div style={{ 
+                                     backgroundColor: punStyle.bg, 
+                                     color: punStyle.color, 
+                                     padding: '10px 0', 
+                                     borderRadius: '12px', 
+                                     fontWeight: '950', 
+                                     fontSize: '14px',
+                                     width: '140px',
+                                     margin: '0 auto',
+                                     border: '1px solid rgba(0,0,0,0.03)'
+                                   }}>{w.puntualidad.toFixed(2)}%</div>
                                 </td>
-                                <td style={{ padding: '18px 24px', textAlign: 'center', fontWeight: '950', color: '#0f172a' }}>{w.productividad.toFixed(1)}</td>
+                                <td style={{ padding: '16px 24px', textAlign: 'center', border: '1px solid #f1f5f9', borderLeft: 'none', borderRadius: '0 16px 16px 0' }}>
+                                   <div style={{ 
+                                     backgroundColor: proStyle.bg, 
+                                     color: proStyle.color, 
+                                     padding: '10px 0', 
+                                     borderRadius: '12px', 
+                                     fontWeight: '950', 
+                                     fontSize: '14px',
+                                     width: '140px',
+                                     margin: '0 auto',
+                                     border: '1px solid rgba(0,0,0,0.03)'
+                                   }}>{w.productividad.toFixed(2)}</div>
+                                </td>
                              </tr>
                            );
                          })}
