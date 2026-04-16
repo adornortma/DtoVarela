@@ -448,8 +448,9 @@ function BPTrackingContent() {
         actions: (tracking || []).map(t => ({
           id: t.id,
           weekLabel: formatDateRange(new Date(t.fecha_inicio), new Date(t.fecha_fin)),
+          dateRange: t.fecha_inicio,
           observation: t.observacion_lider,
-          date: t.fecha_confirmacion
+          date: new Date(t.fecha_confirmacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         })),
         antecedentes: (antData || []).map(a => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
@@ -471,10 +472,12 @@ function BPTrackingContent() {
 
   const handleSaveFullTracking = async (alarms: BPAlarmData, observation: string) => {
     if (!session || !tempWeek) return;
+    const { start, end } = getWeekRange(new Date(tempWeek.dateRange));
+    
     const { error } = await supabase.from('seguimiento_bp').upsert({
       tecnico_id: session.id,
-      fecha_inicio: tempWeek.dateRange,
-      fecha_fin: tempWeek.dateRange,
+      fecha_inicio: start.toISOString().split('T')[0],
+      fecha_fin: end.toISOString().split('T')[0],
       alarma_pt: alarms.pt, alarma_ft: alarms.ft, alarma_ta: alarms.ta, alarma_ma: alarms.ma,
       alarma_te: alarms.te, alarma_rt: alarms.rt, alarma_ne: alarms.ne, alarma_tea: alarms.tea,
       observacion_lider: observation, confirmado: true, estado_carga: 'full',
@@ -498,12 +501,16 @@ function BPTrackingContent() {
     
     const targetDate = date || activeWeek.dateRange;
 
+    const { start, end } = getWeekRange(new Date(targetDate));
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
     const { error } = await supabase
       .from('seguimiento_bp')
       .upsert({
         tecnico_id: session.id,
-        fecha_inicio: targetDate, 
-        fecha_fin: targetDate,
+        fecha_inicio: startStr, 
+        fecha_fin: endStr,
         alarma_pt: data.pt, alarma_ft: data.ft, alarma_ta: data.ta, alarma_ma: data.ma,
         alarma_te: data.te, alarma_rt: data.rt, alarma_ne: data.ne, alarma_tea: data.tea,
         estado_carga: 'full'
@@ -523,12 +530,16 @@ function BPTrackingContent() {
     const confirm = window.confirm("¿Estás seguro? ¿Se actualizaron todas las alarmas operativas para este técnico?");
     if (!confirm) return;
 
+    const { start, end } = getWeekRange(new Date(activeWeek.dateRange));
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
     const { error } = await supabase
       .from('seguimiento_bp')
       .upsert({
         tecnico_id: session.id,
-        fecha_inicio: activeWeek.dateRange,
-        fecha_fin: activeWeek.dateRange,
+        fecha_inicio: startStr,
+        fecha_fin: endStr,
         observacion_lider: observationText,
         confirmado: true,
         fecha_confirmacion: new Date().toISOString()
@@ -560,8 +571,14 @@ function BPTrackingContent() {
     }
   };
 
-  const openSnapshot = (weekLabel: string) => {
-    const week = session?.history.find(w => w.dateRange === weekLabel);
+  const openSnapshot = async (dateRange: string) => {
+    let week = session?.history.find(w => w.dateRange === dateRange);
+    
+    if (!week && session) {
+      // Si no está en las últimas 5 semanas, lo buscamos específicamente
+      week = await fetchWeekData(session.id, new Date(dateRange));
+    }
+    
     if (week) setSelectedSnapshot(week);
   };
 
@@ -826,7 +843,7 @@ function BPTrackingContent() {
                         <span style={{ fontSize: '10px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SEMANA {a.weekLabel}</span>
                         <div style={{ marginTop: '8px' }}>
                            <button 
-                             onClick={() => openSnapshot(a.weekLabel)}
+                             onClick={() => openSnapshot(a.dateRange)}
                              style={{ display: 'flex', alignItems: 'center', gap: '6px', border: 'none', backgroundColor: '#f0f9ff', color: '#019df4', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px', fontWeight: '950' }}
                            >
                              <BarChart3 size={14} /> Ver Snapshot
