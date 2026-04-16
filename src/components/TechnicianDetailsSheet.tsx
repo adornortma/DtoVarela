@@ -34,7 +34,7 @@ interface TechnicianDetailsProps {
   onClose: () => void;
   technician: {
     name: string;
-    dni: string;
+    dni?: string;
     celula?: string;
     metrics: any; // Combined metrics
   } | null;
@@ -431,23 +431,25 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
                   <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', lineHeight: 1, margin: 0 }}>{technician.name}</h2>
-                  <a 
-                    href={`/seguimiento-bp?dni=${technician.dni}`}
-                    style={{ 
-                      backgroundColor: '#f0f9ff', color: '#019df4', padding: '8px 16px', 
-                      borderRadius: '12px', fontSize: '11px', fontWeight: '950', 
-                      display: 'flex', alignItems: 'center', gap: '6px', 
-                      textDecoration: 'none', border: '1px solid #bae6fd',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
-                    }}
-                  >
-                    <Activity size={14} /> IR A SEGUIMIENTO BP
-                  </a>
+                  {technician.dni && (
+                    <a 
+                      href={`/seguimiento-bp?dni=${technician.dni}`}
+                      style={{ 
+                        backgroundColor: '#f0f9ff', color: '#019df4', padding: '8px 16px', 
+                        borderRadius: '12px', fontSize: '11px', fontWeight: '950', 
+                        display: 'flex', alignItems: 'center', gap: '6px', 
+                        textDecoration: 'none', border: '1px solid #bae6fd',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      <Activity size={14} /> IR A SEGUIMIENTO BP
+                    </a>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6B7280' }}>
                   <Briefcase size={16} />
                   <span style={{ fontSize: '15px', fontWeight: '600' }}>Célula: <span style={{ color: '#1F2937', fontWeight: '800' }}>{technician.celula}</span></span>
-                  <span style={{ fontSize: '15px', fontWeight: '600', marginLeft: '12px' }}>DNI: <span style={{ color: '#1F2937', fontWeight: '800' }}>{technician.dni}</span></span>
+                  {technician.dni && <span style={{ fontSize: '15px', fontWeight: '600', marginLeft: '12px' }}>DNI: <span style={{ color: '#1F2937', fontWeight: '800' }}>{technician.dni}</span></span>}
                 </div>
               </div>
               <button 
