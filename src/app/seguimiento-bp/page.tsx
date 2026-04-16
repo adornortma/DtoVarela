@@ -543,17 +543,26 @@ function BPTrackingContent() {
 
            {/* BLOQUE 4: CHECK SEMANAL */}
            <section style={{ backgroundColor: '#f0f9ff', padding: '40px', borderRadius: '32px', border: '1.5px dashed #bae6fd' }}>
-              <SectionHeader title="CHECK SEMANAL" icon={MessageSquare} />
+              <SectionHeader title={`CHECK SEMANAL - ${activeWeek?.dateRange || 'Pendiente'}`} icon={MessageSquare} />
               <div style={{ marginBottom: '24px' }}>
                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#0369a1', marginBottom: '12px' }}>Observaciones del líder</label>
                  <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} placeholder="Ingrese feedback..." style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none', fontSize: '14px', fontWeight: '700' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px' }}>
                   <button 
-                    onClick={handleConfirmCheck} disabled={activeWeek?.locked}
-                    style={{ backgroundColor: activeWeek?.locked ? '#94a3b8' : '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', cursor: activeWeek?.locked ? 'not-allowed' : 'pointer', border: 'none' }}
+                    onClick={handleConfirmCheck}
+                    style={{ 
+                      backgroundColor: '#0ea5e9', 
+                      color: 'white', 
+                      padding: '16px 32px', 
+                      borderRadius: '16px', 
+                      fontWeight: '950', 
+                      cursor: 'pointer',
+                      border: 'none',
+                      boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.4)'
+                    }}
                   >
-                     {activeWeek?.locked ? 'Check Confirmado' : 'Confirmar seguimiento'}
+                     {activeWeek?.locked ? 'Confirmar nuevamente' : 'Confirmar seguimiento'}
                   </button>
               </div>
            </section>
