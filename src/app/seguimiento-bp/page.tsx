@@ -106,26 +106,26 @@ const INITIAL_DATA: BPSession = {
 // --- Utils ---
 const getSemaforo = (value: number, kpi: string) => {
   if (kpi === 'resolucion') {
-    if (value >= 75) return { color: '#065f46', bg: '#d1fae5' }; // Green
-    if (value >= 70) return { color: '#854d0e', bg: '#fef3c7' }; // Yellow
-    return { color: '#991b1b', bg: '#fee2e2' }; // Red
+    if (value >= 75) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' }; // Green
+    if (value >= 70) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' }; // Yellow
+    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' }; // Red
   }
   if (kpi === 'reitero') {
-    if (value <= 4.5) return { color: '#065f46', bg: '#d1fae5' };
-    if (value <= 6) return { color: '#854d0e', bg: '#fef3c7' };
-    return { color: '#991b1b', bg: '#fee2e2' };
+    if (value <= 4.5) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
+    if (value <= 6) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
   if (kpi === 'puntualidad') {
-    if (value >= 80) return { color: '#065f46', bg: '#d1fae5' };
-    if (value >= 75) return { color: '#854d0e', bg: '#fef3c7' };
-    return { color: '#991b1b', bg: '#fee2e2' };
+    if (value >= 80) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
+    if (value >= 75) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
   if (kpi === 'productividad') {
-    if (value >= 6) return { color: '#065f46', bg: '#d1fae5' };
-    if (value >= 5.2) return { color: '#854d0e', bg: '#fef3c7' };
-    return { color: '#991b1b', bg: '#fee2e2' };
+    if (value >= 6) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
+    if (value >= 5.2) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
-  return { color: '#64748b', bg: '#f1f5f9' };
+  return { color: '#64748b', bg: '#f1f5f9', label: 'N/A' };
 };
 
 // --- Components ---
@@ -140,24 +140,25 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
 
   return (
     <div style={{ 
-      backgroundColor: 'white', 
+      backgroundColor: semaforo.bg, 
       borderRadius: '24px', 
       padding: '24px', 
-      border: '1px solid #e2e8f0',
-      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-      flex: 1
+      border: '1px solid rgba(0,0,0,0.05)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+      flex: 1,
+      transition: 'all 0.3s ease'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <p style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</p>
-        <div style={{ backgroundColor: semaforo.bg, color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950' }}>
-           {semaforo.label || 'KPI'}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <p style={{ fontSize: '11px', fontWeight: '950', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8 }}>{title}</p>
+        <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+           {semaforo.label}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-        <h4 style={{ fontSize: '36px', fontWeight: '950', color: '#0f172a', margin: 0 }}>{typeof value === 'number' && kpiKey !== 'productividad' ? `${value.toFixed(1)}%` : value}</h4>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>{typeof value === 'number' && kpiKey !== 'productividad' ? `${value.toFixed(1)}%` : value}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: trendColor }}>
-           {isUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-           <span style={{ fontSize: '13px', fontWeight: '900' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(variation < 0.1 && variation > -0.1 ? 2 : 1)}%`}</span>
+           {isUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+           <span style={{ fontSize: '14px', fontWeight: '950' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(variation < 0.1 && variation > -0.1 ? 2 : 1)}%`}</span>
         </div>
       </div>
     </div>
