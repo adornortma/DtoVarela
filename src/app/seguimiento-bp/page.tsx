@@ -403,7 +403,7 @@ export default function SeguimientoBP() {
              <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '24px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase' }}>Perfil Operativo</span>
                 <p style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginTop: '4px' }}>
-                   {selectedTech?.mainKpi > 15 ? '🚩 Alto Riesgo de Reincidencia' : '⚡ Estable con desviaciones menores'}
+                   {(selectedTech?.mainKpi ?? 0) > 15 ? '🚩 Alto Riesgo de Reincidencia' : '⚡ Estable con desviaciones menores'}
                 </p>
              </div>
 
