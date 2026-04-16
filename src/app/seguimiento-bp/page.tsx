@@ -8,23 +8,12 @@ import {
   Minus,
   AlertCircle,
   Activity,
-  Calendar,
-  Info,
   History,
-  Plus,
-  ArrowLeft,
-  Filter,
-  Search,
   X,
-  Target,
-  ArrowUpRight,
-  MapPin,
   ClipboardList,
   User,
   BarChart3,
   Table as TableIcon,
-  ChevronDown,
-  Layout
 } from 'lucide-react';
 
 // --- Types ---
@@ -51,6 +40,7 @@ interface BPEvent {
 interface BPSession {
   id: string;
   techName: string;
+  dni: string;
   cell: string;
   district: string;
   status: 'critico' | 'seguimiento' | 'mejora';
@@ -74,7 +64,8 @@ interface BPSession {
 const MOCK_BP_DATA: BPSession[] = [
   {
     id: '1',
-    techName: 'GARCIA JUAN CARLOS',
+    techName: 'STELLA SERGIO LEONEL',
+    dni: '37653458',
     cell: 'VARELA 1',
     district: 'Varela',
     status: 'critico',
@@ -98,11 +89,11 @@ const MOCK_BP_DATA: BPSession[] = [
         alarms: { pt: 3, ft: 2, ta: 60, ma: 3, te: 45, rt: 8, ne: 4, tea: 25 } 
       },
       { 
-        week: 'S14', reitero: 19, resolucion: 75, deriva: 11, 
+        week: 'S14', reitero: 19.5, resolucion: 72, deriva: 11, 
         alarms: { pt: 4, ft: 3, ta: 75, ma: 4, te: 42, rt: 12, ne: 5, tea: 35 } 
       },
       { 
-        week: 'S15', reitero: 18.5, resolucion: 76, deriva: 10, 
+        week: 'S15', reitero: 18.5, resolucion: 74, deriva: 9.5, 
         alarms: { pt: 3, ft: 2, ta: 65, ma: 3, te: 44, rt: 10, ne: 4, tea: 30 } 
       },
     ],
@@ -113,7 +104,8 @@ const MOCK_BP_DATA: BPSession[] = [
   },
   {
     id: '2',
-    techName: 'RODRIGUEZ ARIEL',
+    techName: 'GARCIA JUAN CARLOS',
+    dni: '28445123',
     cell: 'VARELA 2',
     district: 'Varela',
     status: 'seguimiento',
@@ -147,6 +139,40 @@ const StatusBadge = ({ status }: { status: BPSession['status'] }) => {
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '14px', backgroundColor: bg, color, fontSize: '13px', fontWeight: '900', border: `1px solid ${dot}33` }}>
       <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dot }} />
       {label}
+    </div>
+  );
+};
+
+const MetricCard = ({ 
+  label, 
+  value, 
+  previousValue, 
+  isLowerBetter = true,
+  unit = '%'
+}: { 
+  label: string, 
+  value: number, 
+  previousValue: number, 
+  isLowerBetter?: boolean,
+  unit?: string
+}) => {
+  const diff = value - previousValue;
+  const isBetter = isLowerBetter ? diff < 0 : diff > 0;
+  const isSame = diff === 0;
+  
+  const color = isSame ? '#64748b' : (isBetter ? '#10b981' : '#ef4444');
+  const Icon = isSame ? Minus : (isBetter ? (isLowerBetter ? TrendingDown : TrendingUp) : (isLowerBetter ? TrendingUp : TrendingDown));
+
+  return (
+    <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '24px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <span style={{ fontSize: '12px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+        <h3 style={{ fontSize: '32px', fontWeight: '950', color: '#1e293b', letterSpacing: '-1.5px', margin: 0 }}>{value}{unit}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', color, gap: '2px', backgroundColor: `${color}10`, padding: '2px 8px', borderRadius: '8px' }}>
+          <Icon size={16} strokeWidth={3} />
+          <span style={{ fontSize: '13px', fontWeight: '900' }}>{diff > 0 ? '+' : ''}{diff.toFixed(1)}{unit}</span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -298,6 +324,15 @@ export default function SeguimientoBP() {
   const [selectedTech, setSelectedTech] = useState<BPSession | null>(null);
   const [isActionsDrawerOpen, setIsActionsDrawerOpen] = useState(false);
 
+  // --- Helpers for Metrics ---
+  const currentKpis = useMemo(() => {
+    if (!selectedTech || selectedTech.kpiHistory.length < 2) return null;
+    const history = selectedTech.kpiHistory;
+    const current = history[history.length - 1];
+    const previous = history[history.length - 2];
+    return { current, previous };
+  }, [selectedTech]);
+
   // --- Handlers ---
   const handleTechClick = (tech: BPSession) => {
     setSelectedTech(tech);
@@ -330,7 +365,7 @@ export default function SeguimientoBP() {
                </div>
                <div>
                   <h1 style={{ fontSize: '28px', fontWeight: '950', color: '#1e293b', letterSpacing: '-1.5px', lineHeight: '1' }}>{selectedTech?.techName}</h1>
-                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#64748b' }}>{selectedTech?.cell} • {selectedTech?.district}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#64748b' }}>DNI: {selectedTech?.dni} • {selectedTech?.cell} • {selectedTech?.district}</span>
                </div>
             </div>
             <div style={{ display: 'flex', gap: '40px', borderLeft: '1px solid #f1f5f9', paddingLeft: '40px' }}>
@@ -348,7 +383,7 @@ export default function SeguimientoBP() {
       </header>
 
       {view === 'list' ? (
-        /* VISTA GLOBAL LIST (Maintained) */
+        /* VISTA GLOBAL LIST */
         <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
@@ -364,7 +399,11 @@ export default function SeguimientoBP() {
                 <tr key={tech.id} onClick={() => handleTechClick(tech)} style={{ borderTop: '1px solid #f1f5f9', cursor: 'pointer' }}>
                    <td style={{ padding: '20px 32px' }}>
                       <span style={{ display: 'block', fontWeight: '950', color: '#1e293b' }}>{tech.techName}</span>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8' }}>{tech.cell}</span>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '12px', fontWeight: '800', color: '#94a3b8' }}>
+                        <span>DNI: {tech.dni}</span>
+                        <span>•</span>
+                        <span>{tech.cell}</span>
+                      </div>
                    </td>
                    <td style={{ padding: '20px 32px' }}><StatusBadge status={tech.status} /></td>
                    <td style={{ padding: '20px 32px', textAlign: 'center' }}><span style={{ fontWeight: '950', fontSize: '18px' }}>{tech.mainKpi}%</span></td>
@@ -375,47 +414,46 @@ export default function SeguimientoBP() {
            </table>
         </div>
       ) : (
-        /* REDISEÑO DETALLE */
+        /* VISTA DETALLE ACTUALIZADA */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
-          {/* Card Estado Analítico */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 300px', gap: '24px' }}>
+          {/* Bloque Superior de KPIs Actuales */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+             {/* 1. Estado */}
              <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '24px', border: '1px solid #e2e8f0', display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: selectedTech?.status === 'critico' ? '#fee2e2' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedTech?.status === 'critico' ? '#ef4444' : '#10b981' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: selectedTech?.status === 'critico' ? '#fee2e2' : (selectedTech?.status === 'mejora' ? '#dcfce7' : '#fef3c7'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedTech?.status === 'critico' ? '#ef4444' : (selectedTech?.status === 'mejora' ? '#10b981' : '#f59e0b') }}>
                     <AlertCircle size={24} strokeWidth={2.5} />
                 </div>
                 <div>
-                   <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase' }}>Estado</span>
-                   <h4 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{selectedTech?.status.toUpperCase()}</h4>
+                   <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase' }}>Estado Actual</span>
+                   <h4 style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b', lineHeight: 1.2 }}>{selectedTech?.status.toUpperCase()}</h4>
+                   <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>Check: {selectedTech?.lastCheckStatus.toUpperCase()}</span>
                 </div>
              </div>
              
-             <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '24px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase' }}>Reitero Actual</span>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
-                   <span style={{ fontSize: '32px', fontWeight: '950', color: 'var(--movistar-blue)', letterSpacing: '-1.5px', lineHeight: '1' }}>{selectedTech?.mainKpi}%</span>
-                   <div style={{ color: selectedTech?.trend === 'up' ? '#10b981' : '#ef4444', marginBottom: '4px' }}>
-                      {selectedTech?.trend === 'up' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                   </div>
-                </div>
-             </div>
+             {/* 2. Reitero Actual */}
+             <MetricCard 
+                label="Reitero Actual"
+                value={currentKpis?.current.reitero ?? 0}
+                previousValue={currentKpis?.previous.reitero ?? 0}
+                isLowerBetter={true}
+             />
 
-             <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '24px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase' }}>Perfil Operativo</span>
-                <p style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginTop: '4px' }}>
-                   {(selectedTech?.mainKpi ?? 0) > 15 ? '🚩 Alto Riesgo de Reincidencia' : '⚡ Estable con desviaciones menores'}
-                </p>
-             </div>
+             {/* 3. Resolución Actual */}
+             <MetricCard 
+                label="Resolución Actual"
+                value={currentKpis?.current.resolucion ?? 0}
+                previousValue={currentKpis?.previous.resolucion ?? 0}
+                isLowerBetter={false}
+             />
 
-             <div style={{ backgroundColor: '#1e293b', borderRadius: '32px', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' }}>
-                <div>
-                   <span style={{ fontSize: '11px', fontWeight: '950', opacity: 0.6, textTransform: 'uppercase' }}>Último Check</span>
-                   <div style={{ fontSize: '18px', fontWeight: '950', color: selectedTech?.lastCheckStatus === 'mejora' ? '#10b981' : '#f59e0b' }}>
-                      {selectedTech?.lastCheckStatus.toUpperCase()}
-                   </div>
-                </div>
-                <div style={{ opacity: 0.4 }}><ClipboardList size={28} /></div>
-             </div>
+             {/* 4. Deriva Actual */}
+             <MetricCard 
+                label="Deriva Actual"
+                value={currentKpis?.current.deriva ?? 0}
+                previousValue={currentKpis?.previous.deriva ?? 0}
+                isLowerBetter={true}
+             />
           </div>
 
           {/* Gráfico KPIs */}
@@ -427,7 +465,7 @@ export default function SeguimientoBP() {
              <KpiChart history={selectedTech?.kpiHistory || []} />
           </section>
 
-          {/* Análisis de Alarmas (The Redesign Focus) */}
+          {/* Análisis de Alarmas */}
           <AlarmBlock history={selectedTech?.kpiHistory || []} />
 
           {/* Acciones Históricas */}
@@ -442,7 +480,7 @@ export default function SeguimientoBP() {
         </div>
       )}
 
-      {/* Actions Drawer (Simplified) */}
+      {/* Actions Drawer */}
       {isActionsDrawerOpen && (
         <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 10000 }}>
            <div onClick={() => setIsActionsDrawerOpen(false)} style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)' }} />
