@@ -902,45 +902,137 @@ function BPTrackingContent() {
            </section>
         </div>
       ) : (
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-           <div style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ maxWidth: '950px', margin: '0 auto', position: 'relative' }}>
+           {/* Timeline Sidebar Header */}
+           <div style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
               <div onClick={() => setIsAntExpanded(!isAntExpanded)} style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <History size={20} />
-                    <h3 style={{ fontSize: '18px', fontWeight: '950' }}>ANTECEDENTES</h3>
+                    <div style={{ backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '12px' }}>
+                        <History size={20} color="#0f172a" />
+                    </div>
+                    <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#0f172a' }}>ANTECEDENTES</h3>
                  </div>
-                 <ChevronDown size={20} />
+                 <div style={{ color: '#64748b', transition: 'transform 0.3s', transform: isAntExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>
+                    <ChevronDown size={20} />
+                 </div>
               </div>
               {isAntExpanded && (
                 <div style={{ padding: '0 32px 32px 32px', borderTop: '1px solid #f1f5f9', paddingTop: '32px' }}>
                    {session.antecedentes.map(ant => (
-                     <div key={ant.id} style={{ padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                        <div><div style={{ fontWeight: '950' }}>{ant.titulo}</div><div style={{ fontSize: '13px' }}>{ant.descripcion}</div></div>
-                        <div style={{ fontSize: '12px' }}>{ant.fecha}</div>
+                     <div key={ant.id} style={{ padding: '20px', borderRadius: '20px', border: '1px solid #f1f5f9', backgroundColor: '#f8fafc', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+                        <div>
+                            <div style={{ fontWeight: '950', color: '#0f172a', marginBottom: '4px' }}>{ant.titulo}</div>
+                            <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.5' }}>{ant.descripcion}</div>
+                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', whiteSpace: 'nowrap', marginLeft: '24px' }}>{ant.fecha}</div>
                      </div>
                    ))}
-                   <button onClick={() => setShowAntecedenteModal(true)} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '2px dashed #cbd5e1', backgroundColor: 'transparent' }}>+ Agregar</button>
+                   <button onClick={() => setShowAntecedenteModal(true)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2.5px dashed #cbd5e1', backgroundColor: 'transparent', color: '#64748b', fontWeight: '900', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>+ Agregar Nuevo Antecedente</button>
                 </div>
               )}
            </div>
-           <SectionHeader title="HISTORIAL" icon={MessageSquare}><button onClick={handleOpenNewTracking} style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '10px 20px', borderRadius: '14px', border: 'none' }}>+ Nuevo</button></SectionHeader>
-           {session.actions.map(a => (
-             <div key={a.id} style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
-                <Clock size={18} />
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #e2e8f0', flex: 1 }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                      <div>
-                        <span style={{ fontSize: '10px', fontWeight: '950' }}>SEMANA {a.weekLabel}</span>
-                        <button onClick={() => openSnapshot(a.dateRange)} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', color: '#019df4', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
-                            <BarChart size={14} /> Ver Snapshot
-                        </button>
-                      </div>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>{a.date}</span>
-                   </div>
-                   <p style={{ margin: 0, fontSize: '15px', color: '#334155' }}>{a.observation}</p>
-                </div>
-             </div>
-           ))}
+
+           <SectionHeader title="HISTORIAL DE SEGUIMIENTO" icon={ClipboardList}>
+              <button 
+                onClick={handleOpenNewTracking} 
+                style={{ backgroundColor: '#019df4', color: 'white', padding: '12px 24px', borderRadius: '14px', border: 'none', fontWeight: '950', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.2)' }}
+              >
+                + Registrar Seguimiento
+              </button>
+           </SectionHeader>
+
+           {/* Timeline Container */}
+           <div style={{ position: 'relative', paddingLeft: '48px', marginTop: '40px' }}>
+                {/* Vertical Line */}
+                <div style={{ position: 'absolute', left: '16px', top: '10px', bottom: '10px', width: '3px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
+
+                {session.actions.map((a, idx) => {
+                    const isFirst = idx === 0;
+                    // Prepare for status color logic (using Resolucion as proxy for demonstration)
+                    const weekData = session.history.find(w => w.dateRange === a.dateRange);
+                    const statusColor = weekData ? getSemaforo(weekData.resolucion, 'resolucion').color : '#019df4';
+                    
+                    return (
+                        <div key={a.id} style={{ position: 'relative', marginBottom: '48px' }}>
+                            {/* Point on timeline */}
+                            <div style={{ 
+                                position: 'absolute', 
+                                left: '-40px', 
+                                top: '32px', 
+                                width: '18px', 
+                                height: '18px', 
+                                backgroundColor: isFirst ? '#019df4' : 'white', 
+                                border: `4px solid ${isFirst ? '#bfdbfe' : '#e2e8f0'}`, 
+                                borderRadius: '50%',
+                                zIndex: 1,
+                                boxShadow: isFirst ? '0 0 0 4px rgba(1, 157, 244, 0.1)' : 'none'
+                             }} />
+
+                            <div style={{ 
+                                backgroundColor: isFirst ? '#f0f9ff' : 'white', 
+                                borderRadius: '28px', 
+                                padding: '32px', 
+                                border: `1px solid ${isFirst ? '#bae6fd' : '#e2e8f0'}`, 
+                                borderLeft: `6px solid ${isFirst ? '#019df4' : statusColor}`,
+                                flex: 1,
+                                boxShadow: isFirst ? '0 10px 30px rgba(1, 157, 244, 0.08)' : '0 4px 20px rgba(0,0,0,0.02)',
+                                transition: 'transform 0.2s',
+                                cursor: 'default'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: isFirst ? '#e0f2fe' : '#f1f5f9', padding: '6px 14px', borderRadius: '10px', width: 'fit-content' }}>
+                                            <CalendarDays size={14} color={isFirst ? '#0369a1' : '#64748b'} />
+                                            <span style={{ fontSize: '11px', fontWeight: '950', color: isFirst ? '#0369a1' : '#475569', letterSpacing: '0.3px' }}>
+                                                {a.weekLabel}
+                                            </span>
+                                        </div>
+                                        <button 
+                                            onClick={() => openSnapshot(a.dateRange)} 
+                                            style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '8px', 
+                                                color: '#019df4', 
+                                                border: '1.5px solid #e0f2fe', 
+                                                backgroundColor: 'white',
+                                                padding: '8px 16px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '950',
+                                                cursor: 'pointer',
+                                                width: 'fit-content',
+                                                boxShadow: '0 2px 6px rgba(1, 157, 244, 0.05)',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <BarChart size={14} /> Ver Snapshot Analítico
+                                        </button>
+                                    </div>
+                                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <span style={{ fontSize: '12px', fontWeight: '950', color: '#1e293b' }}>
+                                            {a.date.split(' ')[0]} {/* Date */}
+                                        </span>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8' }}>
+                                            {a.date.split(' ').slice(1).join(' ')} {/* Time */}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style={{ 
+                                    padding: '20px', 
+                                    backgroundColor: isFirst ? 'rgba(255,255,255,0.5)' : '#f8fafc', 
+                                    borderRadius: '18px',
+                                    border: `1px solid ${isFirst ? '#bae6fd' : '#f1f5f9'}`
+                                }}>
+                                    <p style={{ margin: 0, fontSize: '15px', color: '#334155', lineHeight: '1.6', fontWeight: '500' }}>
+                                        {a.observation}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+           </div>
         </div>
       )}
 
