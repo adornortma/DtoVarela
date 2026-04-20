@@ -67,14 +67,15 @@ interface WeeklyKPI {
   weekLabel: string;
   dateRange: string;
   monthLabel: string;
+  pdi: number;
+  prod_equivalente: number;
   resolucion: number;
   reitero: number;
-  puntualidad: number;
-  productividad: number;
   status: WeeklyLoadStatus;
   alarms: BPAlarmData | null;
   observation?: string;
   locked?: boolean;
+  updated_at?: string;
 }
 
 interface BPAction {
@@ -109,12 +110,12 @@ const getSemaforo = (value: number, kpi: string) => {
     if (value <= 6) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
-  if (kpi === 'puntualidad') {
+  if (kpi === 'pdi') {
     if (value >= 80) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
     if (value >= 75) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
-  if (kpi === 'productividad') {
+  if (kpi === 'prod_equivalente') {
     if (value >= 6) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
     if (value >= 5.2) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
@@ -127,7 +128,7 @@ const getSemaforo = (value: number, kpi: string) => {
 const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, value: string | number, previousValue: number, kpiKey: string }) => {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   const variation = numValue - previousValue;
-  const isPositiveMetric = ['resolucion', 'puntualidad', 'productividad'].includes(kpiKey);
+  const isPositiveMetric = ['resolucion', 'pdi', 'prod_equivalente'].includes(kpiKey);
   const isUp = variation > 0;
   const trendColor = isUp === isPositiveMetric ? '#059669' : '#dc2626';
   const semaforo = getSemaforo(numValue, kpiKey);
@@ -139,7 +140,7 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
         <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950' }}>{semaforo.label}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'productividad' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
+        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: trendColor }}>
           {isUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
           <span style={{ fontSize: '14px', fontWeight: '950' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(1)}%`}</span>
@@ -450,7 +451,7 @@ const StatItem = ({ label, value, kpiKey }: { label: string, value: number, kpiK
   return (
     <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
       <p style={{ fontSize: '10px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</p>
-      <div style={{ fontSize: '20px', fontWeight: '950', color: semaforo.color }}>{kpiKey === 'productividad' ? value.toFixed(2) : `${value.toFixed(1)}%`}</div>
+      <div style={{ fontSize: '20px', fontWeight: '950', color: semaforo.color }}>{kpiKey === 'prod_equivalente' ? value.toFixed(2) : `${value.toFixed(1)}%`}</div>
     </div>
   );
 };
@@ -464,22 +465,48 @@ const AlarmRow = ({ label, value }: { label: string, value: number }) => (
 
 const AlarmsModal = ({ week, onClose, onSave }: any) => {
   const [data, setData] = useState<BPAlarmData>(week.alarms || { pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
+  const [kpiData, setKpiData] = useState({ pdi: week.pdi, prod_equivalente: week.prod_equivalente, resolucion: week.resolucion, reitero: week.reitero });
+  
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '500px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '600px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
-          <h3 style={{ fontSize: '24px', fontWeight: '950' }}>Carga de Alarmas</h3>
+          <h3 style={{ fontSize: '24px', fontWeight: '950' }}>Edición Semanal</h3>
           <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} /></button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {Object.keys(data).map(k => (
+
+        <SubsectionHeader title="Indicadores KPI" icon={Zap} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+          {['PDI', 'PROD_EQUIVALENTE', 'RESOLUCION', 'REITERO'].map(k => (
             <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '11px', fontWeight: '950', color: '#64748b' }}>{k.toUpperCase()}</label>
-              <input type="number" value={(data as any)[k]} onChange={(e) => setData({ ...data, [k]: parseInt(e.target.value) || 0 })} style={{ padding: '12px', borderRadius: '12px', border: '1.5px solid #f1f5f9', outline: 'none' }} />
+              <label style={{ fontSize: '11px', fontWeight: '950', color: '#64748b' }}>{k.replace('_', ' ')}</label>
+              <input 
+                type="number" 
+                step="0.1"
+                value={(kpiData as any)[k.toLowerCase()]} 
+                onChange={(e) => setKpiData({ ...kpiData, [k.toLowerCase()]: parseFloat(e.target.value) || 0 })} 
+                style={{ padding: '12px', borderRadius: '12px', border: '1.5px solid #f1f5f9', outline: 'none' }} 
+              />
             </div>
           ))}
         </div>
-        <button onClick={() => onSave(data, week.dateRange)} style={{ width: '100%', marginTop: '32px', padding: '16px', borderRadius: '16px', backgroundColor: '#019df4', color: 'white', fontWeight: '950', border: 'none', cursor: 'pointer' }}>Guardar Cambios</button>
+
+        <SubsectionHeader title="Alarmas Operativas" icon={AlertCircle} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '32px' }}>
+          {Object.keys(data).map(k => (
+            <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '10px', fontWeight: '950', color: '#64748b' }}>{k.toUpperCase()}</label>
+              <input 
+                type="number" 
+                value={(data as any)[k]} 
+                onChange={(e) => setData({ ...data, [k]: parseInt(e.target.value) || 0 })} 
+                style={{ padding: '10px', borderRadius: '10px', border: '1.5px solid #f1f5f9', outline: 'none', fontSize: '13px' }} 
+              />
+            </div>
+          ))}
+        </div>
+
+        <button onClick={() => onSave(data, week.dateRange, kpiData)} style={{ width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#019df4', color: 'white', fontWeight: '950', border: 'none', cursor: 'pointer' }}>Guardar Todo</button>
       </div>
     </div>
   );
@@ -496,10 +523,10 @@ const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () =
         </div>
 
         <div style={{ gridTemplateColumns: 'repeat(4, 1fr)', display: 'grid', gap: '16px', marginBottom: '40px' }}>
+          <StatItem label="PDI" value={week.pdi} kpiKey="pdi" />
+          <StatItem label="Prod. equivalente" value={week.prod_equivalente} kpiKey="prod_equivalente" />
           <StatItem label="Resolución" value={week.resolucion} kpiKey="resolucion" />
-          <StatItem label="Reitero" value={week.reitero} kpiKey="reitero" />
-          <StatItem label="Puntualidad" value={week.puntualidad} kpiKey="puntualidad" />
-          <StatItem label="Productividad" value={week.productividad} kpiKey="productividad" />
+          <StatItem label="Reiteros" value={week.reitero} kpiKey="reitero" />
         </div>
 
         <div>
@@ -533,9 +560,20 @@ const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () =
 
 const NewTrackingForm = ({ week, onClose, onSave }: any) => {
   const [alarms, setAlarms] = useState<BPAlarmData>({ pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
+  const [kpis, setKpis] = useState({ pdi: 0, prod_equivalente: 0, resolucion: 0, reitero: 0 });
   const [obs, setObs] = useState('');
+
+  const validate = () => {
+    const vals = Object.values(kpis);
+    if (vals.some(v => isNaN(v) || v < 0)) {
+      alert("Por favor ingrese valores numéricos válidos (>= 0)");
+      return false;
+    }
+    return true;
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: '80vh', overflowY: 'auto', paddingRight: '10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h3 style={{ fontSize: '20px', fontWeight: '950' }}>Completar Seguimiento</h3>
@@ -543,19 +581,54 @@ const NewTrackingForm = ({ week, onClose, onSave }: any) => {
         </div>
         <button onClick={onClose} style={{ border: 'none', background: 'none' }}><X /></button>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-        {Object.keys(alarms).map(k => (
-          <div key={k}>
-            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>{k.toUpperCase()}</label>
-            <input type="number" value={(alarms as any)[k]} onChange={e => setAlarms({ ...alarms, [k]: parseInt(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-          </div>
-        ))}
-      </div>
+
       <div>
-        <label style={{ fontWeight: '950', fontSize: '13px', display: 'block', marginBottom: '12px' }}>Observación</label>
-        <textarea rows={4} value={obs} onChange={e => setObs(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} />
+        <SubsectionHeader title="KPIs del Técnico (Manual)" icon={Zap} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>PDI (%)</label>
+            <input type="number" step="0.1" value={kpis.pdi} onChange={e => setKpis({ ...kpis, pdi: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>PROD. EQUIVALENTE</label>
+            <input type="number" step="0.1" value={kpis.prod_equivalente} onChange={e => setKpis({ ...kpis, prod_equivalente: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>RESOLUCIÓN (%)</label>
+            <input type="number" step="0.1" value={kpis.resolucion} onChange={e => setKpis({ ...kpis, resolucion: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>REITEROS (%)</label>
+            <input type="number" step="0.1" value={kpis.reitero} onChange={e => setKpis({ ...kpis, reitero: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+          </div>
+        </div>
       </div>
-      <button onClick={() => onSave(alarms, obs)} style={{ padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none' }}>Guardar Registro</button>
+
+      <div>
+        <SubsectionHeader title="Alarmas Operativas" icon={AlertTriangle} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          {Object.keys(alarms).map(k => (
+            <div key={k}>
+              <label style={{ fontSize: '10px', fontWeight: '950', display: 'block', marginBottom: '6px' }}>{k.toUpperCase()}</label>
+              <input type="number" value={(alarms as any)[k]} onChange={e => setAlarms({ ...alarms, [k]: parseInt(e.target.value) || 0 })} style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label style={{ fontWeight: '950', fontSize: '13px', display: 'block', marginBottom: '12px' }}>Observación del Líder</label>
+        <textarea rows={3} value={obs} onChange={e => setObs(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} placeholder="Escriba aquí el análisis de la semana..." />
+      </div>
+
+      <button
+        onClick={() => {
+          if (validate()) onSave(alarms, obs, kpis);
+        }}
+        style={{ padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer', marginTop: '8px' }}
+      >
+        Guardar Registro Completo
+      </button>
     </div>
   );
 };
@@ -608,29 +681,25 @@ function BPTrackingContent() {
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
 
-    const { data: metrics } = await supabase.from('metricas').select('*').eq('tecnico_id', techId).gte('fecha', startStr).lte('fecha', endStr);
     const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', techId).eq('fecha_inicio', startStr).single();
-
-    const stats = metrics?.length ? {
-      resolucion: metrics.reduce((acc, m) => acc + (m.resolucion || 0), 0) / metrics.length,
-      reitero: metrics.reduce((acc, m) => acc + (m.reitero || 0), 0) / metrics.length,
-      puntualidad: metrics.reduce((acc, m) => acc + (m.puntualidad || 0), 0) / metrics.length,
-      productividad: metrics.reduce((acc, m) => acc + (m.productividad || 0), 0) / metrics.length
-    } : { resolucion: 0, reitero: 0, puntualidad: 0, productividad: 0 };
 
     return {
       id: Math.random().toString(36).substr(2, 9),
       weekLabel: formatDateRange(start, end),
       dateRange: startStr,
       monthLabel: start.toLocaleString('es-ES', { month: 'long' }).toUpperCase(),
-      ...stats,
+      pdi: tracking?.kpi_pdi || 0,
+      prod_equivalente: tracking?.kpi_prod_equiv || 0,
+      resolucion: tracking?.kpi_resolucion || 0,
+      reitero: tracking?.kpi_reitero || 0,
       status: (tracking?.estado_carga || 'empty') as WeeklyLoadStatus,
       alarms: tracking ? {
         pt: tracking.alarma_pt, ft: tracking.alarma_ft, ta: tracking.alarma_ta, ma: tracking.alarma_ma,
         te: tracking.alarma_te, rt: tracking.alarma_rt, ne: tracking.alarma_ne, tea: tracking.alarma_tea
       } : null,
       observation: tracking?.observacion_lider || '',
-      locked: tracking?.confirmado || false
+      locked: tracking?.confirmado || false,
+      updated_at: tracking?.fecha_confirmacion
     };
   };
 
@@ -684,7 +753,7 @@ function BPTrackingContent() {
     setDuplicateMode(weekData.locked ? 'warning' : 'form');
   };
 
-  const handleSaveFullTracking = async (alarms: BPAlarmData, observation: string) => {
+  const handleSaveFullTracking = async (alarms: BPAlarmData, observation: string, kpis: any) => {
     if (!session || !tempWeek) return;
     const { start, end } = getWeekRange(new Date(tempWeek.dateRange));
 
@@ -692,6 +761,10 @@ function BPTrackingContent() {
       tecnico_id: session.id,
       fecha_inicio: start.toISOString().split('T')[0],
       fecha_fin: end.toISOString().split('T')[0],
+      kpi_pdi: kpis.pdi,
+      kpi_prod_equiv: kpis.prod_equivalente,
+      kpi_resolucion: kpis.resolucion,
+      kpi_reitero: kpis.reitero,
       alarma_pt: alarms.pt, alarma_ft: alarms.ft, alarma_ta: alarms.ta, alarma_ma: alarms.ma,
       alarma_te: alarms.te, alarma_rt: alarms.rt, alarma_ne: alarms.ne, alarma_tea: alarms.tea,
       observacion_lider: observation, confirmado: true, estado_carga: 'full',
@@ -710,20 +783,30 @@ function BPTrackingContent() {
     if (activeWeek) setObservationText(activeWeek.observation || '');
   }, [activeWeek]);
 
-  const handleSaveAlarms = async (data: BPAlarmData, date?: string) => {
-    if (!session || !activeWeek) return;
-    const targetDate = date || activeWeek.dateRange;
-    const { start, end } = getWeekRange(new Date(targetDate));
+  const handleSaveAlarms = async (data: BPAlarmData, date: string, kpiData?: any) => {
+    if (!session) return;
+    const { start, end } = getWeekRange(new Date(date));
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
-    const { error } = await supabase.from('seguimiento_bp').upsert({
+    
+    const payload: any = {
       tecnico_id: session.id,
       fecha_inicio: startStr,
       fecha_fin: endStr,
       alarma_pt: data.pt, alarma_ft: data.ft, alarma_ta: data.ta, alarma_ma: data.ma,
       alarma_te: data.te, alarma_rt: data.rt, alarma_ne: data.ne, alarma_tea: data.tea,
-      estado_carga: 'full'
-    }, { onConflict: 'tecnico_id, fecha_inicio' });
+      estado_carga: 'full',
+      fecha_confirmacion: new Date().toISOString()
+    };
+
+    if (kpiData) {
+      payload.kpi_pdi = kpiData.pdi;
+      payload.kpi_prod_equiv = kpiData.prod_equivalente;
+      payload.kpi_resolucion = kpiData.resolucion;
+      payload.kpi_reitero = kpiData.reitero;
+    }
+
+    const { error } = await supabase.from('seguimiento_bp').upsert(payload, { onConflict: 'tecnico_id, fecha_inicio' });
     if (error) alert('Error: ' + error.message);
     else { setModalWeek(null); fetchData(); }
   };
@@ -804,10 +887,10 @@ function BPTrackingContent() {
           <section>
             <SectionHeader title="KPIs ACTUALES" icon={Zap} />
             <div style={{ display: 'flex', gap: '20px' }}>
+              <StatCard title="PDI %" value={activeWeek?.pdi || 0} previousValue={prevWeekRow?.pdi || 0} kpiKey="pdi" />
+              <StatCard title="Prod. equivalente" value={activeWeek?.prod_equivalente || 0} previousValue={prevWeekRow?.prod_equivalente || 0} kpiKey="prod_equivalente" />
               <StatCard title="Resolución %" value={activeWeek?.resolucion || 0} previousValue={prevWeekRow?.resolucion || 0} kpiKey="resolucion" />
-              <StatCard title="Reitero %" value={activeWeek?.reitero || 0} previousValue={prevWeekRow?.reitero || 0} kpiKey="reitero" />
-              <StatCard title="Puntualidad %" value={activeWeek?.puntualidad || 0} previousValue={prevWeekRow?.puntualidad || 0} kpiKey="puntualidad" />
-              <StatCard title="Productividad" value={activeWeek?.productividad || 0} previousValue={prevWeekRow?.productividad || 0} kpiKey="productividad" />
+              <StatCard title="Reiteros %" value={activeWeek?.reitero || 0} previousValue={prevWeekRow?.reitero || 0} kpiKey="reitero" />
             </div>
           </section>
 
@@ -825,7 +908,8 @@ function BPTrackingContent() {
                   <thead>
                     <tr>
                       <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>{kpiScale === 'weekly' ? 'FECHA' : 'MES'}</th>
-                      {['Resolución', 'Reiteros', 'Puntualidad', 'Prod.'].map(h => <th key={h} style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
+                      {['PDI', 'Prod. equivalente', 'Resolución', 'Reiteros'].map(h => <th key={h} style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
+                      <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>ACTUALIZACIÓN</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -835,35 +919,54 @@ function BPTrackingContent() {
                       const currentYear = now.getFullYear();
                       return ALL_MONTHS.slice(0, currentMonthIdx + 1).reverse().map(mLabel => {
                         const weeksInMonth = session.history.filter(w => w.monthLabel === mLabel);
-                        if (weeksInMonth.length === 0) return { id: mLabel, label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`, values: [null, null, null, null] };
+                        if (weeksInMonth.length === 0) return { id: mLabel, label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`, values: [null, null, null, null], lastUpdated: null };
                         
-                        const weeksWithData = weeksInMonth.filter(w => w.resolucion > 0);
+                        const weeksWithData = weeksInMonth.filter(w => w.status === 'full');
                         const count = weeksWithData.length || 1;
                         const avg = (key: keyof typeof weeksWithData[0]) => weeksWithData.reduce((acc, w) => acc + (Number(w[key]) || 0), 0) / count;
 
                         return {
                           id: mLabel,
                           label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`,
-                          values: [avg('resolucion'), avg('reitero'), avg('puntualidad'), avg('productividad')]
+                          values: [avg('pdi'), avg('prod_equivalente'), avg('resolucion'), avg('reitero')],
+                          lastUpdated: weeksInMonth[0]?.updated_at
                         };
                       });
                     })()).map((row: any) => {
                       const isWeekly = kpiScale === 'weekly';
                       const label = isWeekly ? row.dateRange : row.label;
-                      const vals = isWeekly ? [row.resolucion, row.reitero, row.puntualidad, row.productividad] : row.values;
+                      const vals = isWeekly ? [row.pdi, row.prod_equivalente, row.resolucion, row.reitero] : row.values;
+                      const lastUpdate = isWeekly ? row.updated_at : row.lastUpdated;
                       
+                      // Data Freshness Indicator
+                      let dotColor = '#cbd5e1'; // Gray (no data)
+                      if (lastUpdate) {
+                        const diffDays = Math.floor((new Date().getTime() - new Date(lastUpdate).getTime()) / (1000 * 60 * 60 * 24));
+                        if (diffDays < 7) dotColor = '#10b981'; // Green
+                        else if (diffDays < 14) dotColor = '#f59e0b'; // Yellow
+                        else dotColor = '#ef4444'; // Red
+                      }
+
                       return (
-                        <tr key={row.id}>
+                        <tr key={row.id} onClick={() => isWeekly && setModalWeek(row)} style={{ cursor: isWeekly ? 'pointer' : 'default' }}>
                           <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}><div style={{ fontWeight: '950', color: vals[0] === null ? '#94a3b8' : '#0f172a' }}>{label}</div></td>
                           {vals.map((v: any, i: number) => (
-                            <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 3 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 3 ? '0 16px 16px 0' : '0' }}>
-                              {v === null ? (
+                            <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                              {v === null || (isWeekly && row.status === 'empty') ? (
                                 <span style={{ color: '#cbd5e1', fontWeight: '900' }}>—</span>
                               ) : (
-                                <div style={{ backgroundColor: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).bg, color: getSemaforo(v || 0, ['resolucion', 'reitero', 'puntualidad', 'productividad'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>{i === 3 ? v.toFixed(2) : `${v.toFixed(1)}%`}</div>
+                                <div style={{ backgroundColor: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).bg, color: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>{i === 1 ? v.toFixed(2) : `${v.toFixed(1)}%`}</div>
                               )}
                             </td>
                           ))}
+                          <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0' }}>
+                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }}></div>
+                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>
+                                  {lastUpdate ? new Date(lastUpdate).toLocaleDateString() : 'Pendiente'}
+                                </span>
+                             </div>
+                          </td>
                         </tr>
                       );
                     })}
