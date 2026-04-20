@@ -105,19 +105,19 @@ const getSemaforo = (value: number, kpi: string) => {
     if (value >= 70) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
-  if (kpi === 'reitero') {
+  if (kpi === 'reite' || kpi === 'reitero') {
     if (value <= 4.5) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value <= 6) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    if (value <= 5.0) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
   if (kpi === 'pdi') {
-    if (value >= 80) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value >= 75) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    if (value >= 100) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
+    if (value >= 90) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
   if (kpi === 'prod_equivalente') {
-    if (value >= 6) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value >= 5.2) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
+    if (value >= 6.0) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
+    if (value >= 5.0) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
     return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
   }
   return { color: '#64748b', bg: '#f1f5f9', label: 'N/A' };
