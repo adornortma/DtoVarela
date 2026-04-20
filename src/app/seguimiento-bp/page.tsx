@@ -709,7 +709,7 @@ function BPTrackingContent() {
         }
       }
 
-      const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', tech.id).eq('confirmado', true).order('fecha_confirmacion', { ascending: false });
+      const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', tech.id).eq('confirmado', true).order('fecha_inicio', { ascending: false });
       const { data: antData } = await supabase.from('antecedentes_bp').select('*').eq('tecnico_id', tech.id).order('fecha', { ascending: false });
 
       setSession({
