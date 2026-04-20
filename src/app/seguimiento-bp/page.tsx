@@ -1067,7 +1067,7 @@ function BPTrackingContent() {
               <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={handleConfirmCheck} style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer' }}>{activeWeek?.locked ? 'Reconfirmar' : 'Confirmar'}</button>
+              <button onClick={handleConfirmCheck} style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer' }}>Guardar Check</button>
             </div>
           </section>
         </div>
