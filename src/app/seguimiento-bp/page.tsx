@@ -1100,7 +1100,14 @@ function BPTrackingContent() {
             )}
           </div>
 
-          <SectionHeader title="HISTORIAL DE SEGUIMIENTO" icon={ClipboardList} />
+          <SectionHeader title="HISTORIAL DE SEGUIMIENTO" icon={ClipboardList}>
+            <button
+              onClick={() => { setKpiView('table'); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100); }}
+              style={{ backgroundColor: '#019df4', color: 'white', padding: '12px 24px', borderRadius: '16px', fontWeight: '950', fontSize: '13px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 15px rgba(1, 157, 244, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Plus size={16} /> + Registrar Seguimiento
+            </button>
+          </SectionHeader>
 
           {/* Timeline Container */}
           <div style={{ position: 'relative', paddingLeft: '48px', marginTop: '40px' }}>
