@@ -699,7 +699,12 @@ function BPTrackingContent() {
 
   const handleSaveAlarms = async (data: BPAlarmData, date: string, kpiData?: any) => {
     if (!session) return;
-    const { start, end } = getWeekRange(new Date(date));
+    
+    // Convert YYYY-MM-DD string to safe local date to avoid timezone shifts
+    const [year, month, day] = date.split('-').map(Number);
+    const safeDate = new Date(year, month - 1, day);
+    
+    const { start, end } = getWeekRange(safeDate);
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
     
@@ -720,9 +725,16 @@ function BPTrackingContent() {
       payload.kpi_reitero = kpiData.reitero;
     }
 
-    const { error } = await supabase.from('seguimiento_bp').upsert(payload, { onConflict: 'tecnico_id, fecha_inicio' });
-    if (error) alert('Error: ' + error.message);
-    else { fetchData(); }
+    const { error } = await supabase.from('seguimiento_bp').upsert(payload, { 
+      onConflict: 'tecnico_id, fecha_inicio' 
+    });
+
+    if (error) {
+      console.error('Error saving:', error);
+      alert('Error al guardar: ' + error.message);
+    } else {
+      await fetchData(); // Refresh entire state
+    }
   };
 
   const handleConfirmCheck = async () => {
