@@ -603,42 +603,6 @@ const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () =
   );
 };
 
-const NewTrackingForm = ({ week, onClose, onSave }: any) => {
-  const [alarms, setAlarms] = useState<BPAlarmData>({ pt: 0, ft: 0, ta: 0, ma: 0, te: 0, rt: 0, ne: 0, tea: 0 });
-  const [kpis, setKpis] = useState({ pdi: 0, prod_equivalente: 0, resolucion: 0, reitero: 0 });
-  const [obs, setObs] = useState('');
-
-  const validate = () => {
-    const vals = Object.values(kpis);
-    if (vals.some(v => isNaN(v) || v < 0)) {
-      alert("Por favor ingrese valores numéricos válidos (>= 0)");
-      return false;
-    }
-    return true;
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: '80vh', overflowY: 'auto', paddingRight: '10px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '950' }}>Completar Seguimiento</h3>
-          <p style={{ fontSize: '14px', color: '#64748b' }}>Semana: {week.weekLabel}</p>
-        </div>
-        <button onClick={onClose} style={{ border: 'none', background: 'none' }}><X /></button>
-      </div>
-
-      <div>
-        <SubsectionHeader title="KPIs del Técnico (Manual)" icon={Zap} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>PDI (%)</label>
-            <input type="number" step="0.1" value={kpis.pdi} onChange={e => setKpis({ ...kpis, pdi: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>PROD. EQUIVALENTE</label>
-            <input type="number" step="0.1" value={kpis.prod_equivalente} onChange={e => setKpis({ ...kpis, prod_equivalente: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-          </div>
-          <div>
 // --- Main Tracking Component ---
 
 function BPTrackingContent() {
@@ -726,41 +690,6 @@ function BPTrackingContent() {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
-  const handleOpenNewTracking = () => {
-    setNewTrackingDate(new Date().toISOString().split('T')[0]);
-    setDuplicateMode('none');
-    setShowNewModal(true);
-  };
-
-  const handleProcessDate = async () => {
-    if (!session) return;
-    const weekData = await fetchWeekData(session.id, new Date(newTrackingDate));
-    setTempWeek(weekData);
-    setDuplicateMode(weekData.locked ? 'warning' : 'form');
-  };
-
-  const handleSaveFullTracking = async (alarms: BPAlarmData, observation: string, kpis: any) => {
-    if (!session || !tempWeek) return;
-    const { start, end } = getWeekRange(new Date(tempWeek.dateRange));
-
-    const { error } = await supabase.from('seguimiento_bp').upsert({
-      tecnico_id: session.id,
-      fecha_inicio: start.toISOString().split('T')[0],
-      fecha_fin: end.toISOString().split('T')[0],
-      kpi_pdi: kpis.pdi,
-      kpi_prod_equiv: kpis.prod_equivalente,
-      kpi_resolucion: kpis.resolucion,
-      kpi_reitero: kpis.reitero,
-      alarma_pt: alarms.pt, alarma_ft: alarms.ft, alarma_ta: alarms.ta, alarma_ma: alarms.ma,
-      alarma_te: alarms.te, alarma_rt: alarms.rt, alarma_ne: alarms.ne, alarma_tea: alarms.tea,
-      observacion_lider: observation, confirmado: true, estado_carga: 'full',
-      fecha_confirmacion: new Date().toISOString()
-    }, { onConflict: 'tecnico_id, fecha_inicio' });
-
-    if (error) alert(error.message);
-    else { setShowNewModal(false); fetchData(); }
-  };
-
   useEffect(() => { fetchData(); }, [dni]);
 
   const activeWeek = session?.history[0];
@@ -794,7 +723,7 @@ function BPTrackingContent() {
 
     const { error } = await supabase.from('seguimiento_bp').upsert(payload, { onConflict: 'tecnico_id, fecha_inicio' });
     if (error) alert('Error: ' + error.message);
-    else { setModalWeek(null); fetchData(); }
+    else { fetchData(); }
   };
 
   const handleConfirmCheck = async () => {
@@ -1229,37 +1158,7 @@ function BPTrackingContent() {
         </div>
       )}
 
-      {modalWeek && <AlarmsModal week={modalWeek} onClose={() => setModalWeek(null)} onSave={handleSaveAlarms} />}
       {selectedSnapshot && <SnapshotBottomSheet week={selectedSnapshot} onClose={() => setSelectedSnapshot(null)} />}
-      {showNewModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '600px', padding: '40px' }}>
-            {duplicateMode === 'none' && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                  <h2 style={{ fontSize: '24px', fontWeight: '950' }}>Nuevo Seguimiento</h2>
-                  <button onClick={() => setShowNewModal(false)} style={{ border: 'none', background: 'none' }}><X /></button>
-                </div>
-                <label style={{ fontSize: '13px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Seleccionar Fecha</label>
-                <input type="date" value={newTrackingDate} onChange={e => setNewTrackingDate(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '16px' }} />
-                <button onClick={handleProcessDate} style={{ width: '100%', marginTop: '24px', padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none' }}>Siguiente</button>
-              </>
-            )}
-            {duplicateMode === 'warning' && (
-              <div style={{ textAlign: 'center' }}>
-                <AlertTriangle size={48} color="#ef4444" style={{ margin: '0 auto 24px' }} />
-                <h2 style={{ fontSize: '20px', fontWeight: '950' }}>Semana ya bloqueada</h2>
-                <p style={{ color: '#64748b', marginBottom: '32px' }}>Ya existe un registro confirmado para la semana del {tempWeek?.weekLabel}. ¿Deseas editarlo?</p>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <button onClick={() => setShowNewModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'white', fontWeight: '900' }}>Cancelar</button>
-                  <button onClick={() => setDuplicateMode('form')} style={{ flex: 1, padding: '16px', borderRadius: '16px', backgroundColor: '#ef4444', color: 'white', border: 'none', fontWeight: '900' }}>Reemplazar</button>
-                </div>
-              </div>
-            )}
-            {duplicateMode === 'form' && tempWeek && <NewTrackingForm week={tempWeek} onClose={() => setShowNewModal(false)} onSave={handleSaveFullTracking} />}
-          </div>
-        </div>
-      )}
       {showAntecedenteModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10006, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '32px', padding: '40px', width: '450px' }}>
