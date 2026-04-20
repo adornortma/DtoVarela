@@ -155,6 +155,9 @@ const SectionHeader = ({ title, icon: Icon, children }: any) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
       <div style={{ backgroundColor: '#0f172a', padding: '10px', borderRadius: '14px', color: 'white' }}><Icon size={20} /></div>
       <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>{title}</h2>
+      <div style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <FileEdit size={12} /> EDICIÓN MANUAL
+      </div>
     </div>
     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>{children}</div>
   </div>
@@ -187,6 +190,48 @@ const ViewToggle = ({ options, active, onChange }: any) => (
     ))}
   </div>
 );
+
+// --- Table Components ---
+
+const InlineInput = ({ value, onChange, placeholder, style = {} }: any) => (
+  <input
+    type="number"
+    step="0.1"
+    value={value}
+    onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+    placeholder={placeholder}
+    style={{
+      width: '100%',
+      padding: '8px',
+      borderRadius: '8px',
+      border: '2px solid #e2e8f0',
+      textAlign: 'center',
+      fontSize: '13px',
+      fontWeight: '900',
+      outline: 'none',
+      backgroundColor: '#f8fafc',
+      ...style
+    }}
+  />
+);
+
+// --- Utils ---
+const getWeekRange = (date: Date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const start = new Date(d.setDate(diff));
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
+const formatDateRange = (start: Date, end: Date) => {
+  const f = (d: Date) => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+  return `${f(start)} - ${f(end)}`;
+};
 
 // --- Alarms Dashboard ---
 const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mode: AnalyticMode }) => {
@@ -594,45 +639,6 @@ const NewTrackingForm = ({ week, onClose, onSave }: any) => {
             <input type="number" step="0.1" value={kpis.prod_equivalente} onChange={e => setKpis({ ...kpis, prod_equivalente: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
           </div>
           <div>
-            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>RESOLUCIÓN (%)</label>
-            <input type="number" step="0.1" value={kpis.resolucion} onChange={e => setKpis({ ...kpis, resolucion: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: '950', display: 'block', marginBottom: '8px' }}>REITEROS (%)</label>
-            <input type="number" step="0.1" value={kpis.reitero} onChange={e => setKpis({ ...kpis, reitero: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <SubsectionHeader title="Alarmas Operativas" icon={AlertTriangle} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {Object.keys(alarms).map(k => (
-            <div key={k}>
-              <label style={{ fontSize: '10px', fontWeight: '950', display: 'block', marginBottom: '6px' }}>{k.toUpperCase()}</label>
-              <input type="number" value={(alarms as any)[k]} onChange={e => setAlarms({ ...alarms, [k]: parseInt(e.target.value) || 0 })} style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px' }} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label style={{ fontWeight: '950', fontSize: '13px', display: 'block', marginBottom: '12px' }}>Observación del Líder</label>
-        <textarea rows={3} value={obs} onChange={e => setObs(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }} placeholder="Escriba aquí el análisis de la semana..." />
-      </div>
-
-      <button
-        onClick={() => {
-          if (validate()) onSave(alarms, obs, kpis);
-        }}
-        style={{ padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer', marginTop: '8px' }}
-      >
-        Guardar Registro Completo
-      </button>
-    </div>
-  );
-};
-
 // --- Main Tracking Component ---
 
 function BPTrackingContent() {
@@ -640,41 +646,21 @@ function BPTrackingContent() {
   const dni = searchParams.get('dni') || '37653458';
 
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<BPSession | null>(null);
-  const [kpiScale, setKpiScale] = useState<TimeScale>('weekly');
-  const [alarmScale, setAlarmScale] = useState<TimeScale>('weekly');
+  const [session, setSession] = useState<TechnicianSession | null>(null);
+  const [activeWeek, setActiveWeek] = useState<WeeklyKPI | null>(null);
+  const [kpiScale, setKpiScale] = useState<'weekly' | 'monthly'>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
+  const [alarmScale, setAlarmScale] = useState<'weekly' | 'monthly'>('weekly');
   const [alarmView, setAlarmView] = useState<'table' | 'chart'>('table');
   const [alarmMode, setAlarmMode] = useState<AnalyticMode>('current');
-  const [modalWeek, setModalWeek] = useState<WeeklyKPI | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<WeeklyKPI | null>(null);
   const [showAntecedenteModal, setShowAntecedenteModal] = useState(false);
   const [antForm, setAntForm] = useState({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' });
   const [isAntExpanded, setIsAntExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
   const [observationText, setObservationText] = useState('');
-
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [newTrackingDate, setNewTrackingDate] = useState(new Date().toISOString().split('T')[0]);
-  const [duplicateMode, setDuplicateMode] = useState<'none' | 'warning' | 'form'>('none');
-  const [tempWeek, setTempWeek] = useState<WeeklyKPI | null>(null);
-
-  const getWeekRange = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const start = new Date(d.setDate(diff));
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-  };
-
-  const formatDateRange = (start: Date, end: Date) => {
-    const f = (d: Date) => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-    return `${f(start)} - ${f(end)}`;
-  };
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [tempRowData, setTempRowData] = useState<any>(null);
 
   const fetchWeekData = async (techId: string, date: Date) => {
     const { start, end } = getWeekRange(date);
@@ -828,6 +814,46 @@ function BPTrackingContent() {
     else { alert('Guardado!'); fetchData(); }
   };
 
+  const handleInlineEditStart = (row: WeeklyKPI) => {
+    setEditingRowId(row.id);
+    setTempRowData({
+      pdi: row.pdi,
+      prod_equivalente: row.prod_equivalente,
+      resolucion: row.resolucion,
+      reitero: row.reitero,
+      pt: row.alarms?.pt || 0,
+      ft: row.alarms?.ft || 0,
+      ta: row.alarms?.ta || 0,
+      ma: row.alarms?.ma || 0,
+      te: row.alarms?.te || 0,
+      rt: row.alarms?.rt || 0,
+      ne: row.alarms?.ne || 0,
+      tea: row.alarms?.tea || 0
+    });
+  };
+
+  const handleInlineSave = async (dateRange: string) => {
+    if (!session || !tempRowData) return;
+    
+    const vals = Object.values(tempRowData);
+    if (vals.some((v: any) => isNaN(v) || v < 0)) return alert("Valores inválidos. Solo números positivos.");
+
+    const alarmsPayload: BPAlarmData = {
+      pt: tempRowData.pt, ft: tempRowData.ft, ta: tempRowData.ta, ma: tempRowData.ma,
+      te: tempRowData.te, rt: tempRowData.rt, ne: tempRowData.ne, tea: tempRowData.tea
+    };
+    const kpiPayload = {
+      pdi: tempRowData.pdi,
+      prod_equivalente: tempRowData.prod_equivalente,
+      resolucion: tempRowData.resolucion,
+      reitero: tempRowData.reitero
+    };
+
+    await handleSaveAlarms(alarmsPayload, dateRange, kpiPayload);
+    setEditingRowId(null);
+    setTempRowData(null);
+  };
+
   const handleAddAntecedente = async () => {
     if (!antForm.titulo || !antForm.descripcion) return alert('Campos obligatorios');
     const { error } = await supabase.from('antecedentes_bp').insert({
@@ -895,71 +921,118 @@ function BPTrackingContent() {
           </section>
 
           <section>
-            <SectionHeader title="KPIs HISTÓRICOS" icon={TrendingUp}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={kpiScale} onChange={setKpiScale} />
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0', margin: '0 4px' }}></div>
-                <ViewToggle options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Gráfico', icon: BarChart3 }]} active={kpiView} onChange={setKpiView} />
-              </div>
+            <SectionHeader title="TABLA DE GESTIÓN OPERATIVA" icon={List}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={kpiScale} onChange={setKpiScale} />
+                  <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0', margin: '0 4px' }}></div>
+                  <ViewToggle options={[{ value: 'table', label: 'Grilla', icon: TableIcon }, { value: 'chart', label: 'Análisis', icon: BarChart3 }]} active={kpiView} onChange={setKpiView} />
+                </div>
             </SectionHeader>
+
             {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflowX: 'auto', padding: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px', minWidth: '1300px' }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>{kpiScale === 'weekly' ? 'FECHA' : 'MES'}</th>
-                      {['PDI', 'Prod. equivalente', 'Resolución', 'Reiteros'].map(h => <th key={h} style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
+                      <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', width: '150px' }}>SEMANA</th>
+                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
+                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#64748b', fontWeight: '950' }}>{h}</th>)}
                       <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>ACTUALIZACIÓN</th>
+                      <th style={{ padding: '12px 24px', textAlign: 'right', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(kpiScale === 'weekly' ? session.history.slice(0, 5) : (() => {
+                    {(kpiScale === 'weekly' ? session.history.slice(0, 8) : (() => {
                       const now = new Date();
                       const currentMonthIdx = now.getMonth();
                       const currentYear = now.getFullYear();
                       return ALL_MONTHS.slice(0, currentMonthIdx + 1).reverse().map(mLabel => {
                         const weeksInMonth = session.history.filter(w => w.monthLabel === mLabel);
-                        if (weeksInMonth.length === 0) return { id: mLabel, label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`, values: [null, null, null, null], lastUpdated: null };
+                        if (weeksInMonth.length === 0) return { id: mLabel, isMonthly: true, label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`, values: [null, null, null, null], alarms: null, lastUpdated: null };
                         
                         const weeksWithData = weeksInMonth.filter(w => w.status === 'full');
                         const count = weeksWithData.length || 1;
                         const avg = (key: keyof typeof weeksWithData[0]) => weeksWithData.reduce((acc, w) => acc + (Number(w[key]) || 0), 0) / count;
+                        
+                        const k = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
+                        const alarmSums: any = {};
+                        k.forEach(key => alarmSums[key] = weeksInMonth.reduce((acc, w) => acc + (w.alarms ? (w.alarms as any)[key] : 0), 0));
 
                         return {
                           id: mLabel,
+                          isMonthly: true,
                           label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`,
                           values: [avg('pdi'), avg('prod_equivalente'), avg('resolucion'), avg('reitero')],
+                          alarms: alarmSums,
                           lastUpdated: weeksInMonth[0]?.updated_at
                         };
                       });
                     })()).map((row: any) => {
                       const isWeekly = kpiScale === 'weekly';
-                      const label = isWeekly ? row.dateRange : row.label;
-                      const vals = isWeekly ? [row.pdi, row.prod_equivalente, row.resolucion, row.reitero] : row.values;
+                      const isEditing = editingRowId === row.id;
+                      const label = isWeekly ? row.weekLabel : row.label;
+                      const kpiVals = isWeekly ? [row.pdi, row.prod_equivalente, row.resolucion, row.reitero] : row.values;
+                      const alarms = row.alarms;
+                      const alarmKeys = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
                       const lastUpdate = isWeekly ? row.updated_at : row.lastUpdated;
                       
-                      // Data Freshness Indicator
-                      let dotColor = '#cbd5e1'; // Gray (no data)
+                      let dotColor = '#cbd5e1';
                       if (lastUpdate) {
                         const diffDays = Math.floor((new Date().getTime() - new Date(lastUpdate).getTime()) / (1000 * 60 * 60 * 24));
-                        if (diffDays < 7) dotColor = '#10b981'; // Green
-                        else if (diffDays < 14) dotColor = '#f59e0b'; // Yellow
-                        else dotColor = '#ef4444'; // Red
+                        if (diffDays < 7) dotColor = '#10b981';
+                        else if (diffDays < 14) dotColor = '#f59e0b';
+                        else dotColor = '#ef4444';
                       }
 
                       return (
-                        <tr key={row.id} onClick={() => isWeekly && setModalWeek(row)} style={{ cursor: isWeekly ? 'pointer' : 'default' }}>
-                          <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}><div style={{ fontWeight: '950', color: vals[0] === null ? '#94a3b8' : '#0f172a' }}>{label}</div></td>
-                          {vals.map((v: any, i: number) => (
-                            <td key={i} style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                              {v === null || (isWeekly && row.status === 'empty') ? (
-                                <span style={{ color: '#cbd5e1', fontWeight: '900' }}>—</span>
+                        <tr key={row.id} style={{ backgroundColor: isEditing ? '#f0f9ff' : 'transparent', transition: 'background-color 0.2s' }}>
+                          {/* WEEK / DATE */}
+                          <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {!row.isMonthly && <FileEdit size={12} color="#64748b" />}
+                              <div style={{ fontWeight: '950', color: '#0f172a' }}>{label}</div>
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', marginTop: '2px' }}>{isWeekly ? row.dateRange : 'Mensual'}</div>
+                          </td>
+
+                          {/* KPIs */}
+                          {kpiVals.map((v: any, i: number) => (
+                            <td key={i} style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '90px' }}>
+                              {isEditing ? (
+                                <InlineInput 
+                                  value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
+                                  onChange={(val: number) => setTempRowData({...tempRowData, [['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]: val})}
+                                  style={{ borderColor: '#019df4', borderStyle: 'dashed' }}
+                                />
                               ) : (
-                                <div style={{ backgroundColor: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).bg, color: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).color, padding: '8px 16px', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }}>{i === 1 ? v.toFixed(2) : `${v.toFixed(1)}%`}</div>
+                                (v === null || (isWeekly && row.status === 'empty')) ? 
+                                <span style={{ color: '#cbd5e1', fontWeight: '900' }}>—</span> :
+                                <div style={{ 
+                                  backgroundColor: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).bg, 
+                                  color: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).color, 
+                                  padding: '8px 4px', borderRadius: '8px', fontWeight: '950', fontSize: '12px' 
+                                }}>{i === 1 ? v.toFixed(2) : `${v.toFixed(1)}%`}</div>
                               )}
                             </td>
                           ))}
-                          <td style={{ padding: '16px 24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0' }}>
+
+                          {/* ALARMS */}
+                          {alarmKeys.map((k, i) => (
+                            <td key={k} style={{ padding: '8px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '60px' }}>
+                               {isEditing ? (
+                                 <InlineInput 
+                                   value={tempRowData[k]} 
+                                   onChange={(val: number) => setTempRowData({...tempRowData, [k]: val})}
+                                   style={{ padding: '6px', fontSize: '12px' }}
+                                 />
+                               ) : (
+                                 <div style={{ fontWeight: '950', fontSize: '13px', color: alarms ? '#1e293b' : '#cbd5e1' }}>{alarms ? (alarms as any)[k] : '0'}</div>
+                               )}
+                            </td>
+                          ))}
+
+                          {/* UPDATE DATE */}
+                          <td style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '130px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }}></div>
                                 <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>
@@ -967,90 +1040,35 @@ function BPTrackingContent() {
                                 </span>
                              </div>
                           </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : <div style={{ height: '350px' }} />}
-          </section>
 
-          <section>
-            <SectionHeader title="ALARMAS OPERATIVAS" icon={AlertCircle}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={alarmScale} onChange={setAlarmScale} />
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0', margin: '0 4px' }}></div>
-                <ViewToggle options={[{ value: 'table', label: 'Tabla', icon: TableIcon }, { value: 'chart', label: 'Dashboard', icon: BarChart3 }]} active={alarmView} onChange={setAlarmView} />
-              </div>
-              {alarmView === 'chart' && (
-                <ViewToggle
-                  options={[
-                    { value: 'current', label: 'Semana Actual' },
-                    { value: 'compare-week', label: 'C. Semanal', icon: RotateCcw },
-                    { value: 'last-4-weeks', label: 'Evolución 4S', icon: TrendingUp },
-                    { value: 'monthly', label: 'C. Mensual', icon: CalendarDays }
-                  ]}
-                  active={alarmMode} onChange={setAlarmMode}
-                />
-              )}
-              <button onClick={() => activeWeek && setModalWeek(activeWeek)} style={{ backgroundColor: '#019df4', color: 'white', padding: '10px 20px', borderRadius: '14px', fontWeight: '950', fontSize: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}><Plus size={14} /> Cargar</button>
-            </SectionHeader>
-
-            {alarmView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', padding: '12px' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>{alarmScale === 'weekly' ? 'FECHA' : 'MES'}</th>
-                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950' }}>{h}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(alarmScale === 'weekly' ? session.history.slice(0, 5) : (() => {
-                      const now = new Date();
-                      const currentMonthIdx = now.getMonth();
-                      const currentYear = now.getFullYear();
-                      const k = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
-                      
-                      return ALL_MONTHS.slice(0, currentMonthIdx + 1).reverse().map(mLabel => {
-                        const weeksInMonth = session.history.filter(w => w.monthLabel === mLabel);
-                        if (weeksInMonth.length === 0) return { id: mLabel, label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`, values: null };
-                        
-                        const sums: any = {};
-                        k.forEach(key => {
-                          sums[key] = weeksInMonth.reduce((acc, w) => acc + (w.alarms ? (w.alarms as any)[key] : 0), 0);
-                        });
-
-                        return {
-                          id: mLabel,
-                          label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`,
-                          values: sums
-                        };
-                      });
-                    })()).map((row: any) => {
-                      const isWeekly = alarmScale === 'weekly';
-                      const label = isWeekly ? row.dateRange : row.label;
-                      const alarms = isWeekly ? row.alarms : row.values;
-                      const valArray = alarms ? [alarms.pt, alarms.ft, alarms.ta, alarms.ma, alarms.te, alarms.rt, alarms.ne, alarms.tea] : null;
-
-                      return (
-                        <tr key={row.id} onClick={() => isWeekly && setModalWeek(row)} style={{ cursor: isWeekly ? 'pointer' : 'default' }}>
-                          <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ fontWeight: '950', color: !alarms ? '#94a3b8' : '#0f172a' }}>{label}</div>
-                              {isWeekly && !alarms && <div style={{ backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '950' }}>PED.</div>}
-                            </div>
+                          {/* ACTIONS */}
+                          <td style={{ padding: '16px 24px', textAlign: 'right', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0', width: '180px' }}>
+                            {isEditing ? (
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <button
+                                  onClick={() => handleInlineSave(row.dateRange)}
+                                  style={{ padding: '8px 12px', backgroundColor: '#10b981', color: 'white', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Save size={14} /> GUARDAR
+                                </button>
+                                <button
+                                  onClick={() => { setEditingRowId(null); setTempRowData(null); }}
+                                  style={{ padding: '8px 12px', backgroundColor: '#f1f5f9', color: '#ef4444', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '11px' }}
+                                >
+                                  CANCELAR
+                                </button>
+                              </div>
+                            ) : (
+                              isWeekly && (
+                                <button 
+                                  onClick={() => handleInlineEditStart(row)} 
+                                  style={{ backgroundColor: 'transparent', border: '1.5px solid #e2e8f0', color: '#64748b', padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
+                                >
+                                  ✍️ EDITAR FILA
+                                </button>
+                              )
+                            )}
                           </td>
-                          {valArray ? valArray.map((v, i) => (
-                            <td key={i} style={{ padding: '16px 4px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: i === 7 ? '1px solid #f1f5f9' : 'none', borderRadius: i === 7 ? '0 16px 16px 0' : '0' }}>
-                              <div style={{ fontWeight: '950', fontSize: '14px' }}>{v}</div>
-                            </td>
-                          )) : (
-                            <td colSpan={8} style={{ textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0' }}>
-                              <span style={{ color: '#cbd5e1', fontWeight: '900' }}>—</span>
-                            </td>
-                          )}
                         </tr>
                       );
                     })}
@@ -1058,8 +1076,9 @@ function BPTrackingContent() {
                 </table>
               </div>
             ) : (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
-                <AlarmsAnalyticalDashboard history={session.history} mode={alarmMode} />
+              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', padding: '32px' }}>
+                 <SubsectionHeader title="Análisis de Alarmas" icon={BarChart} />
+                 <AlarmsAnalyticalDashboard history={session.history} mode={alarmMode} />
               </div>
             )}
           </section>
