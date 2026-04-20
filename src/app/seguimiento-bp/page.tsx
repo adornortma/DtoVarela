@@ -718,14 +718,14 @@ function BPTrackingContent() {
         district: 'Varela',
         status: 'seguimiento',
         history: weeks,
-        actions: (tracking || []).map(t => ({
+        actions: (tracking || []).map((t: any) => ({
           id: t.id,
           weekLabel: formatDateRange(new Date(t.fecha_inicio), new Date(t.fecha_fin)),
           dateRange: t.fecha_inicio,
           observation: t.observacion_lider,
           date: new Date(t.fecha_confirmacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         })),
-        antecedentes: (antData || []).map(a => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
+        antecedentes: (antData || []).map((a: any) => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
       setMonthlyHistory(months.reverse());
     } catch (err) { console.error(err); } finally { setLoading(false); }
@@ -1086,7 +1086,7 @@ function BPTrackingContent() {
             </div>
             {isAntExpanded && (
               <div style={{ padding: '0 32px 32px 32px', borderTop: '1px solid #f1f5f9', paddingTop: '32px' }}>
-                {session.antecedentes.map(ant => (
+                {session.antecedentes.map((ant: any) => (
                   <div key={ant.id} style={{ padding: '20px', borderRadius: '20px', border: '1px solid #f1f5f9', backgroundColor: '#f8fafc', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontWeight: '950', color: '#0f172a', marginBottom: '4px' }}>{ant.titulo}</div>
@@ -1107,10 +1107,10 @@ function BPTrackingContent() {
             {/* Vertical Line */}
             <div style={{ position: 'absolute', left: '16px', top: '10px', bottom: '10px', width: '3px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
 
-            {session.actions.map((a, idx) => {
+            {session.actions.map((a: any, idx: number) => {
               const isFirst = idx === 0;
               // Prepare for status color logic (using Resolucion as proxy for demonstration)
-              const weekData = session.history.find(w => w.dateRange === a.dateRange);
+              const weekData = session.history.find((w: any) => w.dateRange === a.dateRange);
               const statusColor = weekData ? getSemaforo(weekData.resolucion, 'resolucion').color : '#019df4';
 
               return (
