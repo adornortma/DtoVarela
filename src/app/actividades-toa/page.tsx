@@ -392,7 +392,7 @@ const CellGroup = ({
 
 export default function ActividadesToaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('indicador');
-  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s2');
+  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState('Abril');
   const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -440,8 +440,41 @@ export default function ActividadesToaPage() {
     setDistrictKPIs(districtStats);
 
     setData(processToaData(metricsRes.data || [], cellTotalsRes.data || [], monthIndex, year));
+
+    // Auto-select last week of the loaded month data
+    const allDates = [...(metricsRes.data?.map((m: any) => m.fecha) || []), ...(cellTotalsRes.data?.map((ct: any) => ct.fecha) || [])];
+    if (allDates.length > 0) {
+      const lastDateStr = allDates.reduce((max, d) => d > max ? d : max, allDates[0]);
+      setSelectedWeek(getWeekOfDate(new Date(lastDateStr)));
+    }
+
     setLoading(false);
   };
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: lastMetric } = await supabase
+        .from('metricas')
+        .select('fecha')
+        .order('fecha', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastMetric) {
+        const date = new Date(lastMetric.fecha);
+        const monthName = MONTHS[date.getUTCMonth()];
+        const week = getWeekOfDate(date);
+        setSelectedMonth(monthName);
+        setSelectedWeek(week);
+        
+        if (!visibleMonths.includes(monthName)) {
+           const monthIdx = MONTHS.indexOf(monthName);
+           setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 1), Math.max(0, monthIdx - 1) + 4));
+        }
+      }
+    };
+    init();
+  }, []);
 
   useEffect(() => {
     fetchData();

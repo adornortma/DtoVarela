@@ -518,7 +518,7 @@ const CellGroup = ({
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('indicador');
-  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s2');
+  const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
   const [visibleMonths, setVisibleMonths] = useState(
     MONTHS.slice(Math.max(0, new Date().getMonth() - 1), Math.max(0, new Date().getMonth() - 1) + 4)
@@ -578,6 +578,29 @@ export default function Home() {
             setDistrictKPIs(distData);
             setLastUpdate(distData.updated_at);
         }
+
+        // --- Auto-select last loaded week on mount ---
+        const { data: lastMetric } = await supabase
+          .from('metricas')
+          .select('fecha')
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (lastMetric) {
+          const date = new Date(lastMetric.fecha);
+          const monthName = MONTHS[date.getUTCMonth()];
+          const week = getWeekOfDate(date);
+          
+          setSelectedMonth(monthName);
+          setSelectedWeek(week);
+          
+          // Adjust visible months if needed
+          if (!visibleMonths.includes(monthName)) {
+             const monthIdx = MONTHS.indexOf(monthName);
+             setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 1), Math.max(0, monthIdx - 1) + 4));
+          }
+        }
     };
     fetchConfig();
   }, []);
@@ -623,6 +646,13 @@ export default function Home() {
         return;
       }
       setData(processData(metrics, cellTotals, monthIndex, year));
+
+      // Auto-select last week of the loaded month data
+      const allDates = [...metrics.map(m => m.fecha), ...cellTotals.map(ct => ct.fecha)];
+      if (allDates.length > 0) {
+        const lastDateStr = allDates.reduce((max, d) => d > max ? d : max, allDates[0]);
+        setSelectedWeek(getWeekOfDate(new Date(lastDateStr)));
+      }
     } else {
         // Fallback or dummy logic if needed
         setData([]);
