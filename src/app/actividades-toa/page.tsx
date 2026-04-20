@@ -24,7 +24,8 @@ import WeatherIndicator from '@/components/WeatherIndicator';
 // --- Weather Data ---
 const WEATHER_DATA: Record<string, Record<string, string[]>> = {
   'Abril': {
-    's2': ['Lunes 06-04', 'Martes 07-04']
+    's1': ['Lunes 06-04', 'Martes 07-04'],
+    's3': ['Miércoles 15-04', 'Jueves 16-04']
   }
 };
 
