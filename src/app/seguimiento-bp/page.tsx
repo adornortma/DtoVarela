@@ -140,7 +140,7 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
         <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950' }}>{semaforo.label}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#0f172a', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
+        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#1F2937', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: trendColor }}>
           {isUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
           <span style={{ fontSize: '14px', fontWeight: '950' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(1)}%`}</span>
@@ -153,11 +153,8 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
 const SectionHeader = ({ title, icon: Icon, children }: any) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{ backgroundColor: '#0f172a', padding: '10px', borderRadius: '14px', color: 'white' }}><Icon size={20} /></div>
-      <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>{title}</h2>
-      <div style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <FileEdit size={12} /> EDICIÓN MANUAL
-      </div>
+      <div style={{ backgroundColor: '#1F2937', padding: '10px', borderRadius: '14px', color: 'white' }}><Icon size={20} /></div>
+      <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#1F2937', letterSpacing: '-0.5px' }}>{title}</h2>
     </div>
     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>{children}</div>
   </div>
@@ -165,8 +162,8 @@ const SectionHeader = ({ title, icon: Icon, children }: any) => (
 
 const SubsectionHeader = ({ title, icon: Icon }: any) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-    <Icon size={16} color="#64748b" />
-    <span style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+    <Icon size={16} color="#4B5563" />
+    <span style={{ fontSize: '11px', fontWeight: '950', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
   </div>
 );
 
@@ -179,7 +176,7 @@ const ViewToggle = ({ options, active, onChange }: any) => (
         style={{
           padding: '8px 16px', borderRadius: '9px', border: 'none',
           backgroundColor: active === opt.value ? 'white' : 'transparent',
-          color: active === opt.value ? '#0f172a' : '#64748b',
+          color: active === opt.value ? '#1F2937' : '#4B5563',
           fontSize: '11px', fontWeight: '900', boxShadow: active === opt.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
         }}
@@ -314,17 +311,17 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
     return (
       <div style={{ padding: '24px 32px', backgroundColor: '#f8fafc', borderRadius: '24px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</div>
+          <div style={{ fontSize: '11px', fontWeight: '950', color: '#4B5563', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</div>
           <div style={{ display: 'flex', gap: '32px' }}>
             {relevant.length > 0 ? relevant.map(r => (
               <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '15px', fontWeight: '950', color: '#1e293b' }}>{r.label}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: r.diff > 0 ? '#ef4444' : r.diff < 0 ? '#10b981' : '#94a3b8', fontWeight: '950', fontSize: '15px' }}>
+                <span style={{ fontSize: '15px', fontWeight: '950', color: '#1F2937' }}>{r.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: r.diff > 0 ? '#ef4444' : r.diff < 0 ? '#10b981' : '#6B7280', fontWeight: '950', fontSize: '15px' }}>
                   {r.diff > 0 ? <TrendingUp size={16} /> : r.diff < 0 ? <TrendingDown size={16} /> : <Minus size={16} />}
                   {Math.abs(r.diff)}
                 </div>
               </div>
-            )) : <span style={{ fontSize: '14px', fontStyle: 'italic', color: '#94a3b8' }}>Sin variaciones detectadas</span>}
+            )) : <span style={{ fontSize: '14px', fontStyle: 'italic', color: '#6B7280' }}>Sin variaciones detectadas</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '20px' }}>
@@ -393,8 +390,8 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
                 <div style={{ width: (mode === 'compare-week' || mode === 'monthly') ? '50%' : '100%', height: `${(d.cur / maxVal) * 100}%`, backgroundColor: '#019df4', borderRadius: '6px 6px 2px 2px', transition: 'all 0.6s', boxShadow: '0 4px 12px rgba(1, 157, 244, 0.1)' }} />
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '16px', fontWeight: '950', color: '#0f172a' }}>{d.cur}</div>
-                <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{d.label}</div>
+                <div style={{ fontSize: '16px', fontWeight: '950', color: '#1F2937' }}>{d.cur}</div>
+                <div style={{ fontSize: '11px', fontWeight: '950', color: '#6B7280', marginTop: '4px' }}>{d.label}</div>
               </div>
             </div>
           ))}
@@ -445,8 +442,8 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
                 })}
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '15px', fontWeight: '950', color: '#0f172a' }}>{last4[3].alarms ? last4[3].alarms[k] : 0}</div>
-                <div style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', marginTop: '4px' }}>{labels[k]}</div>
+                <div style={{ fontSize: '15px', fontWeight: '950', color: '#1F2937' }}>{last4[3].alarms ? last4[3].alarms[k] : 0}</div>
+                <div style={{ fontSize: '11px', fontWeight: '950', color: '#6B7280', marginTop: '4px' }}>{labels[k]}</div>
               </div>
             </div>
           ))}
@@ -456,21 +453,21 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
   };
 
   const renderDateContext = () => {
-    if (mode === 'current') return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Semana actual: <span style={{ color: '#019df4' }}>{activeWeek?.weekLabel}</span></div>;
+    if (mode === 'current') return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#4B5563' }}>Semana actual: <span style={{ color: '#019df4' }}>{activeWeek?.weekLabel}</span></div>;
     if (mode === 'compare-week') return (
-      <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b', display: 'flex', gap: '16px' }}>
+      <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#4B5563', display: 'flex', gap: '16px' }}>
         <div>Semana actual: <span style={{ color: '#019df4' }}>{activeWeek?.weekLabel}</span></div>
-        <div style={{ color: '#cbd5e1' }}>vs</div>
-        <div>Semana anterior: <span style={{ color: '#94a3b8' }}>{prevWeek?.weekLabel}</span></div>
+        <div style={{ color: '#6B7280' }}>vs</div>
+        <div>Semana anterior: <span style={{ color: '#6B7280' }}>{prevWeek?.weekLabel}</span></div>
       </div>
     );
     if (mode === 'last-4-weeks') {
       const range = history.slice(0, 4).reverse().map(w => w.weekLabel.split(' - ')[0]).join(' · ');
-      return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Últimas 4 semanas: <span style={{ color: '#019df4' }}>{range}</span></div>;
+      return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#4B5563' }}>Últimas 4 semanas: <span style={{ color: '#019df4' }}>{range}</span></div>;
     }
     if (mode === 'monthly') {
       const m = getMonthlyData();
-      return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Mensual: <span style={{ color: '#019df4' }}>{m.curLabel}</span> vs <span style={{ color: '#94a3b8' }}>{m.prevLabel}</span></div>;
+      return <div style={{ marginBottom: '24px', fontSize: '14px', fontWeight: '800', color: '#4B5563' }}>Mensual: <span style={{ color: '#019df4' }}>{m.curLabel}</span> vs <span style={{ color: '#6B7280' }}>{m.prevLabel}</span></div>;
     }
     return null;
   };
@@ -495,7 +492,7 @@ const StatItem = ({ label, value, kpiKey }: { label: string, value: number, kpiK
   const semaforo = getSemaforo(value, kpiKey);
   return (
     <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-      <p style={{ fontSize: '10px', fontWeight: '950', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</p>
+      <p style={{ fontSize: '10px', fontWeight: '950', color: '#4B5563', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</p>
       <div style={{ fontSize: '20px', fontWeight: '950', color: semaforo.color }}>{kpiKey === 'prod_equivalente' ? value.toFixed(2) : `${value.toFixed(1)}%`}</div>
     </div>
   );
@@ -862,7 +859,7 @@ function BPTrackingContent() {
     <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <Activity size={48} className="animate-spin" color="#019df4" />
-        <p style={{ marginTop: '16px', fontWeight: '950', color: '#0f172a' }}>Cargando expediente...</p>
+        <p style={{ marginTop: '16px', fontWeight: '950', color: '#1F2937' }}>Cargando expediente...</p>
       </div>
     </div>
   );
@@ -875,7 +872,7 @@ function BPTrackingContent() {
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 120px 40px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
 
       <header style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: '#94a3b8', fontSize: '13px', fontWeight: '800' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: '#6B7280', fontSize: '13px', fontWeight: '800' }}>
           <span>Panel</span><ChevronRight size={14} />
           <span style={{ color: '#019df4', fontWeight: '950' }}>BP Detalle</span>
         </div>
@@ -885,8 +882,8 @@ function BPTrackingContent() {
               <User size={30} />
             </div>
             <div>
-              <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.5px', margin: 0 }}>{session.techName}</h1>
-              <p style={{ fontSize: '14px', fontWeight: '800', color: '#64748b', marginTop: '4px' }}>DNI: {session.dni} • Varela</p>
+              <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', margin: 0 }}>{session.techName}</h1>
+              <p style={{ fontSize: '14px', fontWeight: '800', color: '#4B5563', marginTop: '4px' }}>DNI: {session.dni} • Varela</p>
             </div>
           </div>
           <ViewToggle options={[{ value: 'data', label: 'ANÁLISIS', icon: Activity }, { value: 'actions', label: 'HISTORIAL', icon: History }]} active={activeTab} onChange={setActiveTab} />
@@ -920,11 +917,11 @@ function BPTrackingContent() {
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px', minWidth: '1300px' }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#94a3b8', fontWeight: '950', width: '150px' }}>SEMANA</th>
-                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#1e293b', fontWeight: '950', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
-                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#64748b', fontWeight: '950' }}>{h}</th>)}
-                      <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>ACTUALIZACIÓN</th>
-                      <th style={{ padding: '12px 24px', textAlign: 'right', fontSize: '10px', color: '#94a3b8', fontWeight: '950' }}>ACCIONES</th>
+                      <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#4B5563', fontWeight: '950', width: '150px' }}>SEMANA</th>
+                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#4B5563', fontWeight: '950', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
+                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#4B5563', fontWeight: '950' }}>{h}</th>)}
+                      <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#4B5563', fontWeight: '950' }}>ACTUALIZACIÓN</th>
+                      <th style={{ padding: '12px 24px', textAlign: 'right', fontSize: '10px', color: '#4B5563', fontWeight: '950' }}>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -955,10 +952,9 @@ function BPTrackingContent() {
                         <tr key={row.id} style={{ backgroundColor: isEditing ? '#f0f9ff' : 'transparent', transition: 'background-color 0.2s' }}>
                           <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <FileEdit size={12} color="#64748b" />
-                              <div style={{ fontWeight: '950', color: '#0f172a' }}>{label}</div>
+                              <div style={{ fontWeight: '950', color: '#1F2937' }}>{label}</div>
                             </div>
-                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', marginTop: '2px' }}>{row.isAverage ? 'Promedio Automático' : (row.isMonthly ? 'Cierre Mensual' : row.dateRange)}</div>
+                            <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '800', marginTop: '2px' }}>{row.isAverage ? 'Promedio Automático' : (row.isMonthly ? 'Cierre Mensual' : row.dateRange)}</div>
                           </td>
 
                           {kpiVals.map((v: any, i: number) => (
@@ -1006,7 +1002,7 @@ function BPTrackingContent() {
                                      {getStatusLabel(alarms ? alarms[k] : 0).text}
                                    </div>
                                  ) : (
-                                   <div style={{ fontWeight: '950', fontSize: '13px', color: alarms ? '#1e293b' : '#cbd5e1' }}>{alarms ? (alarms as any)[k] : '0'}</div>
+                                   <div style={{ fontWeight: '950', fontSize: '13px', color: alarms ? '#1F2937' : '#6B7280' }}>{alarms ? (alarms as any)[k] : '0'}</div>
                                  )
                                )}
                             </td>
@@ -1015,9 +1011,9 @@ function BPTrackingContent() {
                           <td style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '130px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }}></div>
-                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b' }}>
-                                  {lastUpdate ? new Date(lastUpdate).toLocaleDateString() : 'Pendiente'}
-                                </span>
+                                 <span style={{ fontSize: '11px', fontWeight: '800', color: '#6B7280' }}>
+                                   {lastUpdate ? new Date(lastUpdate).toLocaleDateString() : 'Pendiente'}
+                                 </span>
                              </div>
                           </td>
 
@@ -1040,7 +1036,7 @@ function BPTrackingContent() {
                             ) : (
                               <button 
                                 onClick={() => handleInlineEditStart(row)} 
-                                style={{ backgroundColor: 'transparent', border: '1.5px solid #e2e8f0', color: '#64748b', padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
+                                style={{ backgroundColor: 'transparent', border: '1.5px solid #e2e8f0', color: '#4B5563', padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
                               >
                                 ✍️ EDITAR {row.isMonthly ? 'MES' : 'FILA'}
                               </button>
@@ -1080,9 +1076,9 @@ function BPTrackingContent() {
                 <div style={{ backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '12px' }}>
                   <History size={20} color="#0f172a" />
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#0f172a' }}>ANTECEDENTES</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: '950', color: '#1F2937' }}>ANTECEDENTES</h3>
               </div>
-              <div style={{ color: '#64748b', transition: 'transform 0.3s', transform: isAntExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>
+              <div style={{ color: '#4B5563', transition: 'transform 0.3s', transform: isAntExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>
                 <ChevronDown size={20} />
               </div>
             </div>
