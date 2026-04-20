@@ -626,6 +626,7 @@ function BPTrackingContent() {
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [tempRowData, setTempRowData] = useState<any>(null);
   const [showNewTrackingModal, setShowNewTrackingModal] = useState(false);
+  const [trackingDate, setTrackingDate] = useState(new Date().toISOString().split('T')[0]);
 
   const fetchWeekData = async (techId: string, date: Date, isMonthly: boolean = false) => {
     const { start, end } = getWeekRange(date);
@@ -1115,7 +1116,11 @@ function BPTrackingContent() {
             {/* Vertical Line */}
             <div style={{ position: 'absolute', left: '16px', top: '10px', bottom: '10px', width: '3px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
 
-            {session.actions.map((a: any, idx: number) => {
+            {session.actions.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+                <p style={{ color: '#64748b', fontWeight: '800' }}>Aún no hay registros de seguimiento para este técnico.</p>
+              </div>
+            ) : session.actions.map((a: any, idx: number) => {
               const isFirst = idx === 0;
               // Prepare for status color logic (using Resolucion as proxy for demonstration)
               const weekData = session.history.find((w: any) => w.dateRange === a.dateRange);
@@ -1225,43 +1230,123 @@ function BPTrackingContent() {
 
       {showNewTrackingModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10007, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-          <div style={{ backgroundColor: 'white', borderTopLeftRadius: '40px', borderTopRightRadius: '40px', width: '100%', maxWidth: '700px', padding: '40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', animation: 'slideUp 0.3s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+          <div style={{ 
+            backgroundColor: 'white', 
+            borderTopLeftRadius: '40px', 
+            borderTopRightRadius: '40px', 
+            width: '100%', 
+            maxWidth: '800px', 
+            padding: '40px 48px', 
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', 
+            animation: 'slideUp 0.3s ease-out',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
               <div>
-                <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>Registrar Nuevo Seguimiento</h3>
-                <p style={{ color: '#64748b', fontWeight: '800', marginTop: '4px' }}>Periodo: {activeWeek?.weekLabel}</p>
+                <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1px' }}>Registrar Nuevo Seguimiento</h3>
+                <p style={{ color: '#64748b', fontWeight: '800', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CalendarDays size={16} /> 
+                  Confirmación de desempeño para el periodo seleccionado
+                </p>
               </div>
-              <button onClick={() => setShowNewTrackingModal(false)} style={{ backgroundColor: '#f1f5f9', border: 'none', padding: '12px', borderRadius: '14px', cursor: 'pointer' }}>
+              <button 
+                onClick={() => setShowNewTrackingModal(false)} 
+                style={{ backgroundColor: '#f1f5f9', border: 'none', padding: '12px', borderRadius: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+              >
                 <X size={20} color="#64748b" />
               </button>
             </div>
 
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '950', color: '#64748b', textTransform: 'uppercase' }}>Fecha del Seguimiento</label>
+                  <input 
+                    type="date" 
+                    value={trackingDate} 
+                    onChange={(e) => setTrackingDate(e.target.value)} 
+                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #f1f5f9', outline: 'none', fontWeight: '900', color: '#0f172a', boxSizing: 'border-box' }}
+                  />
+               </div>
+               <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '950', color: '#94a3b8', textTransform: 'uppercase' }}>Periodo Identificado</span>
+                  <div style={{ fontSize: '15px', fontWeight: '950', color: '#019df4', marginTop: '4px' }}>
+                    {(() => {
+                      const d = new Date(trackingDate + 'T12:00:00');
+                      const { start, end } = getWeekRange(d);
+                      return formatDateRange(start, end);
+                    })()}
+                  </div>
+               </div>
+            </div>
+
             <div style={{ marginBottom: '32px' }}>
-               <SubsectionHeader title="Obs. del Líder / Hito del Seguimiento" icon={MessageSquare} />
-               <textarea 
-                 rows={5} 
-                 value={observationText} 
-                 onChange={(e) => setObservationText(e.target.value)} 
-                 placeholder="Ej: Se realizó feedback sobre productividad y reitero. El técnico se compromete a..."
-                 style={{ width: '100%', padding: '24px', borderRadius: '24px', border: '2px solid #e0f2fe', outline: 'none', fontSize: '15px', lineHeight: '1.6', color: '#1e293b' }} 
-               />
+               <SubsectionHeader title="Obs. del Líder / Feedback Técnico" icon={MessageSquare} />
+               <div style={{ position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+                 <textarea 
+                   rows={5} 
+                   value={observationText} 
+                   onChange={(e) => setObservationText(e.target.value)} 
+                   placeholder="Escribe aquí el resumen del feedback o hito del técnico..."
+                   style={{ 
+                     width: '100%', 
+                     padding: '24px', 
+                     borderRadius: '24px', 
+                     border: '2px solid #e0f2fe', 
+                     outline: 'none', 
+                     fontSize: '15px', 
+                     lineHeight: '1.6', 
+                     color: '#1e293b',
+                     boxSizing: 'border-box',
+                     display: 'block',
+                     fontFamily: 'inherit'
+                   }} 
+                 />
+               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '16px' }}>
                <button 
                  onClick={() => setShowNewTrackingModal(false)} 
-                 style={{ flex: 1, padding: '18px', borderRadius: '20px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: '950', cursor: 'pointer' }}
+                 style={{ flex: 1, padding: '20px', borderRadius: '24px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: '950', cursor: 'pointer', transition: 'all 0.2s' }}
                >
                  Cancelar
                </button>
                <button 
                  onClick={async () => {
-                   await handleConfirmCheck();
-                   setShowNewTrackingModal(false);
+                   const targetDate = new Date(trackingDate + 'T12:00:00');
+                   const { start } = getWeekRange(targetDate);
+                   const startStr = start.toISOString().split('T')[0];
+                   
+                   const { error } = await supabase.from('seguimiento_bp').upsert({
+                     tecnico_id: session.id,
+                     fecha_inicio: startStr,
+                     fecha_fin: new Date(new Date(start).setDate(start.getDate() + 6)).toISOString().split('T')[0],
+                     observacion_lider: observationText,
+                     fecha_confirmacion: new Date().toISOString(),
+                     es_mensual: false 
+                   }, { onConflict: 'tecnico_id, fecha_inicio, es_mensual' });
+
+                   if (error) alert('Error al guardar: ' + error.message);
+                   else {
+                     setShowNewTrackingModal(false);
+                     fetchData();
+                   }
                  }} 
-                 style={{ flex: 2, padding: '18px', borderRadius: '20px', backgroundColor: '#019df4', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer', boxShadow: '0 4px 15px rgba(1, 157, 244, 0.3)' }}
+                 style={{ 
+                   flex: 2, 
+                   padding: '20px', 
+                   borderRadius: '24px', 
+                   backgroundColor: '#019df4', 
+                   color: 'white', 
+                   border: 'none', 
+                   fontWeight: '950', 
+                   cursor: 'pointer', 
+                   boxShadow: '0 8px 25px rgba(1, 157, 244, 0.3)',
+                   transition: 'all 0.2s'
+                 }}
                >
-                 Confirmar y Publicar Hito
+                 Publicar Seguimiento
                </button>
             </div>
           </div>
