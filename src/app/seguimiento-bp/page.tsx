@@ -625,6 +625,7 @@ function BPTrackingContent() {
   const [observationText, setObservationText] = useState('');
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [tempRowData, setTempRowData] = useState<any>(null);
+  const [showNewTrackingModal, setShowNewTrackingModal] = useState(false);
 
   const fetchWeekData = async (techId: string, date: Date, isMonthly: boolean = false) => {
     const { start, end } = getWeekRange(date);
@@ -1102,7 +1103,7 @@ function BPTrackingContent() {
 
           <SectionHeader title="HISTORIAL DE SEGUIMIENTO" icon={ClipboardList}>
             <button
-              onClick={() => { setKpiView('table'); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100); }}
+              onClick={() => setShowNewTrackingModal(true)}
               style={{ backgroundColor: '#019df4', color: 'white', padding: '12px 24px', borderRadius: '16px', fontWeight: '950', fontSize: '13px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 15px rgba(1, 157, 244, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}
             >
               <Plus size={16} /> + Registrar Seguimiento
@@ -1219,6 +1220,57 @@ function BPTrackingContent() {
               <button onClick={handleAddAntecedente} style={{ flex: 1, padding: '16px', backgroundColor: '#019df4', color: 'white', borderRadius: '16px', border: 'none' }}>Guardar</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showNewTrackingModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10007, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: 'white', borderTopLeftRadius: '40px', borderTopRightRadius: '40px', width: '100%', maxWidth: '700px', padding: '40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', animation: 'slideUp 0.3s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <div>
+                <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>Registrar Nuevo Seguimiento</h3>
+                <p style={{ color: '#64748b', fontWeight: '800', marginTop: '4px' }}>Periodo: {activeWeek?.weekLabel}</p>
+              </div>
+              <button onClick={() => setShowNewTrackingModal(false)} style={{ backgroundColor: '#f1f5f9', border: 'none', padding: '12px', borderRadius: '14px', cursor: 'pointer' }}>
+                <X size={20} color="#64748b" />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '32px' }}>
+               <SubsectionHeader title="Obs. del Líder / Hito del Seguimiento" icon={MessageSquare} />
+               <textarea 
+                 rows={5} 
+                 value={observationText} 
+                 onChange={(e) => setObservationText(e.target.value)} 
+                 placeholder="Ej: Se realizó feedback sobre productividad y reitero. El técnico se compromete a..."
+                 style={{ width: '100%', padding: '24px', borderRadius: '24px', border: '2px solid #e0f2fe', outline: 'none', fontSize: '15px', lineHeight: '1.6', color: '#1e293b' }} 
+               />
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px' }}>
+               <button 
+                 onClick={() => setShowNewTrackingModal(false)} 
+                 style={{ flex: 1, padding: '18px', borderRadius: '20px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: '950', cursor: 'pointer' }}
+               >
+                 Cancelar
+               </button>
+               <button 
+                 onClick={async () => {
+                   await handleConfirmCheck();
+                   setShowNewTrackingModal(false);
+                 }} 
+                 style={{ flex: 2, padding: '18px', borderRadius: '20px', backgroundColor: '#019df4', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer', boxShadow: '0 4px 15px rgba(1, 157, 244, 0.3)' }}
+               >
+                 Confirmar y Publicar Hito
+               </button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes slideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+          `}</style>
         </div>
       )}
     </div>
