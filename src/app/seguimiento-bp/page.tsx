@@ -610,7 +610,8 @@ function BPTrackingContent() {
   const dni = searchParams.get('dni') || '37653458';
 
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<TechnicianSession | null>(null);
+  const [session, setSession] = useState<any>(null);
+  const [monthlyHistory, setMonthlyHistory] = useState<any[]>([]);
   const [kpiScale, setKpiScale] = useState<'weekly' | 'monthly'>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
   const [alarmScale, setAlarmScale] = useState<'weekly' | 'monthly'>('weekly');
@@ -625,18 +626,24 @@ function BPTrackingContent() {
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [tempRowData, setTempRowData] = useState<any>(null);
 
-  const fetchWeekData = async (techId: string, date: Date) => {
+  const fetchWeekData = async (techId: string, date: Date, isMonthly: boolean = false) => {
     const { start, end } = getWeekRange(date);
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const startStr = isMonthly ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01` : start.toISOString().split('T')[0];
+    const endStr = isMonthly ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-28` : end.toISOString().split('T')[0];
 
-    const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', techId).eq('fecha_inicio', startStr).single();
+    const { data: tracking } = await supabase.from('seguimiento_bp')
+      .select('*')
+      .eq('tecnico_id', techId)
+      .eq('fecha_inicio', startStr)
+      .eq('es_mensual', isMonthly)
+      .maybeSingle();
 
     return {
-      id: Math.random().toString(36).substr(2, 9),
-      weekLabel: formatDateRange(start, end),
+      id: isMonthly ? `monthly-${startStr}` : Math.random().toString(36).substr(2, 9),
+      isMonthly,
+      weekLabel: isMonthly ? date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase() : formatDateRange(start, end),
       dateRange: startStr,
-      monthLabel: start.toLocaleString('es-ES', { month: 'long' }).toUpperCase(),
+      monthLabel: date.toLocaleString('es-ES', { month: 'long' }).toUpperCase(),
       pdi: tracking?.kpi_pdi || 0,
       prod_equivalente: tracking?.kpi_prod_equiv || 0,
       resolucion: tracking?.kpi_resolucion || 0,
@@ -659,11 +666,45 @@ function BPTrackingContent() {
       if (!tech) return;
 
       const now = new Date();
-      const weeks: WeeklyKPI[] = [];
+      const weeks: any[] = [];
       for (let i = 0; i < 6; i++) {
         const d = new Date(now);
         d.setDate(now.getDate() - (i * 7));
         weeks.push(await fetchWeekData(tech.id, d));
+      }
+
+      const months: any[] = [];
+      const currentMonth = now.getMonth();
+      for (let i = 0; i <= currentMonth; i++) {
+        const dateObj = new Date(now.getFullYear(), i, 1);
+        const mData = await fetchWeekData(tech.id, dateObj, true);
+        
+        if (mData.status === 'full') {
+          months.push(mData);
+        } else {
+          const mLabel = dateObj.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+          const weeksInMonth = weeks.filter(w => w.monthLabel === mLabel);
+          const weeksWithData = weeksInMonth.filter(w => w.status === 'full');
+          const count = weeksWithData.length || 1;
+          
+          const ak = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
+          const alarmSums: any = {};
+          ak.forEach(key => alarmSums[key] = weeksInMonth.reduce((acc, w) => acc + (w.alarms ? (w.alarms as any)[key] : 0), 0));
+
+          months.push({
+            id: `avg-${mLabel}`,
+            isMonthly: true,
+            isAverage: true,
+            weekLabel: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${now.getFullYear()}`,
+            dateRange: mData.dateRange,
+            pdi: weeksWithData.reduce((acc, w) => acc + (w.pdi || 0), 0) / count,
+            prod_equivalente: weeksWithData.reduce((acc, w) => acc + (w.prod_equivalente || 0), 0) / count,
+            resolucion: weeksWithData.reduce((acc, w) => acc + (w.resolucion || 0), 0) / count,
+            reitero: weeksWithData.reduce((acc, w) => acc + (w.reitero || 0), 0) / count,
+            alarms: alarmSums,
+            status: 'partial'
+          });
+        }
       }
 
       const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', tech.id).eq('confirmado', true).order('fecha_confirmacion', { ascending: false });
@@ -686,6 +727,7 @@ function BPTrackingContent() {
         })),
         antecedentes: (antData || []).map(a => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
+      setMonthlyHistory(months.reverse());
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
@@ -697,16 +739,19 @@ function BPTrackingContent() {
     if (activeWeek) setObservationText(activeWeek.observation || '');
   }, [activeWeek]);
 
-  const handleSaveAlarms = async (data: BPAlarmData, date: string, kpiData?: any) => {
+  const handleSaveAlarms = async (data: BPAlarmData, date: string, kpiData?: any, isMonthlyOverride: boolean = false) => {
     if (!session) return;
     
-    // Convert YYYY-MM-DD string to safe local date to avoid timezone shifts
-    const [year, month, day] = date.split('-').map(Number);
-    const safeDate = new Date(year, month - 1, day);
-    
-    const { start, end } = getWeekRange(safeDate);
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    let startStr = date;
+    let endStr = date;
+
+    if (!isMonthlyOverride) {
+      const [year, month, day] = date.split('-').map(Number);
+      const safeDate = new Date(year, month - 1, day);
+      const { start, end } = getWeekRange(safeDate);
+      startStr = start.toISOString().split('T')[0];
+      endStr = end.toISOString().split('T')[0];
+    }
     
     const payload: any = {
       tecnico_id: session.id,
@@ -715,6 +760,8 @@ function BPTrackingContent() {
       alarma_pt: data.pt, alarma_ft: data.ft, alarma_ta: data.ta, alarma_ma: data.ma,
       alarma_te: data.te, alarma_rt: data.rt, alarma_ne: data.ne, alarma_tea: data.tea,
       estado_carga: 'full',
+      confirmado: true,
+      es_mensual: isMonthlyOverride,
       fecha_confirmacion: new Date().toISOString()
     };
 
@@ -726,7 +773,7 @@ function BPTrackingContent() {
     }
 
     const { error } = await supabase.from('seguimiento_bp').upsert(payload, { 
-      onConflict: 'tecnico_id, fecha_inicio' 
+      onConflict: 'tecnico_id, fecha_inicio, es_mensual' 
     });
 
     if (error) {
@@ -772,12 +819,9 @@ function BPTrackingContent() {
     });
   };
 
-  const handleInlineSave = async (dateRange: string) => {
+  const handleInlineSave = async (dateRange: string, isMonthly: boolean = false) => {
     if (!session || !tempRowData) return;
     
-    const vals = Object.values(tempRowData);
-    if (vals.some((v: any) => isNaN(v) || v < 0)) return alert("Valores inválidos. Solo números positivos.");
-
     const alarmsPayload: BPAlarmData = {
       pt: tempRowData.pt, ft: tempRowData.ft, ta: tempRowData.ta, ma: tempRowData.ma,
       te: tempRowData.te, rt: tempRowData.rt, ne: tempRowData.ne, tea: tempRowData.tea
@@ -789,7 +833,7 @@ function BPTrackingContent() {
       reitero: tempRowData.reitero
     };
 
-    await handleSaveAlarms(alarmsPayload, dateRange, kpiPayload);
+    await handleSaveAlarms(alarmsPayload, dateRange, kpiPayload, isMonthly);
     setEditingRowId(null);
     setTempRowData(null);
   };
@@ -882,39 +926,13 @@ function BPTrackingContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(kpiScale === 'weekly' ? session.history.slice(0, 8) : (() => {
-                      const now = new Date();
-                      const currentMonthIdx = now.getMonth();
-                      const currentYear = now.getFullYear();
-                      return ALL_MONTHS.slice(0, currentMonthIdx + 1).reverse().map(mLabel => {
-                        const weeksInMonth = session.history.filter(w => w.monthLabel === mLabel);
-                        if (weeksInMonth.length === 0) return { id: mLabel, isMonthly: true, label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`, values: [null, null, null, null], alarms: null, lastUpdated: null };
-                        
-                        const weeksWithData = weeksInMonth.filter(w => w.status === 'full');
-                        const count = weeksWithData.length || 1;
-                        const avg = (key: keyof typeof weeksWithData[0]) => weeksWithData.reduce((acc, w) => acc + (Number(w[key]) || 0), 0) / count;
-                        
-                        const k = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
-                        const alarmSums: any = {};
-                        k.forEach(key => alarmSums[key] = weeksInMonth.reduce((acc, w) => acc + (w.alarms ? (w.alarms as any)[key] : 0), 0));
-
-                        return {
-                          id: mLabel,
-                          isMonthly: true,
-                          label: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${currentYear}`,
-                          values: [avg('pdi'), avg('prod_equivalente'), avg('resolucion'), avg('reitero')],
-                          alarms: alarmSums,
-                          lastUpdated: weeksInMonth[0]?.updated_at
-                        };
-                      });
-                    })()).map((row: any) => {
-                      const isWeekly = kpiScale === 'weekly';
+                    {(kpiScale === 'weekly' ? session.history : monthlyHistory).map((row: any) => {
                       const isEditing = editingRowId === row.id;
-                      const label = isWeekly ? row.weekLabel : row.label;
-                      const kpiVals = isWeekly ? [row.pdi, row.prod_equivalente, row.resolucion, row.reitero] : row.values;
+                      const label = row.weekLabel;
+                      const kpiVals = [row.pdi, row.prod_equivalente, row.resolucion, row.reitero];
                       const alarms = row.alarms;
                       const alarmKeys = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
-                      const lastUpdate = isWeekly ? row.updated_at : row.lastUpdated;
+                      const lastUpdate = row.updated_at || row.lastUpdated;
                       
                       let dotColor = '#cbd5e1';
                       if (lastUpdate) {
@@ -924,54 +942,74 @@ function BPTrackingContent() {
                         else dotColor = '#ef4444';
                       }
 
+                      const getStatusLabel = (val: number) => {
+                        if (val === 1) return { text: 'OK', bg: '#d1fae5', color: '#065f46' };
+                        if (val === 2) return { text: 'REG', bg: '#fef3c7', color: '#854d0e' };
+                        if (val === 3) return { text: 'MAL', bg: '#fee2e2', color: '#991b1b' };
+                        return { text: '—', bg: '#f1f5f9', color: '#64748b' };
+                      };
+
                       return (
                         <tr key={row.id} style={{ backgroundColor: isEditing ? '#f0f9ff' : 'transparent', transition: 'background-color 0.2s' }}>
-                          {/* WEEK / DATE */}
                           <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {!row.isMonthly && <FileEdit size={12} color="#64748b" />}
+                              <FileEdit size={12} color="#64748b" />
                               <div style={{ fontWeight: '950', color: '#0f172a' }}>{label}</div>
                             </div>
-                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', marginTop: '2px' }}>{isWeekly ? row.dateRange : 'Mensual'}</div>
+                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', marginTop: '2px' }}>{row.isAverage ? 'Promedio Automático' : (row.isMonthly ? 'Cierre Mensual' : row.dateRange)}</div>
                           </td>
 
-                          {/* KPIs */}
                           {kpiVals.map((v: any, i: number) => (
                             <td key={i} style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '90px' }}>
                               {isEditing ? (
                                 <InlineInput 
                                   value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
                                   onChange={(val: number) => setTempRowData({...tempRowData, [['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]: val})}
-                                  style={{ borderColor: '#019df4', borderStyle: 'dashed' }}
                                 />
                               ) : (
-                                (v === null || (isWeekly && row.status === 'empty')) ? 
-                                <span style={{ color: '#cbd5e1', fontWeight: '900' }}>—</span> :
                                 <div style={{ 
                                   backgroundColor: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).bg, 
                                   color: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).color, 
                                   padding: '8px 4px', borderRadius: '8px', fontWeight: '950', fontSize: '12px' 
-                                }}>{i === 1 ? v.toFixed(2) : `${v.toFixed(1)}%`}</div>
+                                }}>{i === 1 ? (v || 0).toFixed(2) : `${(v || 0).toFixed(1)}%`}</div>
                               )}
                             </td>
                           ))}
 
-                          {/* ALARMS */}
                           {alarmKeys.map((k, i) => (
-                            <td key={k} style={{ padding: '8px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '60px' }}>
-                               {isEditing ? (
-                                 <InlineInput 
-                                   value={tempRowData[k]} 
-                                   onChange={(val: number) => setTempRowData({...tempRowData, [k]: val})}
-                                   style={{ padding: '6px', fontSize: '12px' }}
-                                 />
+                            <td key={k} style={{ padding: '8px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '70px' }}>
+                               {isEditing && row.isMonthly ? (
+                                 <select
+                                   value={tempRowData[k]}
+                                   onChange={e => setTempRowData({...tempRowData, [k]: Number(e.target.value)})}
+                                   style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '900' }}
+                                 >
+                                   <option value="0">—</option>
+                                   <option value="1">OK</option>
+                                   <option value="2">REG</option>
+                                   <option value="3">MAL</option>
+                                 </select>
+                               ) : isEditing && !row.isMonthly ? (
+                                  <InlineInput 
+                                    value={tempRowData[k]} 
+                                    onChange={(val: number) => setTempRowData({...tempRowData, [k]: val})}
+                                  />
                                ) : (
-                                 <div style={{ fontWeight: '950', fontSize: '13px', color: alarms ? '#1e293b' : '#cbd5e1' }}>{alarms ? (alarms as any)[k] : '0'}</div>
+                                 row.isMonthly && !row.isAverage ? (
+                                   <div style={{ 
+                                     backgroundColor: getStatusLabel(alarms ? alarms[k] : 0).bg,
+                                     color: getStatusLabel(alarms ? alarms[k] : 0).color,
+                                     padding: '6px', borderRadius: '8px', fontSize: '11px', fontWeight: '950'
+                                   }}>
+                                     {getStatusLabel(alarms ? alarms[k] : 0).text}
+                                   </div>
+                                 ) : (
+                                   <div style={{ fontWeight: '950', fontSize: '13px', color: alarms ? '#1e293b' : '#cbd5e1' }}>{alarms ? (alarms as any)[k] : '0'}</div>
+                                 )
                                )}
                             </td>
                           ))}
 
-                          {/* UPDATE DATE */}
                           <td style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '130px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }}></div>
@@ -981,12 +1019,11 @@ function BPTrackingContent() {
                              </div>
                           </td>
 
-                          {/* ACTIONS */}
                           <td style={{ padding: '16px 24px', textAlign: 'right', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0', width: '180px' }}>
                             {isEditing ? (
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                 <button
-                                  onClick={() => handleInlineSave(row.dateRange)}
+                                  onClick={() => handleInlineSave(row.dateRange, row.isMonthly)}
                                   style={{ padding: '8px 12px', backgroundColor: '#10b981', color: 'white', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
                                 >
                                   <Save size={14} /> GUARDAR
@@ -999,14 +1036,12 @@ function BPTrackingContent() {
                                 </button>
                               </div>
                             ) : (
-                              isWeekly && (
-                                <button 
-                                  onClick={() => handleInlineEditStart(row)} 
-                                  style={{ backgroundColor: 'transparent', border: '1.5px solid #e2e8f0', color: '#64748b', padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
-                                >
-                                  ✍️ EDITAR FILA
-                                </button>
-                              )
+                              <button 
+                                onClick={() => handleInlineEditStart(row)} 
+                                style={{ backgroundColor: 'transparent', border: '1.5px solid #e2e8f0', color: '#64748b', padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
+                              >
+                                ✍️ EDITAR {row.isMonthly ? 'MES' : 'FILA'}
+                              </button>
                             )}
                           </td>
                         </tr>
