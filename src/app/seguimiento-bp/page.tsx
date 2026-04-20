@@ -611,7 +611,6 @@ function BPTrackingContent() {
 
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<TechnicianSession | null>(null);
-  const [activeWeek, setActiveWeek] = useState<WeeklyKPI | null>(null);
   const [kpiScale, setKpiScale] = useState<'weekly' | 'monthly'>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
   const [alarmScale, setAlarmScale] = useState<'weekly' | 'monthly'>('weekly');
