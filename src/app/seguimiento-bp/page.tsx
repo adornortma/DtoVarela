@@ -683,13 +683,13 @@ function BPTrackingContent() {
           months.push(mData);
         } else {
           const mLabel = dateObj.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-          const weeksInMonth = weeks.filter(w => w.monthLabel === mLabel);
-          const weeksWithData = weeksInMonth.filter(w => w.status === 'full');
+          const weeksInMonth = weeks.filter((w: any) => w.monthLabel === mLabel);
+          const weeksWithData = weeksInMonth.filter((w: any) => w.status === 'full');
           const count = weeksWithData.length || 1;
           
           const ak = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
           const alarmSums: any = {};
-          ak.forEach(key => alarmSums[key] = weeksInMonth.reduce((acc, w) => acc + (w.alarms ? (w.alarms as any)[key] : 0), 0));
+          ak.forEach(key => alarmSums[key] = weeksInMonth.reduce((acc: number, w: any) => acc + (w.alarms ? (w.alarms as any)[key] : 0), 0));
 
           months.push({
             id: `avg-${mLabel}`,
@@ -697,10 +697,10 @@ function BPTrackingContent() {
             isAverage: true,
             weekLabel: `${mLabel[0]}${mLabel.slice(1).toLowerCase()} ${now.getFullYear()}`,
             dateRange: mData.dateRange,
-            pdi: weeksWithData.reduce((acc, w) => acc + (w.pdi || 0), 0) / count,
-            prod_equivalente: weeksWithData.reduce((acc, w) => acc + (w.prod_equivalente || 0), 0) / count,
-            resolucion: weeksWithData.reduce((acc, w) => acc + (w.resolucion || 0), 0) / count,
-            reitero: weeksWithData.reduce((acc, w) => acc + (w.reitero || 0), 0) / count,
+            pdi: weeksWithData.reduce((acc: number, w: any) => acc + (w.pdi || 0), 0) / count,
+            prod_equivalente: weeksWithData.reduce((acc: number, w: any) => acc + (w.prod_equivalente || 0), 0) / count,
+            resolucion: weeksWithData.reduce((acc: number, w: any) => acc + (w.resolucion || 0), 0) / count,
+            reitero: weeksWithData.reduce((acc: number, w: any) => acc + (w.reitero || 0), 0) / count,
             alarms: alarmSums,
             status: 'partial'
           });
@@ -851,7 +851,7 @@ function BPTrackingContent() {
   };
 
   const openSnapshot = async (dateRange: string) => {
-    let week = session?.history.find(w => w.dateRange === dateRange);
+    let week = session?.history.find((w: any) => w.dateRange === dateRange);
     if (!week && session) week = await fetchWeekData(session.id, new Date(dateRange));
     if (week) setSelectedSnapshot(week);
   };
