@@ -86,7 +86,7 @@ interface BPAction {
   date: string;
 }
 
-interface BPSession {
+interface TechnicianSession {
   id: string;
   techName: string;
   dni: string;
