@@ -1336,12 +1336,14 @@ function BPTrackingContent() {
   const prevWeekRow = session.history[1] || session.history[0];
 
   return (
-    <div style={{ backgroundColor: '#E2E8F0', minHeight: '100vh', padding: '24px 16px 120px 16px', width: '100%', maxWidth: '100vw', overflowX: 'hidden', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#E2E8F0', minHeight: '100vh', padding: '24px 24px 120px 24px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; overflow-x: hidden; width: 100%; }
         html { width: 100%; overflow-x: hidden; }
       `}</style>
+      
+      <div style={{ maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
 
       <header style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -1448,23 +1450,23 @@ function BPTrackingContent() {
             `}</style>
 
             {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #94A3B8', overflowX: 'auto', padding: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '850px' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #94A3B8', overflowX: 'auto', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
-                      <th style={{ padding: '14px 16px', textAlign: 'left', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '12px 0 0 12px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
+                      <th style={{ padding: '14px 24px', textAlign: 'left', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '12px 0 0 12px', borderBottom: '1px solid #E5E7EB', width: '220px' }}>SEMANA</th>
                       {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => (
-                        <th key={h} title={GLOSSARY[h.replace('.', '') as keyof typeof GLOSSARY]} style={{ padding: '14px 6px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
+                        <th key={h} title={GLOSSARY[h.replace('.', '') as keyof typeof GLOSSARY]} style={{ padding: '14px 6px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help', width: '110px' }}>
                            <span style={{ borderBottom: '1.5px dotted #CBD5E1' }}>{h}</span>
                         </th>
                       ))}
                       {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => (
-                        <th key={h} title={GLOSSARY[h as keyof typeof GLOSSARY]} style={{ padding: '14px 6px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
+                        <th key={h} title={GLOSSARY[h as keyof typeof GLOSSARY]} style={{ padding: '14px 6px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help', width: '75px' }}>
                            <span style={{ borderBottom: '1.5px dotted #CBD5E1' }}>{h}</span>
                         </th>
                       ))}
-                      <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ULT. MODIFICACIÓN</th>
-                      <th style={{ padding: '14px 16px', textAlign: 'right', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 12px 12px 0', borderBottom: '1px solid #E5E7EB' }}>ACCIONES</th>
+                      <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', width: '150px' }}>ULT. MODIFICACIÓN</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'right', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 12px 12px 0', borderBottom: '1px solid #E5E7EB', width: '180px' }}>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1503,7 +1505,7 @@ function BPTrackingContent() {
                           {kpiVals.map((v: any, i: number) => {
                             const sem = getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]);
                             return (
-                              <td key={i} style={{ padding: '10px 4px', textAlign: 'center', width: '80px' }}>
+                              <td key={i} style={{ padding: '10px 4px', textAlign: 'center', width: '110px' }}>
                                 {isEditing ? (
                                   <InlineInput 
                                     value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
@@ -1525,7 +1527,7 @@ function BPTrackingContent() {
                           })}
 
                           {alarmKeys.map((k, i) => (
-                            <td key={k} style={{ padding: '8px 4px', textAlign: 'center', width: '50px' }}>
+                            <td key={k} style={{ padding: '8px 4px', textAlign: 'center', width: '70px' }}>
                                {isEditing && row.isMonthly ? (
                                  <select
                                    value={tempRowData[k]}
@@ -1562,7 +1564,7 @@ function BPTrackingContent() {
                             </td>
                           ))}
 
-                          <td style={{ padding: '10px 8px', textAlign: 'center', width: '110px' }}>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', width: '150px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: dotColor }}></div>
                                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#5B6470' }}>
@@ -1571,7 +1573,7 @@ function BPTrackingContent() {
                              </div>
                           </td>
 
-                          <td style={{ padding: '10px 16px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderRadius: '0 12px 12px 0', width: '140px' }}>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderRadius: '0 12px 12px 0', width: '180px' }}>
                             {isEditing ? (
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                 <button
@@ -1935,6 +1937,8 @@ function BPTrackingContent() {
           `}</style>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
