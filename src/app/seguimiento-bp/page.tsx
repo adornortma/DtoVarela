@@ -98,6 +98,21 @@ interface TechnicianSession {
   antecedentes: BPAntecedente[];
 }
 
+const GLOSSARY = {
+  PDI: 'Índice de desempeño individual',
+  PROD: 'Productividad Equivalente',
+  RESO: 'Índice de Resolución',
+  REIT: 'Índice de Reiteros',
+  PT: 'Primera Tarde',
+  FT: 'Fin Temprano',
+  TA: 'Tiempo Almuerzo',
+  MA: 'Momento Almuerzo',
+  TE: 'Tiempo de Ejecución',
+  RT: 'Retrabajo',
+  NE: 'No Efectiva',
+  TEA: 'Tiempo Entre Actuaciones'
+} as const;
+
 // --- Utils ---
 const getSemaforo = (value: number, kpi: string) => {
   if (kpi === 'resolucion') {
@@ -1123,12 +1138,44 @@ function BPTrackingContent() {
 
           <section>
             <SectionHeader title="TABLA DE GESTIÓN OPERATIVA" icon={List}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div className="glossary-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'help' }}>
+                    <Info size={20} color="#019df4" />
+                    <div className="glossary-popup" style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '12px',
+                      width: '280px',
+                      backgroundColor: '#1C1F23',
+                      color: 'white',
+                      padding: '20px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      zIndex: 100,
+                      display: 'none',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                      lineHeight: '1.6',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      <div style={{ color: '#019df4', marginBottom: '10px', fontWeight: '1000', fontSize: '13px', letterSpacing: '0.5px' }}>GLOSARIO DE INDICADORES</div>
+                      {Object.entries(GLOSSARY).map(([k, v]) => (
+                        <div key={k} style={{ marginBottom: '6px', display: 'flex', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                          <span style={{ color: '#019df4', minWidth: '40px', fontWeight: '1000' }}>{k}:</span>
+                          <span style={{ color: '#E5E7EB' }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={kpiScale} onChange={setKpiScale} />
-                  <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0', margin: '0 4px' }}></div>
+                  <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0' }}></div>
                   <ViewToggle options={[{ value: 'table', label: 'Grilla', icon: TableIcon }, { value: 'chart', label: 'Análisis', icon: BarChart3 }]} active={kpiView} onChange={setKpiView} />
                 </div>
             </SectionHeader>
+            <style>{`
+              .glossary-container:hover .glossary-popup { display: block !important; }
+            `}</style>
 
             {kpiView === 'table' ? (
               <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e5e7eb', overflowX: 'auto', padding: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
@@ -1136,8 +1183,16 @@ function BPTrackingContent() {
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
                       <th style={{ padding: '18px 24px', textAlign: 'left', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '16px 0 0 16px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
-                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>{h}</th>)}
-                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>{h}</th>)}
+                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => (
+                        <th key={h} title={GLOSSARY[h.replace('.', '') as keyof typeof GLOSSARY]} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
+                           <span style={{ borderBottom: '1.5px dotted #CBD5E1' }}>{h}</span>
+                        </th>
+                      ))}
+                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => (
+                        <th key={h} title={GLOSSARY[h as keyof typeof GLOSSARY]} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
+                           <span style={{ borderBottom: '1.5px dotted #CBD5E1' }}>{h}</span>
+                        </th>
+                      ))}
                       <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ULT. MODIFICACIÓN</th>
                       <th style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 16px 16px 0', borderBottom: '1px solid #E5E7EB' }}>ACCIONES</th>
                     </tr>
