@@ -101,24 +101,24 @@ interface TechnicianSession {
 // --- Utils ---
 const getSemaforo = (value: number, kpi: string) => {
   if (kpi === 'resolucion') {
-    if (value >= 75) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
-    if (value >= 70) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
-    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
+    if (value >= 75) return { color: '#064e3b', bg: '#bbf7d0', label: 'Objetivo OK', border: '#86efac' };
+    if (value >= 70) return { color: '#78350f', bg: '#fef08a', label: 'En Umbral', border: '#fde047' };
+    return { color: '#7f1d1d', bg: '#fecaca', label: 'Crítico', border: '#fca5a5' };
   }
   if (kpi === 'reite' || kpi === 'reitero') {
-    if (value <= 4.5) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
-    if (value <= 5.0) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
-    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
+    if (value <= 4.5) return { color: '#064e3b', bg: '#bbf7d0', label: 'Objetivo OK', border: '#86efac' };
+    if (value <= 5.0) return { color: '#78350f', bg: '#fef08a', label: 'En Umbral', border: '#fde047' };
+    return { color: '#7f1d1d', bg: '#fecaca', label: 'Crítico', border: '#fca5a5' };
   }
   if (kpi === 'pdi') {
-    if (value >= 100) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
-    if (value >= 90) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
-    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
+    if (value >= 100) return { color: '#064e3b', bg: '#bbf7d0', label: 'Objetivo OK', border: '#86efac' };
+    if (value >= 90) return { color: '#78350f', bg: '#fef08a', label: 'En Umbral', border: '#fde047' };
+    return { color: '#7f1d1d', bg: '#fecaca', label: 'Crítico', border: '#fca5a5' };
   }
   if (kpi === 'prod_equivalente') {
-    if (value >= 6.0) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
-    if (value >= 5.0) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
-    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
+    if (value >= 6.0) return { color: '#064e3b', bg: '#bbf7d0', label: 'Objetivo OK', border: '#86efac' };
+    if (value >= 5.0) return { color: '#78350f', bg: '#fef08a', label: 'En Umbral', border: '#fde047' };
+    return { color: '#7f1d1d', bg: '#fecaca', label: 'Crítico', border: '#fca5a5' };
   }
   return { color: '#374151', bg: '#f3f4f6', label: 'N/A', border: '#e5e7eb' };
 };
@@ -130,17 +130,17 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
   const variation = numValue - previousValue;
   const isPositiveMetric = ['resolucion', 'pdi', 'prod_equivalente'].includes(kpiKey);
   const isUp = variation > 0;
-  const trendColor = isUp === isPositiveMetric ? '#059669' : '#dc2626';
+  const trendColor = isUp === isPositiveMetric ? '#064e3b' : '#7f1d1d';
   const semaforo = getSemaforo(numValue, kpiKey);
 
   return (
-    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '24px', border: `2px solid ${semaforo.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.03)', flex: 1 }}>
+    <div style={{ backgroundColor: semaforo.bg, borderRadius: '24px', padding: '24px', border: `1px solid ${semaforo.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', flex: 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <p style={{ fontSize: '13px', fontWeight: '800', color: '#5B6470', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{title}</p>
-        <div style={{ backgroundColor: semaforo.bg, color: semaforo.color, padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', border: `1px solid ${semaforo.border}` }}>{semaforo.label}</div>
+        <p style={{ fontSize: '13px', fontWeight: '800', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8 }}>{title}</p>
+        <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '1000' }}>{semaforo.label}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <h4 style={{ fontSize: '40px', fontWeight: '1000', color: '#1C1F23', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
+        <h4 style={{ fontSize: '40px', fontWeight: '1000', color: semaforo.color, margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: trendColor }}>
           {isUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
           <span style={{ fontSize: '15px', fontWeight: '900' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(1)}%`}</span>
@@ -1138,7 +1138,7 @@ function BPTrackingContent() {
                       <th style={{ padding: '18px 24px', textAlign: 'left', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '16px 0 0 16px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
                       {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>{h}</th>)}
                       {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>{h}</th>)}
-                      <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ACTUALIZACIÓN</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ULT. MODIFICACIÓN</th>
                       <th style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 16px 16px 0', borderBottom: '1px solid #E5E7EB' }}>ACCIONES</th>
                     </tr>
                   </thead>
@@ -1173,7 +1173,6 @@ function BPTrackingContent() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ fontWeight: '1000', color: '#1C1F23', fontSize: '15px' }}>{label}</div>
                             </div>
-                            <div style={{ fontSize: '12px', color: '#5B6470', fontWeight: '800', marginTop: '4px' }}>{row.isAverage ? 'Promedio Automático' : (row.isMonthly ? 'Cierre Mensual' : row.dateRange)}</div>
                           </td>
 
                           {kpiVals.map((v: any, i: number) => {
