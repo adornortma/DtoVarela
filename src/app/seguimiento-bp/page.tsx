@@ -657,14 +657,14 @@ const BPDirectory = () => {
   const getRoleStyle = (role: string) => {
     switch (role.toUpperCase()) {
       case 'GM':
-        return { bg: '#eff6ff', color: '#1e40af', border: '#dbeafe' };
+        return { bg: '#dbeafe', color: '#1d4ed8', border: '#bfdbfe' }; // Azules más saturados
       case 'REVISADOR':
       case 'REVISOR':
-        return { bg: '#f5f3ff', color: '#5b21b6', border: '#ede9fe' };
+        return { bg: '#ede9fe', color: '#6d28d9', border: '#ddd6fe' }; // Violetas más saturados
       case 'EMPALMADOR':
-        return { bg: '#f0fdfa', color: '#115e59', border: '#ccfbf1' };
+        return { bg: '#ccfbf1', color: '#0f766e', border: '#99f6e4' }; // Teals más saturados
       default:
-        return { bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
+        return { bg: '#f1f5f9', color: '#334155', border: '#e2e8f0' };
     }
   };
 
@@ -677,25 +677,25 @@ const BPDirectory = () => {
   return (
     <div style={{ backgroundColor: '#F3F7FB', minHeight: '100vh', width: '100%', padding: '60px 20px' }}>
       <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '40px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', marginBottom: '8px' }}>Directorio de Técnicos</h1>
-        <p style={{ color: '#6B7280', fontWeight: '800', fontSize: '15px' }}>Módulo Seguimiento BP • Organización por Distrito y Célula</p>
+      <div style={{ marginBottom: '64px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '42px', fontWeight: '1000', color: '#111827', letterSpacing: '-1.8px', marginBottom: '12px' }}>Directorio de Técnicos</h1>
+        <p style={{ color: '#4B5563', fontWeight: '900', fontSize: '16px' }}>Módulo Seguimiento BP • Organización por Distrito y Célula</p>
       </div>
 
       {STRUCTURE.map(dist => (
-        <div key={dist.distrito} style={{ marginBottom: '56px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ height: '2px', flex: 1, backgroundColor: '#e2e8f0' }}></div>
-            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#1F2937', letterSpacing: '-0.5px' }}>{dist.distrito}</h2>
-            <div style={{ height: '2px', flex: 1, backgroundColor: '#e2e8f0' }}></div>
+        <div key={dist.distrito} style={{ marginBottom: '72px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
+            <div style={{ height: '3px', flex: 1, backgroundColor: '#E5E7EB', borderRadius: '4px' }}></div>
+            <h2 style={{ fontSize: '28px', fontWeight: '1000', color: '#111827', letterSpacing: '-0.7px' }}>{dist.distrito}</h2>
+            <div style={{ height: '3px', flex: 1, backgroundColor: '#E5E7EB', borderRadius: '4px' }}></div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', paddingLeft: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '56px', paddingLeft: '12px' }}>
             {dist.celulas.map(cel => (
               <div key={cel.nombre}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', paddingBottom: '12px', borderBottom: '2px solid #E5EAF0' }}>
-                  <LayoutDashboard size={20} color="#019df4" />
-                  <h3 style={{ fontSize: '16px', fontWeight: '950', color: '#475569', textTransform: 'uppercase', letterSpacing: '1px' }}>{cel.nombre}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px', paddingBottom: '14px', borderBottom: '2.5px solid #E5E7EB' }}>
+                  <LayoutDashboard size={22} color="#019df4" />
+                  <h3 style={{ fontSize: '17px', fontWeight: '1000', color: '#374151', textTransform: 'uppercase', letterSpacing: '1.2px' }}>{cel.nombre}</h3>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '34px' }}>
@@ -742,10 +742,10 @@ const BPDirectory = () => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                          <div style={{ width: '44px', height: '44px', borderRadius: '16px', backgroundColor: '#F3F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={22} color="#1C1F23" />
+                          <div style={{ width: '44px', height: '44px', borderRadius: '16px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
+                            <User size={22} color="#111827" />
                           </div>
-                          <span style={{ fontSize: '16px', fontWeight: '950', color: '#1C1F23', letterSpacing: '-0.3px' }}>{tech.name}</span>
+                          <span style={{ fontSize: '17px', fontWeight: '1000', color: '#111827', letterSpacing: '-0.4px' }}>{tech.name}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                           <span style={{ 
