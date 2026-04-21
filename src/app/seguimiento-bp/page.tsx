@@ -292,7 +292,7 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
   const semaforo = getSemaforo(numValue, kpiKey);
 
   return (
-    <div style={{ backgroundColor: semaforo.bg, borderRadius: '24px', padding: '24px', border: `1px solid ${semaforo.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', flex: 1 }}>
+    <div style={{ backgroundColor: semaforo.bg, borderRadius: '24px', padding: '24px', border: `1px solid ${semaforo.border}`, borderBottomWidth: '3px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)', flex: 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <p style={{ fontSize: '13px', fontWeight: '800', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8 }}>{title}</p>
       </div>
@@ -1336,7 +1336,7 @@ function BPTrackingContent() {
   const prevWeekRow = session.history[1] || session.history[0];
 
   return (
-    <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 120px 40px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#EFF3F8', minHeight: '100vh', padding: '24px 60px 120px 60px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
 
       <header style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -1385,7 +1385,7 @@ function BPTrackingContent() {
               </p>
             </div>
           </div>
-          <ViewToggle options={[{ value: 'data', label: 'ANÁLISIS', icon: Activity }, { value: 'actions', label: 'HISTORIAL', icon: History }]} active={activeTab} onChange={setActiveTab} />
+          <ViewToggle options={[{ value: 'data', label: 'SEGUIMIENTO', icon: Activity }, { value: 'actions', label: 'HISTORIAL', icon: History }]} active={activeTab} onChange={setActiveTab} />
         </div>
       </header>
 
@@ -1435,8 +1435,7 @@ function BPTrackingContent() {
                     </div>
                   </div>
                   <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={kpiScale} onChange={setKpiScale} />
-                  <div style={{ width: '1px', height: '16px', backgroundColor: '#e2e8f0' }}></div>
-                  <ViewToggle options={[{ value: 'table', label: 'Grilla', icon: TableIcon }, { value: 'chart', label: 'Análisis', icon: BarChart3 }]} active={kpiView} onChange={setKpiView} />
+                  {/* Chart analysis toggle removed per user request */}
                 </div>
             </SectionHeader>
             <style>{`
@@ -1444,7 +1443,7 @@ function BPTrackingContent() {
             `}</style>
 
             {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e5e7eb', overflowX: 'auto', padding: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #CBD5E1', overflowX: 'auto', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '1300px' }}>
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
