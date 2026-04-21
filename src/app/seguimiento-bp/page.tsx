@@ -775,9 +775,7 @@ const STRUCTURE = [
   {
     distrito: "LANUS",
     celulas: [
-      { nombre: "LANUS 1 Y 2", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] },
-      { nombre: "BANFIELD", tecnicos: [] },
-      { nombre: "ADROGUE", tecnicos: [] },
+      { nombre: "GM LANUS", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] },
       { nombre: "GM LOMAS", tecnicos: [{ name: "GARCIA, CARLOS FACUNDO", role: "GM" }] },
       { nombre: "PIÑEYRO", tecnicos: [{ name: "ORTIGOZA, EMMANUEL JAVIER", role: "REVISADOR" }] },
       { nombre: "SARANDI", tecnicos: [{ name: "FALCON, AGUSTIN ALEJANDRO", role: "REVISADOR" }, { name: "TORRES, CHRISTIAN NICOLAS", role: "REVISADOR" }] },
@@ -787,18 +785,16 @@ const STRUCTURE = [
   {
     distrito: "MONTE GRANDE",
     celulas: [
-      { nombre: "BURZACO Y LO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISADOR" }, { name: "SALINAS LUCIANO", role: "REVISADOR" }, { name: "DIANA PABLO", role: "REVISADOR" }] },
+      { nombre: "BURZACO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISADOR" }, { name: "SALINAS LUCIANO", role: "REVISADOR" }] },
+      { nombre: "LONGCHAMPS", tecnicos: [{ name: "DIANA PABLO", role: "REVISADOR" }] },
       { nombre: "MS MONTE GRANDE", tecnicos: [{ name: "FIGUEREDO CARLOS", role: "EMPALMADOR" }, { name: "FERNANDEZ FACUNDO", role: "EMPALMADOR" }] }
     ]
   },
   {
     distrito: "VARELA",
     celulas: [
-      { nombre: "VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
-      { nombre: "QUILMES", tecnicos: [] },
-      { nombre: "BERAZATEGUI", tecnicos: [] },
-      { nombre: "FLORENCIO VARELA", tecnicos: [] },
-      { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LEONEL", role: "REVISADOR" }] }
+      { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
+      { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LIONEL", role: "REVISADOR" }] }
     ]
   }
 ];
@@ -1068,15 +1064,13 @@ function BPTrackingContent() {
       const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', tech.id).eq('confirmado', true).order('fecha_inicio', { ascending: false });
       const { data: antData } = await supabase.from('antecedentes_bp').select('*').eq('tecnico_id', tech.id).order('fecha', { ascending: false });
 
-      let orgInfo = { district: 'VARELA', cell: 'N/A', role: 'Técnico' };
-      const lastName = (tech?.apellido || '').toUpperCase();
-      const firstName = (tech?.nombre || '').toUpperCase();
-      const fullName = `${lastName}, ${firstName}`;
-      const altName = `${firstName} ${lastName}`;
+      let orgInfo = { district: 'N/A', cell: 'N/A', role: 'Técnico' };
+      const normalize = (s: string) => s.toUpperCase().replace(/,/g, '').split(/\s+/).filter(Boolean).sort().join(' ');
+      const techDBName = normalize(`${tech.nombre} ${tech.apellido}`);
 
       for (const dist of STRUCTURE) {
         for (const cel of dist.celulas) {
-          const matchedTech = cel.tecnicos.find(t => t.name.toUpperCase() === fullName || t.name.toUpperCase() === altName);
+          const matchedTech = cel.tecnicos.find(t => normalize(t.name) === techDBName);
           if (matchedTech) {
             orgInfo = { district: dist.distrito, cell: cel.nombre, role: matchedTech.role };
             break;
@@ -1371,14 +1365,14 @@ function BPTrackingContent() {
             </div>
             <div>
               <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', margin: 0 }}>{session.techName}</h1>
-              <p style={{ fontSize: '14px', fontWeight: '800', color: '#4B5563', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>DNI: {session.dni}</span>
+              <p style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: '#111827', fontWeight: '950' }}>DNI: {session.dni}</span>
                 <span style={{ color: '#cbd5e1' }}>•</span>
-                <span style={{ textTransform: 'capitalize' }}>{session.district.toLowerCase()}</span>
+                <span>Distrito: <strong style={{ color: '#111827', fontWeight: '950' }}>{session.district}</strong></span>
                 <span style={{ color: '#cbd5e1' }}>•</span>
-                <span>{session.cell}</span>
+                <span>Célula: <strong style={{ color: '#111827', fontWeight: '950' }}>{session.cell}</strong></span>
                 <span style={{ color: '#cbd5e1' }}>•</span>
-                <span style={{ color: '#019df4', fontWeight: '950' }}>{session.role}</span>
+                <span>Función: <strong style={{ color: '#019df4', fontWeight: '1000' }}>{session.role}</strong></span>
               </p>
             </div>
           </div>
