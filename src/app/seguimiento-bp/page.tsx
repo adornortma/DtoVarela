@@ -1336,7 +1336,7 @@ function BPTrackingContent() {
   const prevWeekRow = session.history[1] || session.history[0];
 
   return (
-    <div style={{ backgroundColor: '#EFF3F8', minHeight: '100vh', padding: '24px 60px 120px 60px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#EFF3F8', minHeight: '100vh', padding: '24px 32px 120px 32px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
 
       <header style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -1444,7 +1444,7 @@ function BPTrackingContent() {
 
             {kpiView === 'table' ? (
               <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #CBD5E1', overflowX: 'auto', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '1300px' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '1100px' }}>
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
                       <th style={{ padding: '18px 24px', textAlign: 'left', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '16px 0 0 16px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
@@ -1498,7 +1498,7 @@ function BPTrackingContent() {
                           {kpiVals.map((v: any, i: number) => {
                             const sem = getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]);
                             return (
-                              <td key={i} style={{ padding: '12px 10px', textAlign: 'center', width: '100px' }}>
+                              <td key={i} style={{ padding: '12px 8px', textAlign: 'center', width: '90px' }}>
                                 {isEditing ? (
                                   <InlineInput 
                                     value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
@@ -1520,7 +1520,7 @@ function BPTrackingContent() {
                           })}
 
                           {alarmKeys.map((k, i) => (
-                            <td key={k} style={{ padding: '12px 8px', textAlign: 'center', width: '75px' }}>
+                            <td key={k} style={{ padding: '12px 6px', textAlign: 'center', width: '65px' }}>
                                {isEditing && row.isMonthly ? (
                                  <select
                                    value={tempRowData[k]}
@@ -1557,7 +1557,7 @@ function BPTrackingContent() {
                             </td>
                           ))}
 
-                          <td style={{ padding: '12px 24px', textAlign: 'center', width: '150px' }}>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', width: '130px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: dotColor }}></div>
                                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#5B6470' }}>
