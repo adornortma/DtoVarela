@@ -1336,7 +1336,12 @@ function BPTrackingContent() {
   const prevWeekRow = session.history[1] || session.history[0];
 
   return (
-    <div style={{ backgroundColor: '#E2E8F0', minHeight: '100vh', padding: '24px 16px 120px 16px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#E2E8F0', minHeight: '100vh', padding: '24px 16px 120px 16px', width: '100%', maxWidth: '100vw', overflowX: 'hidden', fontFamily: 'Inter, sans-serif' }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; overflow-x: hidden; width: 100%; }
+        html { width: 100%; overflow-x: hidden; }
+      `}</style>
 
       <header style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
