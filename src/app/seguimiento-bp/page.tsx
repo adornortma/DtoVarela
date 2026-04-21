@@ -631,7 +631,7 @@ const BPDirectory = () => {
       distrito: "VARELA",
       celulas: [
         { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
-        { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LIONEL", role: "REVISADOR" }] }
+        { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LEONEL", role: "REVISADOR" }] }
       ]
     }
   ];
@@ -653,6 +653,20 @@ const BPDirectory = () => {
     };
     fetchDnis();
   }, []);
+
+  const getRoleStyle = (role: string) => {
+    switch (role.toUpperCase()) {
+      case 'GM':
+        return { bg: '#eff6ff', color: '#1e40af', border: '#dbeafe' };
+      case 'REVISADOR':
+      case 'REVISOR':
+        return { bg: '#f5f3ff', color: '#5b21b6', border: '#ede9fe' };
+      case 'EMPALMADOR':
+        return { bg: '#f0fdfa', color: '#115e59', border: '#ccfbf1' };
+      default:
+        return { bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
+    }
+  };
 
   if (loading) return (
     <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -677,15 +691,16 @@ const BPDirectory = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingLeft: '12px' }}>
             {dist.celulas.map(cel => (
-              <div key={cel.nombre}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <LayoutDashboard size={16} color="#019df4" />
-                  <h3 style={{ fontSize: '13px', fontWeight: '950', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cel.nombre}</h3>
+              <div key={cel.nombre} style={{ marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                  <LayoutDashboard size={18} color="#019df4" />
+                  <h3 style={{ fontSize: '15px', fontWeight: '950', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{cel.nombre}</h3>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '26px' }}>
                   {cel.tecnicos.map(tech => {
                     const dni = techMapping[tech.name.toUpperCase()];
+                    const rs = getRoleStyle(tech.role);
                     return (
                       <a 
                         key={tech.name}
@@ -694,36 +709,49 @@ const BPDirectory = () => {
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'space-between', 
-                          padding: '16px 20px', 
+                          padding: '18px 24px', 
                           backgroundColor: 'white', 
-                          borderRadius: '16px', 
+                          borderRadius: '20px', 
                           border: '1px solid #e2e8f0',
                           textDecoration: 'none',
-                          transition: 'all 0.2s',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                          marginBottom: '4px',
+                          cursor: 'pointer'
                         }}
                         onMouseOver={(e) => {
-                          e.currentTarget.style.borderColor = '#019df4';
-                          e.currentTarget.style.transform = 'translateX(4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(1,157,244,0.08)';
+                          e.currentTarget.style.borderColor = '#bae6fd';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 10px 25px rgba(1,157,244,0.12)';
+                          e.currentTarget.style.backgroundColor = '#f0f9ff';
                         }}
                         onMouseOut={(e) => {
                           e.currentTarget.style.borderColor = '#e2e8f0';
-                          e.currentTarget.style.transform = 'translateX(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.02)';
+                          e.currentTarget.style.backgroundColor = 'white';
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '32px', height: '32px', borderRadius: '10px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={16} color="#4B5563" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '14px', backgroundColor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <User size={20} color="#0369a1" />
                           </div>
-                          <span style={{ fontSize: '15px', fontWeight: '950', color: '#1F2937' }}>{tech.name}</span>
+                          <span style={{ fontSize: '16px', fontWeight: '950', color: '#1F2937' }}>{tech.name}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: '950', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f8fafc', color: '#6B7280', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <span style={{ 
+                            fontSize: '11px', 
+                            fontWeight: '950', 
+                            padding: '6px 14px', 
+                            borderRadius: '99px', 
+                            backgroundColor: rs.bg, 
+                            color: rs.color, 
+                            border: `1px solid ${rs.border}`,
+                            letterSpacing: '0.5px'
+                          }}>
                             {tech.role}
                           </span>
-                          <ArrowRight size={16} color="#cbd5e1" />
+                          <ArrowRight size={18} color="#019df4" style={{ opacity: 0.5 }} />
                         </div>
                       </a>
                     );
