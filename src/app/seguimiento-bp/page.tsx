@@ -1126,13 +1126,14 @@ function BPTrackingContent() {
   };
 
   useEffect(() => { 
+    if (!authChecked) return;
     setAccessDenied(false);
     if (dni && user) {
       fetchData(); 
     } else {
       setLoading(false);
     }
-  }, [dni, user]);
+  }, [dni, user, authChecked]);
 
   const activeWeek = session?.history[0];
 
