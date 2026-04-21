@@ -41,7 +41,8 @@ import {
   LogIn,
   LogOut,
   Eye,
-  EyeOff
+  EyeOff,
+  ArrowLeft
 } from 'lucide-react';
 
 // --- Types ---
