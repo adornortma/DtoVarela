@@ -35,7 +35,8 @@ import {
   RotateCcw,
   Minus,
   Search,
-  BarChart
+  BarChart,
+  Info
 } from 'lucide-react';
 
 // --- Types ---
