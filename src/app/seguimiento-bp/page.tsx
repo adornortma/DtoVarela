@@ -1013,9 +1013,14 @@ function BPTrackingContent() {
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 120px 40px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
 
       <header style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: '#6B7280', fontSize: '13px', fontWeight: '800' }}>
-          <span>Panel</span><ChevronRight size={14} />
-          <span style={{ color: '#019df4', fontWeight: '950' }}>BP Detalle</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6B7280', fontSize: '13px', fontWeight: '800' }}>
+            <span>Panel</span><ChevronRight size={14} />
+            <span style={{ color: '#019df4', fontWeight: '950' }}>BP Detalle</span>
+          </div>
+          <a href="/seguimiento-bp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6B7280', textDecoration: 'none', fontSize: '12px', fontWeight: '950', padding: '8px 16px', borderRadius: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', transition: 'all 0.2s' }}>
+            <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Volver al Directorio
+          </a>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
