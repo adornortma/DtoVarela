@@ -133,3 +133,13 @@ CREATE TABLE IF NOT EXISTS public.antecedentes_bp (
 );
 
 CREATE INDEX IF NOT EXISTS idx_antecedentes_tech ON public.antecedentes_bp(tecnico_id);
+
+-- 10. Usuarios (Gestión de Accesos)
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    usuario TEXT PRIMARY KEY,
+    pass TEXT NOT NULL,
+    rol TEXT NOT NULL, -- 'FULL', 'LIDER'
+    distrito TEXT NOT NULL,
+    celula TEXT, -- null para FULL, valor específico para LIDER
+    created_at TIMESTAMPTZ DEFAULT now()
+);

@@ -36,7 +36,12 @@ import {
   Minus,
   Search,
   BarChart,
-  Info
+  Info,
+  Lock,
+  LogIn,
+  LogOut,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 // --- Types ---
@@ -44,6 +49,13 @@ type WeeklyLoadStatus = 'full' | 'partial' | 'empty';
 type AnalyticMode = 'current' | 'compare-week' | 'last-4-weeks' | 'monthly';
 type TimeScale = 'weekly' | 'monthly';
 const ALL_MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+
+interface UserSession {
+  usuario: string;
+  rol: 'FULL' | 'LIDER';
+  distrito: string;
+  celula: string | null;
+}
 
 interface BPAlarmData {
   pt: number;
@@ -137,6 +149,138 @@ const getSemaforo = (value: number, kpi: string) => {
     return { color: '#7f1d1d', bg: '#fecaca', label: 'Crítico', border: '#fca5a5' };
   }
   return { color: '#374151', bg: '#f3f4f6', label: 'N/A', border: '#e5e7eb' };
+};
+
+// --- Auth Components ---
+
+const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const normalizedUser = username.toUpperCase();
+      const { data, error: dbError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('usuario', normalizedUser)
+        .single();
+
+      if (dbError || !data) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      if (data.pass !== password) {
+        throw new Error('Contraseña incorrecta');
+      }
+
+      const session: UserSession = {
+        usuario: data.usuario,
+        rol: data.rol as 'FULL' | 'LIDER',
+        distrito: data.distrito,
+        celula: data.celula
+      };
+
+      localStorage.setItem('bp_session', JSON.stringify(session));
+      onLogin(session);
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F7FB', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '400px', backgroundColor: 'white', borderRadius: '32px', padding: '48px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', border: '1px solid #E5EAF0' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ width: '64px', height: '64px', backgroundColor: '#1C1F23', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <Lock size={32} />
+          </div>
+          <h2 style={{ fontSize: '28px', fontWeight: '1000', color: '#111827', letterSpacing: '-1px' }}>Acceso Seguimiento BP</h2>
+          <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '8px', fontWeight: '800' }}>Ingresá tus credenciales operativas</p>
+        </div>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '1000', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.8px', paddingLeft: '4px' }}>Usuario</label>
+            <input 
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="EJ: LOPEZF"
+              required
+              style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s' }}
+              onFocus={e => e.currentTarget.style.borderColor = '#019df4'}
+              onBlur={e => e.currentTarget.style.borderColor = '#E2E8F0'}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '1000', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.8px', paddingLeft: '4px' }}>Contraseña</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                style={{ width: '100%', padding: '16px 50px 16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s' }}
+                onFocus={e => e.currentTarget.style.borderColor = '#019df4'}
+                onBlur={e => e.currentTarget.style.borderColor = '#E2E8F0'}
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+              >
+                {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '12px', color: '#7F1D1D', fontSize: '13px', fontWeight: '800' }}>
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
+
+          <button 
+            type="submit"
+            disabled={loading}
+            style={{ 
+              width: '100%', 
+              padding: '18px', 
+              borderRadius: '16px', 
+              backgroundColor: loading ? '#94A3B8' : '#1C1F23', 
+              color: 'white', 
+              fontSize: '15px', 
+              fontWeight: '950', 
+              border: 'none', 
+              cursor: loading ? 'not-allowed' : 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s'
+            }}
+          >
+            {loading ? <Activity className="animate-spin" size={20} /> : <LogIn size={20} />}
+            {loading ? 'Validando...' : 'Entrar al Sistema'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 // --- Components ---
@@ -633,33 +777,46 @@ const STRUCTURE = [
   {
     distrito: "LANUS",
     celulas: [
+      { nombre: "LANUS 1 Y 2", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] },
+      { nombre: "BANFIELD", tecnicos: [] },
+      { nombre: "ADROGUE", tecnicos: [] },
       { nombre: "GM LOMAS", tecnicos: [{ name: "GARCIA, CARLOS FACUNDO", role: "GM" }] },
       { nombre: "PIÑEYRO", tecnicos: [{ name: "ORTIGOZA, EMMANUEL JAVIER", role: "REVISADOR" }] },
       { nombre: "SARANDI", tecnicos: [{ name: "FALCON, AGUSTIN ALEJANDRO", role: "REVISADOR" }, { name: "TORRES, CHRISTIAN NICOLAS", role: "REVISADOR" }] },
-      { nombre: "MS LANUS", tecnicos: [{ name: "JAIME, MARCELO RAUL", role: "EMPALMADOR" }, { name: "PARED, JUAN MANUEL", role: "EMPALMADOR" }, { name: "RIOS RADO, EMILIO", role: "EMPALMADOR" }] },
-      { nombre: "GM LANUS", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] }
+      { nombre: "MS LANUS", tecnicos: [{ name: "JAIME, MARCELO RAUL", role: "EMPALMADOR" }, { name: "PARED, JUAN MANUEL", role: "EMPALMADOR" }, { name: "RIOS RADO, EMILIO", role: "EMPALMADOR" }] }
     ]
   },
   {
     distrito: "MONTE GRANDE",
     celulas: [
-      { nombre: "BURZACO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISADOR" }, { name: "SALINAS LUCIANO", role: "REVISADOR" }] },
-      { nombre: "LONGCHAMPS", tecnicos: [{ name: "DIANA PABLO", role: "REVISADOR" }] },
+      { nombre: "BURZACO Y LO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISADOR" }, { name: "SALINAS LUCIANO", role: "REVISADOR" }, { name: "DIANA PABLO", role: "REVISADOR" }] },
       { nombre: "MS MONTE GRANDE", tecnicos: [{ name: "FIGUEREDO CARLOS", role: "EMPALMADOR" }, { name: "FERNANDEZ FACUNDO", role: "EMPALMADOR" }] }
     ]
   },
   {
     distrito: "VARELA",
     celulas: [
-      { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
+      { nombre: "VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
+      { nombre: "QUILMES", tecnicos: [] },
+      { nombre: "BERAZATEGUI", tecnicos: [] },
+      { nombre: "FLORENCIO VARELA", tecnicos: [] },
       { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LEONEL", role: "REVISADOR" }] }
     ]
   }
 ];
 
-const BPDirectory = () => {
+const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => void }) => {
   const [techMapping, setTechMapping] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+
+  const filteredStructure = useMemo(() => {
+    if (user.rol === 'FULL') return STRUCTURE;
+    
+    return STRUCTURE.map(dist => ({
+      ...dist,
+      celulas: dist.celulas.filter(cel => cel.nombre === user.celula)
+    })).filter(dist => dist.celulas.length > 0);
+  }, [user]);
 
   useEffect(() => {
     const fetchDnis = async () => {
@@ -702,11 +859,27 @@ const BPDirectory = () => {
   return (
     <div style={{ backgroundColor: '#F3F7FB', minHeight: '100vh', width: '100%', padding: '60px 20px' }}>
       <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '64px', textAlign: 'center' }}>
+      <div style={{ position: 'relative', marginBottom: '64px', textAlign: 'center' }}>
+        <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 16px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+          <div style={{ width: '30px', height: '30px', borderRadius: '8px', backgroundColor: user.rol === 'FULL' ? '#1C1F23' : '#019df4', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <User size={16} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+            <span style={{ fontSize: '12px', fontWeight: '1000', color: '#1C1F23' }}>{user.usuario}</span>
+            <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>{user.rol}</span>
+          </div>
+          <button 
+            onClick={onLogout}
+            title="Cerrar Sesión"
+            style={{ marginLeft: '8px', padding: '6px', backgroundColor: '#FEF2F2', border: 'none', borderRadius: '8px', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
         <h1 style={{ fontSize: '42px', fontWeight: '1000', color: '#111827', letterSpacing: '-1.8px', marginBottom: '12px' }}>Seguimiento BP</h1>
       </div>
 
-      {STRUCTURE.map(dist => (
+      {filteredStructure.map(dist => (
         <div key={dist.distrito} style={{ marginBottom: '72px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
             <div style={{ height: '3px', flex: 1, backgroundColor: '#E5E7EB', borderRadius: '4px' }}></div>
@@ -809,7 +982,9 @@ function BPTrackingContent() {
   const dni = searchParams.get('dni');
 
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<UserSession | null>(null);
   const [session, setSession] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [monthlyHistory, setMonthlyHistory] = useState<any[]>([]);
   const [kpiScale, setKpiScale] = useState<'weekly' | 'monthly'>('weekly');
   const [kpiView, setKpiView] = useState<'table' | 'chart'>('table');
@@ -826,6 +1001,24 @@ function BPTrackingContent() {
   const [tempRowData, setTempRowData] = useState<any>(null);
   const [showNewTrackingModal, setShowNewTrackingModal] = useState(false);
   const [trackingDate, setTrackingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('bp_session');
+    if (saved) {
+      setUser(JSON.parse(saved));
+    }
+    setAuthChecked(true);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('bp_session');
+    setUser(null);
+    window.location.href = '/seguimiento-bp';
+  };
+
+  if (!authChecked) return null;
+  if (!user) return <LoginForm onLogin={setUser} />;
 
   const fetchWeekData = async (techId: string, date: Date, isMonthly: boolean = false) => {
     const { start, end } = getWeekRange(date);
@@ -926,6 +1119,12 @@ function BPTrackingContent() {
         }
       }
 
+      if (user?.rol === 'LIDER' && orgInfo.cell !== user.celula) {
+        setAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+
       setSession({
         id: tech.id,
         techName: `${tech.nombre} ${tech.apellido}`,
@@ -948,9 +1147,25 @@ function BPTrackingContent() {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, [dni]);
+  useEffect(() => { 
+    setAccessDenied(false);
+    fetchData(); 
+  }, [dni]);
 
-  if (!dni) return <BPDirectory />;
+  if (!dni) return <BPDirectory user={user} onLogout={handleLogout} />;
+
+  if (accessDenied) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2' }}>
+      <div style={{ textAlign: 'center', padding: '48px', backgroundColor: 'white', borderRadius: '32px', boxShadow: '0 20px 50px rgba(239, 68, 68, 0.1)', border: '1px solid #FECACA', maxWidth: '400px' }}>
+        <div style={{ width: '64px', height: '64px', backgroundColor: '#EF4444', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <AlertTriangle size={32} />
+        </div>
+        <h2 style={{ fontSize: '24px', fontWeight: '1000', color: '#111827', marginBottom: '12px' }}>Acceso Denegado</h2>
+        <p style={{ color: '#6B7280', fontSize: '15px', fontWeight: '800', lineHeight: '1.6' }}>No tenés permisos para visualizar técnicos fuera de tu célula ({user?.celula}).</p>
+        <button onClick={() => window.location.href = '/seguimiento-bp'} style={{ marginTop: '32px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#1C1F23', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer' }}>Volver al Directorio</button>
+      </div>
+    </div>
+  );
 
   const activeWeek = session?.history[0];
 
@@ -1097,9 +1312,28 @@ function BPTrackingContent() {
             <span>Panel</span><ChevronRight size={14} />
             <span style={{ color: '#019df4', fontWeight: '950' }}>BP Detalle</span>
           </div>
-          <a href="/seguimiento-bp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6B7280', textDecoration: 'none', fontSize: '12px', fontWeight: '950', padding: '8px 16px', borderRadius: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', transition: 'all 0.2s' }}>
-            <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Volver al Directorio
-          </a>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 16px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '10px', backgroundColor: user?.rol === 'FULL' ? '#1C1F23' : '#019df4', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User size={18} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '13px', fontWeight: '1000', color: '#1C1F23' }}>{user?.usuario}</span>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>{user?.rol}</span>
+              </div>
+              <button 
+                onClick={handleLogout}
+                title="Cerrar Sesión"
+                style={{ marginLeft: '12px', padding: '6px', backgroundColor: '#FEF2F2', border: 'none', borderRadius: '8px', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+            <a href="/seguimiento-bp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6B7280', textDecoration: 'none', fontSize: '12px', fontWeight: '950', padding: '8px 16px', borderRadius: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', transition: 'all 0.2s' }}>
+              <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Volver al Directorio
+            </a>
+          </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
