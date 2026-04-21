@@ -1018,50 +1018,6 @@ function BPTrackingContent() {
     setAuthChecked(true);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('bp_session');
-    setUser(null);
-    window.location.href = '/seguimiento-bp';
-  };
-
-  if (!authChecked) return null;
-  if (!user) return <LoginForm onLogin={setUser} />;
-
-  const fetchWeekData = async (techId: string, date: Date, isMonthly: boolean = false) => {
-    const { start, end } = getWeekRange(date);
-    const startStr = isMonthly ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01` : start.toISOString().split('T')[0];
-    const endStr = isMonthly ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-28` : end.toISOString().split('T')[0];
-
-    const { data: tracking } = await supabase.from('seguimiento_bp')
-      .select('*')
-      .eq('tecnico_id', techId)
-      .eq('fecha_inicio', startStr)
-      .eq('es_mensual', isMonthly)
-      .maybeSingle();
-
-    return {
-      id: isMonthly ? `monthly-${startStr}` : Math.random().toString(36).substr(2, 9),
-      isMonthly,
-      weekLabel: isMonthly 
-        ? `${ALL_MONTHS[date.getMonth()]} ${date.getFullYear()}`
-        : formatDateRange(start, end),
-      dateRange: startStr,
-      monthLabel: ALL_MONTHS[date.getMonth()],
-      pdi: tracking?.kpi_pdi || 0,
-      prod_equivalente: tracking?.kpi_prod_equiv || 0,
-      resolucion: tracking?.kpi_resolucion || 0,
-      reitero: tracking?.kpi_reitero || 0,
-      status: (tracking?.estado_carga || 'empty') as WeeklyLoadStatus,
-      alarms: tracking ? {
-        pt: tracking.alarma_pt, ft: tracking.alarma_ft, ta: tracking.alarma_ta, ma: tracking.alarma_ma,
-        te: tracking.alarma_te, rt: tracking.alarma_rt, ne: tracking.alarma_ne, tea: tracking.alarma_tea
-      } : null,
-      observation: tracking?.observacion_lider || '',
-      locked: tracking?.confirmado || false,
-      updated_at: tracking?.fecha_confirmacion
-    };
-  };
-
   const fetchData = async () => {
     if (!dni) return;
     setLoading(true);
@@ -1171,32 +1127,59 @@ function BPTrackingContent() {
 
   useEffect(() => { 
     setAccessDenied(false);
-    fetchData(); 
-  }, [dni]);
-
-  if (!dni) {
-    if (!user) return null;
-    return <BPDirectory user={user} onLogout={handleLogout} />;
-  }
-
-  if (accessDenied) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2' }}>
-      <div style={{ textAlign: 'center', padding: '48px', backgroundColor: 'white', borderRadius: '32px', boxShadow: '0 20px 50px rgba(239, 68, 68, 0.1)', border: '1px solid #FECACA', maxWidth: '400px' }}>
-        <div style={{ width: '64px', height: '64px', backgroundColor: '#EF4444', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-          <AlertTriangle size={32} />
-        </div>
-        <h2 style={{ fontSize: '24px', fontWeight: '1000', color: '#111827', marginBottom: '12px' }}>Acceso Denegado</h2>
-        <p style={{ color: '#6B7280', fontSize: '15px', fontWeight: '800', lineHeight: '1.6' }}>No tenés permisos para visualizar técnicos fuera de tu célula ({user?.celula}).</p>
-        <button onClick={() => window.location.href = '/seguimiento-bp'} style={{ marginTop: '32px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#1C1F23', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer' }}>Volver al Directorio</button>
-      </div>
-    </div>
-  );
+    if (dni && user) fetchData(); 
+  }, [dni, user]);
 
   const activeWeek = session?.history[0];
 
   useEffect(() => {
     if (activeWeek) setObservationText(activeWeek.observation || '');
   }, [activeWeek]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('bp_session');
+    setUser(null);
+    window.location.href = '/seguimiento-bp';
+  };
+
+  if (!authChecked) return null;
+  if (!user) return <LoginForm onLogin={setUser} />;
+
+  const fetchWeekData = async (techId: string, date: Date, isMonthly: boolean = false) => {
+    const { start, end } = getWeekRange(date);
+    const startStr = isMonthly ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01` : start.toISOString().split('T')[0];
+    const endStr = isMonthly ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-28` : end.toISOString().split('T')[0];
+
+    const { data: tracking } = await supabase.from('seguimiento_bp')
+      .select('*')
+      .eq('tecnico_id', techId)
+      .eq('fecha_inicio', startStr)
+      .eq('es_mensual', isMonthly)
+      .maybeSingle();
+
+    return {
+      id: isMonthly ? `monthly-${startStr}` : Math.random().toString(36).substr(2, 9),
+      isMonthly,
+      weekLabel: isMonthly 
+        ? `${ALL_MONTHS[date.getMonth()]} ${date.getFullYear()}`
+        : formatDateRange(start, end),
+      dateRange: startStr,
+      monthLabel: ALL_MONTHS[date.getMonth()],
+      pdi: tracking?.kpi_pdi || 0,
+      prod_equivalente: tracking?.kpi_prod_equiv || 0,
+      resolucion: tracking?.kpi_resolucion || 0,
+      reitero: tracking?.kpi_reitero || 0,
+      status: (tracking?.estado_carga || 'empty') as WeeklyLoadStatus,
+      alarms: tracking ? {
+        pt: tracking.alarma_pt, ft: tracking.alarma_ft, ta: tracking.alarma_ta, ma: tracking.alarma_ma,
+        te: tracking.alarma_te, rt: tracking.alarma_rt, ne: tracking.alarma_ne, tea: tracking.alarma_tea
+      } : null,
+      observation: tracking?.observacion_lider || '',
+      locked: tracking?.confirmado || false,
+      updated_at: tracking?.fecha_confirmacion
+    };
+  };
+
 
   const handleSaveAlarms = async (data: BPAlarmData, date: string, kpiData?: any, isMonthlyOverride: boolean = false) => {
     if (!session) return;
@@ -1320,6 +1303,24 @@ function BPTrackingContent() {
       <div style={{ textAlign: 'center' }}>
         <Activity size={48} className="animate-spin" color="#019df4" />
         <p style={{ marginTop: '16px', fontWeight: '950', color: '#1F2937' }}>Cargando expediente...</p>
+      </div>
+    </div>
+  );
+
+  if (!dni) {
+    if (!user) return null;
+    return <BPDirectory user={user} onLogout={handleLogout} />;
+  }
+
+  if (accessDenied) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2' }}>
+      <div style={{ textAlign: 'center', padding: '48px', backgroundColor: 'white', borderRadius: '32px', boxShadow: '0 20px 50px rgba(239, 68, 68, 0.1)', border: '1px solid #FECACA', maxWidth: '400px' }}>
+        <div style={{ width: '64px', height: '64px', backgroundColor: '#EF4444', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <AlertTriangle size={32} />
+        </div>
+        <h2 style={{ fontSize: '24px', fontWeight: '1000', color: '#111827', marginBottom: '12px' }}>Acceso Denegado</h2>
+        <p style={{ color: '#6B7280', fontSize: '15px', fontWeight: '800', lineHeight: '1.6' }}>No tenés permisos para visualizar técnicos fuera de tu célula ({user?.celula}).</p>
+        <button onClick={() => window.location.href = '/seguimiento-bp'} style={{ marginTop: '32px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#1C1F23', color: 'white', border: 'none', fontWeight: '950', cursor: 'pointer' }}>Volver al Directorio</button>
       </div>
     </div>
   );
