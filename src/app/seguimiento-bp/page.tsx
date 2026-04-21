@@ -1336,7 +1336,7 @@ function BPTrackingContent() {
   const prevWeekRow = session.history[1] || session.history[0];
 
   return (
-    <div style={{ backgroundColor: '#EFF3F8', minHeight: '100vh', padding: '24px 16px 120px 16px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#E2E8F0', minHeight: '100vh', padding: '24px 16px 120px 16px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
 
       <header style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -1443,8 +1443,8 @@ function BPTrackingContent() {
             `}</style>
 
             {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #CBD5E1', overflowX: 'auto', padding: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '950px' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #94A3B8', overflowX: 'auto', padding: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '850px' }}>
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
                       <th style={{ padding: '14px 16px', textAlign: 'left', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '12px 0 0 12px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
@@ -1632,11 +1632,11 @@ function BPTrackingContent() {
             )}
           </section>
 
-          <section style={{ backgroundColor: '#f0f9ff', padding: '40px', borderRadius: '32px', border: '1.5px dashed #bae6fd' }}>
+          <section style={{ backgroundColor: 'white', padding: '40px', borderRadius: '32px', border: '2px solid #64748B', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
             <SectionHeader title={`CHECK SEMANAL - ${activeWeek?.dateRange || 'Pendiente'}`} icon={MessageSquare} />
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#0369a1', marginBottom: '12px' }}>Observaciones</label>
-              <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '1.5px solid #e0f2fe', outline: 'none' }} />
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#334155', marginBottom: '12px' }}>Observaciones</label>
+              <textarea rows={4} value={observationText} onChange={(e) => setObservationText(e.target.value)} style={{ width: '100%', padding: '20px', borderRadius: '16px', border: '2px solid #334155', backgroundColor: '#F8FAFC', outline: 'none', color: '#1E293B', fontSize: '15px', fontWeight: '500' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={handleConfirmCheck} style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer' }}>Guardar Check</button>
@@ -1644,7 +1644,7 @@ function BPTrackingContent() {
           </section>
         </div>
       ) : (
-        <div style={{ maxWidth: '950px', margin: '0 auto', position: 'relative' }}>
+        <div style={{ width: '100%', position: 'relative' }}>
           {/* Timeline Sidebar Header */}
           <div style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
             <div onClick={() => setIsAntExpanded(!isAntExpanded)} style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
