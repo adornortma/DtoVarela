@@ -1442,34 +1442,14 @@ function BPTrackingContent() {
                     </div>
                   </div>
                   <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={kpiScale} onChange={setKpiScale} />
-                  <ViewToggle 
-                    options={[
-                      { value: 'table', label: 'Tabla', icon: List }, 
-                      { value: 'chart', label: 'Gráfico', icon: BarChart3 }
-                    ]} 
-                    active={kpiView} 
-                    onChange={setKpiView} 
-                  />
-                  {kpiView === 'chart' && (
-                    <ViewToggle 
-                      options={[
-                        { value: 'current', label: 'Actual' },
-                        { value: 'compare-week', label: 'Semanal' },
-                        { value: 'last-4-weeks', label: '4 Sem.' },
-                        { value: 'monthly', label: 'Mensual' }
-                      ]} 
-                      active={alarmMode} 
-                      onChange={setAlarmMode} 
-                    />
-                  )}
+                  {/* Chart analysis toggle removed per user request */}
                 </div>
             </SectionHeader>
             <style>{`
               .glossary-container:hover .glossary-popup { display: block !important; }
             `}</style>
 
-            {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #94A3B8', overflowX: 'auto', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #94A3B8', overflowX: 'auto', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
@@ -1650,12 +1630,6 @@ function BPTrackingContent() {
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', padding: '32px' }}>
-                 <SubsectionHeader title="Análisis de Alarmas" icon={BarChart} />
-                 <AlarmsAnalyticalDashboard history={session.history} mode={alarmMode} />
-              </div>
-            )}
           </section>
 
           <section style={{ backgroundColor: 'white', padding: '40px', borderRadius: '32px', border: '2px solid #64748B', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
