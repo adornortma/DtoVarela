@@ -1,30 +1,9 @@
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
-// Manual env loading
-try {
-  const envPath = path.join(process.cwd(), '.env.local');
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  envContent.split('\n').forEach(line => {
-    const [key, ...valueParts] = line.split('=');
-    if (key && valueParts.length > 0) {
-      const value = valueParts.join('=').trim();
-      process.env[key.trim()] = value;
-    }
-  });
-} catch (e) {
-  console.error("Error loading .env.local:", e.message);
-}
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing Supabase config");
-  process.exit(1);
-}
-
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const users = [

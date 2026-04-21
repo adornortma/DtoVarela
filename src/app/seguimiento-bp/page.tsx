@@ -54,7 +54,7 @@ interface UserSession {
   usuario: string;
   rol: 'FULL' | 'LIDER';
   distrito: string;
-  celula: string | null;
+  celula: string | string[] | null;
 }
 
 interface BPAlarmData {
@@ -794,6 +794,7 @@ const STRUCTURE = [
     distrito: "VARELA",
     celulas: [
       { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
+      { nombre: "MS QUILMES", tecnicos: [] },
       { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LIONEL", role: "REVISADOR" }] }
     ]
   }
@@ -809,7 +810,13 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
     return STRUCTURE.map(dist => ({
       ...dist,
       celulas: user.rol === 'LIDER' 
-        ? dist.celulas.filter(cel => cel.nombre === user.celula)
+        ? dist.celulas.filter(cel => {
+            if (!user.celula) return false;
+            const allowed = Array.isArray(user.celula) 
+              ? user.celula 
+              : user.celula.split(',').map(c => c.trim().toUpperCase());
+            return allowed.includes(cel.nombre.toUpperCase());
+          })
         : dist.celulas
     })).filter(dist => dist.celulas.length > 0);
   }, [user]);
@@ -1078,10 +1085,13 @@ function BPTrackingContent() {
         }
       }
 
-      if (user?.rol === 'LIDER' && orgInfo.cell !== user?.celula) {
-        setAccessDenied(true);
-        setLoading(false);
-        return;
+      if (user?.rol === 'LIDER') {
+        const allowed = !user.celula ? [] : (Array.isArray(user.celula) ? user.celula : user.celula.split(',').map(c => c.trim().toUpperCase()));
+        if (!allowed.includes(orgInfo.cell.toUpperCase())) {
+          setAccessDenied(true);
+          setLoading(false);
+          return;
+        }
       }
 
       setSession({
