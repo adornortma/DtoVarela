@@ -101,26 +101,26 @@ interface TechnicianSession {
 // --- Utils ---
 const getSemaforo = (value: number, kpi: string) => {
   if (kpi === 'resolucion') {
-    if (value >= 75) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value >= 70) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
-    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
+    if (value >= 75) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
+    if (value >= 70) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
+    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
   }
   if (kpi === 'reite' || kpi === 'reitero') {
-    if (value <= 4.5) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value <= 5.0) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
-    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
+    if (value <= 4.5) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
+    if (value <= 5.0) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
+    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
   }
   if (kpi === 'pdi') {
-    if (value >= 100) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value >= 90) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
-    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
+    if (value >= 100) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
+    if (value >= 90) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
+    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
   }
   if (kpi === 'prod_equivalente') {
-    if (value >= 6.0) return { color: '#065f46', bg: '#d1fae5', label: 'Objetivo OK' };
-    if (value >= 5.0) return { color: '#854d0e', bg: '#fef3c7', label: 'En Umbral' };
-    return { color: '#991b1b', bg: '#fee2e2', label: 'Crítico' };
+    if (value >= 6.0) return { color: '#064e3b', bg: '#10b98120', label: 'Objetivo OK', border: '#10b98140' };
+    if (value >= 5.0) return { color: '#78350f', bg: '#f59e0b20', label: 'En Umbral', border: '#f59e0b40' };
+    return { color: '#7f1d1d', bg: '#ef444420', label: 'Crítico', border: '#ef444440' };
   }
-  return { color: '#64748b', bg: '#f1f5f9', label: 'N/A' };
+  return { color: '#374151', bg: '#f3f4f6', label: 'N/A', border: '#e5e7eb' };
 };
 
 // --- Components ---
@@ -134,16 +134,16 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
   const semaforo = getSemaforo(numValue, kpiKey);
 
   return (
-    <div style={{ backgroundColor: semaforo.bg, borderRadius: '24px', padding: '24px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', flex: 1 }}>
+    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '24px', border: `2px solid ${semaforo.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.03)', flex: 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <p style={{ fontSize: '11px', fontWeight: '950', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8 }}>{title}</p>
-        <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950' }}>{semaforo.label}</div>
+        <p style={{ fontSize: '13px', fontWeight: '800', color: '#5B6470', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{title}</p>
+        <div style={{ backgroundColor: semaforo.bg, color: semaforo.color, padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', border: `1px solid ${semaforo.border}` }}>{semaforo.label}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <h4 style={{ fontSize: '40px', fontWeight: '950', color: '#1F2937', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
+        <h4 style={{ fontSize: '40px', fontWeight: '1000', color: '#1C1F23', margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: trendColor }}>
           {isUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-          <span style={{ fontSize: '14px', fontWeight: '950' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(1)}%`}</span>
+          <span style={{ fontSize: '15px', fontWeight: '900' }}>{variation === 0 ? '0%' : `${Math.abs(variation).toFixed(1)}%`}</span>
         </div>
       </div>
     </div>
@@ -151,37 +151,38 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
 };
 
 const SectionHeader = ({ title, icon: Icon, children }: any) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{ backgroundColor: '#1F2937', padding: '10px', borderRadius: '14px', color: 'white' }}><Icon size={20} /></div>
-      <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#1F2937', letterSpacing: '-0.5px' }}>{title}</h2>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ backgroundColor: '#1C1F23', padding: '12px', borderRadius: '16px', color: 'white' }}><Icon size={22} /></div>
+      <h2 style={{ fontSize: '22px', fontWeight: '1000', color: '#1C1F23', letterSpacing: '-0.5px' }}>{title}</h2>
     </div>
     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>{children}</div>
   </div>
 );
 
 const SubsectionHeader = ({ title, icon: Icon }: any) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-    <Icon size={16} color="#4B5563" />
-    <span style={{ fontSize: '11px', fontWeight: '950', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #F3F7FB', paddingBottom: '10px' }}>
+    <Icon size={18} color="#1C1F23" />
+    <span style={{ fontSize: '13px', fontWeight: '800', color: '#1C1F23', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{title}</span>
   </div>
 );
 
 const ViewToggle = ({ options, active, onChange }: any) => (
-  <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+  <div style={{ display: 'flex', backgroundColor: '#F3F7FB', padding: '5px', borderRadius: '16px' }}>
     {options.map((opt: any) => (
       <button
         key={String(opt.value)}
         onClick={() => onChange(opt.value)}
         style={{
-          padding: '8px 16px', borderRadius: '9px', border: 'none',
+          padding: '10px 20px', borderRadius: '12px', border: 'none',
           backgroundColor: active === opt.value ? 'white' : 'transparent',
-          color: active === opt.value ? '#1F2937' : '#4B5563',
-          fontSize: '11px', fontWeight: '900', boxShadow: active === opt.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
+          color: active === opt.value ? '#1C1F23' : '#5B6470',
+          fontSize: '13px', fontWeight: '800', boxShadow: active === opt.value ? '0 4px 10px rgba(0,0,0,0.06)' : 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap',
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
-        {opt.icon && <opt.icon size={13} />}
+        {opt.icon && <opt.icon size={15} />}
         {opt.label}
       </button>
     ))}
@@ -199,15 +200,24 @@ const InlineInput = ({ value, onChange, placeholder, style = {} }: any) => (
     placeholder={placeholder}
     style={{
       width: '100%',
-      padding: '8px',
-      borderRadius: '8px',
+      padding: '12px 10px',
+      borderRadius: '12px',
       border: '2px solid #e2e8f0',
       textAlign: 'center',
-      fontSize: '13px',
-      fontWeight: '900',
+      fontSize: '15px',
+      fontWeight: '1000',
       outline: 'none',
-      backgroundColor: '#f8fafc',
+      backgroundColor: '#FFFFFF',
+      color: '#1C1F23',
+      transition: 'all 0.2s',
       ...style
+    }}
+    onFocus={(e) => {
+      e.currentTarget.style.borderColor = '#019df4';
+      e.currentTarget.style.backgroundColor = '#FFFFFF';
+    }}
+    onBlur={(e) => {
+      e.currentTarget.style.borderColor = '#e2e8f0';
     }}
   />
 );
@@ -491,17 +501,17 @@ const AlarmsAnalyticalDashboard = ({ history, mode }: { history: WeeklyKPI[], mo
 const StatItem = ({ label, value, kpiKey }: { label: string, value: number, kpiKey: string }) => {
   const semaforo = getSemaforo(value, kpiKey);
   return (
-    <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-      <p style={{ fontSize: '10px', fontWeight: '950', color: '#4B5563', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</p>
-      <div style={{ fontSize: '20px', fontWeight: '950', color: semaforo.color }}>{kpiKey === 'prod_equivalente' ? value.toFixed(2) : `${value.toFixed(1)}%`}</div>
+    <div style={{ backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '16px', border: `1px solid ${semaforo.border}`, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+      <p style={{ fontSize: '12px', fontWeight: '800', color: '#5B6470', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</p>
+      <div style={{ fontSize: '22px', fontWeight: '1000', color: semaforo.color }}>{kpiKey === 'prod_equivalente' ? value.toFixed(2) : `${value.toFixed(1)}%`}</div>
     </div>
   );
 };
 
 const AlarmRow = ({ label, value }: { label: string, value: number }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-    <span style={{ fontSize: '13px', fontWeight: '800', color: '#475569' }}>{label}</span>
-    <span style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b' }}>{value}</span>
+  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid #f1f5f9' }}>
+    <span style={{ fontSize: '14px', fontWeight: '800', color: '#5B6470' }}>{label}</span>
+    <span style={{ fontSize: '15px', fontWeight: '1000', color: '#1C1F23' }}>{value}</span>
   </div>
 );
 
@@ -741,10 +751,10 @@ const BPDirectory = () => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                          <div style={{ width: '44px', height: '44px', borderRadius: '16px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
-                            <User size={22} color="#111827" />
+                          <div style={{ width: '44px', height: '44px', borderRadius: '16px', backgroundColor: '#F3F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
+                            <User size={22} color="#1C1F23" />
                           </div>
-                          <span style={{ fontSize: '17px', fontWeight: '1000', color: '#111827', letterSpacing: '-0.4px' }}>{tech.name}</span>
+                          <span style={{ fontSize: '17px', fontWeight: '1000', color: '#1C1F23', letterSpacing: '-0.4px' }}>{tech.name}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                           <span style={{ 
@@ -1121,25 +1131,26 @@ function BPTrackingContent() {
             </SectionHeader>
 
             {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflowX: 'auto', padding: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px', minWidth: '1300px' }}>
-                  <thead>
+              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e5e7eb', overflowX: 'auto', padding: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '1300px' }}>
+                  <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
-                      <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#4B5563', fontWeight: '950', width: '150px' }}>SEMANA</th>
-                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#4B5563', fontWeight: '950', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
-                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '12px 10px', textAlign: 'center', fontSize: '10px', color: '#4B5563', fontWeight: '950' }}>{h}</th>)}
-                      <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '10px', color: '#4B5563', fontWeight: '950' }}>ACTUALIZACIÓN</th>
-                      <th style={{ padding: '12px 24px', textAlign: 'right', fontSize: '10px', color: '#4B5563', fontWeight: '950' }}>ACCIONES</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '16px 0 0 16px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
+                      {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => <th key={h} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>{h}</th>)}
+                      {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => <th key={h} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>{h}</th>)}
+                      <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ACTUALIZACIÓN</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 16px 16px 0', borderBottom: '1px solid #E5E7EB' }}>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(kpiScale === 'weekly' ? session.history : monthlyHistory).map((row: any) => {
+                    {(kpiScale === 'weekly' ? session.history : monthlyHistory).map((row: any, idx: number) => {
                       const isEditing = editingRowId === row.id;
                       const label = row.weekLabel;
                       const kpiVals = [row.pdi, row.prod_equivalente, row.resolucion, row.reitero];
                       const alarms = row.alarms;
                       const alarmKeys = ['pt', 'ft', 'ta', 'ma', 'te', 'rt', 'ne', 'tea'];
                       const lastUpdate = row.updated_at || row.lastUpdated;
+                      const isZebra = idx % 2 === 0;
                       
                       let dotColor = '#cbd5e1';
                       if (lastUpdate) {
@@ -1150,45 +1161,52 @@ function BPTrackingContent() {
                       }
 
                       const getStatusLabel = (val: number) => {
-                        if (val === 1) return { text: 'OK', bg: '#d1fae5', color: '#065f46' };
-                        if (val === 2) return { text: 'REG', bg: '#fef3c7', color: '#854d0e' };
-                        if (val === 3) return { text: 'MAL', bg: '#fee2e2', color: '#991b1b' };
-                        return { text: '—', bg: '#f1f5f9', color: '#64748b' };
+                        if (val === 1) return { text: 'OK', bg: '#10b98125', color: '#064e3b', border: '#10b98140' };
+                        if (val === 2) return { text: 'REG', bg: '#f59e0b25', color: '#78350f', border: '#f59e0b40' };
+                        if (val === 3) return { text: 'MAL', bg: '#ef444425', color: '#7f1d1d', border: '#ef444440' };
+                        return { text: '—', bg: '#f3f4f6', color: '#374151', border: '#e5e7eb' };
                       };
 
                       return (
-                        <tr key={row.id} style={{ backgroundColor: isEditing ? '#f0f9ff' : 'transparent', transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '16px 24px', border: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
+                        <tr key={row.id} style={{ backgroundColor: isEditing ? '#f0f9ff' : (isZebra ? '#F9FAFB' : 'transparent'), transition: 'background-color 0.2s' }}>
+                          <td style={{ padding: '24px', borderLeft: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ fontWeight: '950', color: '#1F2937' }}>{label}</div>
+                              <div style={{ fontWeight: '1000', color: '#1C1F23', fontSize: '15px' }}>{label}</div>
                             </div>
-                            <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '800', marginTop: '2px' }}>{row.isAverage ? 'Promedio Automático' : (row.isMonthly ? 'Cierre Mensual' : row.dateRange)}</div>
+                            <div style={{ fontSize: '12px', color: '#5B6470', fontWeight: '800', marginTop: '4px' }}>{row.isAverage ? 'Promedio Automático' : (row.isMonthly ? 'Cierre Mensual' : row.dateRange)}</div>
                           </td>
 
-                          {kpiVals.map((v: any, i: number) => (
-                            <td key={i} style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '90px' }}>
-                              {isEditing ? (
-                                <InlineInput 
-                                  value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
-                                  onChange={(val: number) => setTempRowData({...tempRowData, [['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]: val})}
-                                />
-                              ) : (
-                                <div style={{ 
-                                  backgroundColor: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).bg, 
-                                  color: getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]).color, 
-                                  padding: '8px 4px', borderRadius: '8px', fontWeight: '950', fontSize: '12px' 
-                                }}>{i === 1 ? (v || 0).toFixed(2) : `${(v || 0).toFixed(1)}%`}</div>
-                              )}
-                            </td>
-                          ))}
+                          {kpiVals.map((v: any, i: number) => {
+                            const sem = getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]);
+                            return (
+                              <td key={i} style={{ padding: '12px 10px', textAlign: 'center', width: '100px' }}>
+                                {isEditing ? (
+                                  <InlineInput 
+                                    value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
+                                    onChange={(val: number) => setTempRowData({...tempRowData, [['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]: val})}
+                                  />
+                                ) : (
+                                  <div style={{ 
+                                    backgroundColor: sem.bg, 
+                                    color: sem.color, 
+                                    padding: '10px 4px', 
+                                    borderRadius: '10px', 
+                                    fontWeight: '1000', 
+                                    fontSize: '15px',
+                                    border: `1px solid ${sem.border}`
+                                  }}>{i === 1 ? (v || 0).toFixed(2) : `${(v || 0).toFixed(1)}%`}</div>
+                                )}
+                              </td>
+                            );
+                          })}
 
                           {alarmKeys.map((k, i) => (
-                            <td key={k} style={{ padding: '8px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '70px' }}>
+                            <td key={k} style={{ padding: '12px 8px', textAlign: 'center', width: '75px' }}>
                                {isEditing && row.isMonthly ? (
                                  <select
                                    value={tempRowData[k]}
                                    onChange={e => setTempRowData({...tempRowData, [k]: Number(e.target.value)})}
-                                   style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: '900' }}
+                                   style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '14px', fontWeight: '900' }}
                                  >
                                    <option value="0">—</option>
                                    <option value="1">OK</option>
@@ -1205,38 +1223,42 @@ function BPTrackingContent() {
                                    <div style={{ 
                                      backgroundColor: getStatusLabel(alarms ? alarms[k] : 0).bg,
                                      color: getStatusLabel(alarms ? alarms[k] : 0).color,
-                                     padding: '6px', borderRadius: '8px', fontSize: '11px', fontWeight: '950'
+                                     padding: '10px 4px', 
+                                     borderRadius: '10px', 
+                                     fontSize: '13px', 
+                                     fontWeight: '1000',
+                                     border: `1px solid ${getStatusLabel(alarms ? alarms[k] : 0).border}`
                                    }}>
                                      {getStatusLabel(alarms ? alarms[k] : 0).text}
                                    </div>
                                  ) : (
-                                   <div style={{ fontWeight: '950', fontSize: '13px', color: alarms ? '#1F2937' : '#6B7280' }}>{alarms ? (alarms as any)[k] : '0'}</div>
+                                   <div style={{ fontWeight: '1000', fontSize: '16px', color: alarms ? '#1C1F23' : '#94a3b8' }}>{alarms ? (alarms as any)[k] : '0'}</div>
                                  )
                                )}
                             </td>
                           ))}
 
-                          <td style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', width: '130px' }}>
+                          <td style={{ padding: '12px 24px', textAlign: 'center', width: '150px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }}></div>
-                                 <span style={{ fontSize: '11px', fontWeight: '800', color: '#6B7280' }}>
+                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: dotColor }}></div>
+                                 <span style={{ fontSize: '13px', fontWeight: '800', color: '#5B6470' }}>
                                    {lastUpdate ? new Date(lastUpdate).toLocaleDateString() : 'Pendiente'}
                                  </span>
                              </div>
                           </td>
 
-                          <td style={{ padding: '16px 24px', textAlign: 'right', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0', width: '180px' }}>
+                          <td style={{ padding: '16px 24px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0', width: '200px' }}>
                             {isEditing ? (
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                 <button
                                   onClick={() => handleInlineSave(row.dateRange, row.isMonthly)}
-                                  style={{ padding: '8px 12px', backgroundColor: '#10b981', color: 'white', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                  style={{ padding: '10px 16px', backgroundColor: '#059669', color: 'white', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '1000', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)' }}
                                 >
-                                  <Save size={14} /> GUARDAR
+                                  <Save size={16} /> GUARDAR
                                 </button>
                                 <button
                                   onClick={() => { setEditingRowId(null); setTempRowData(null); }}
-                                  style={{ padding: '8px 12px', backgroundColor: '#f1f5f9', color: '#ef4444', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '11px' }}
+                                  style={{ padding: '10px 16px', backgroundColor: '#f3f4f6', color: '#dc2626', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '1000', fontSize: '12px' }}
                                 >
                                   CANCELAR
                                 </button>
@@ -1244,9 +1266,36 @@ function BPTrackingContent() {
                             ) : (
                               <button 
                                 onClick={() => handleInlineEditStart(row)} 
-                                style={{ backgroundColor: 'transparent', border: '1.5px solid #e2e8f0', color: '#4B5563', padding: '8px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
+                                style={{ 
+                                  backgroundColor: '#FFFFFF', 
+                                  border: '2px solid #019df4', 
+                                  color: '#019df4', 
+                                  padding: '12px 20px', 
+                                  borderRadius: '14px', 
+                                  fontSize: '12px', 
+                                  fontWeight: '1000', 
+                                  cursor: 'pointer', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '8px', 
+                                  marginLeft: 'auto',
+                                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                  boxShadow: '0 4px 10px rgba(1, 157, 244, 0.05)'
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#019df4';
+                                  e.currentTarget.style.color = '#FFFFFF';
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                  e.currentTarget.style.boxShadow = '0 6px 15px rgba(1, 157, 244, 0.2)';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                                  e.currentTarget.style.color = '#019df4';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(1, 157, 244, 0.05)';
+                                }}
                               >
-                                ✍️ EDITAR {row.isMonthly ? 'MES' : 'FILA'}
+                                <FileEdit size={16} /> EDITAR {row.isMonthly ? 'MES' : 'FILA'}
                               </button>
                             )}
                           </td>
