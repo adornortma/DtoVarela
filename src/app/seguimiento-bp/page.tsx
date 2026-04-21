@@ -1369,8 +1369,22 @@ function BPTrackingContent() {
                 <LogOut size={16} />
               </button>
             </div>
-            <a href="/seguimiento-bp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6B7280', textDecoration: 'none', fontSize: '12px', fontWeight: '950', padding: '8px 16px', borderRadius: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', transition: 'all 0.2s' }}>
-              <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Volver al Directorio
+            <a href="/seguimiento-bp" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              color: '#4F46E5', 
+              textDecoration: 'none', 
+              fontSize: '13px', 
+              fontWeight: '1000', 
+              padding: '10px 20px', 
+              borderRadius: '16px', 
+              backgroundColor: '#EEF2FF', 
+              border: '2px solid #4F46E5', 
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.1)'
+            }}>
+              <ArrowLeft size={16} strokeWidth={3} /> Volver al listado
             </a>
           </div>
         </div>
