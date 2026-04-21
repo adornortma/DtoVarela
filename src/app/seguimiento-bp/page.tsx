@@ -602,9 +602,147 @@ const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () =
 
 // --- Main Tracking Component ---
 
+// --- Directory Components ---
+
+const BPDirectory = () => {
+  const [techMapping, setTechMapping] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  const STRUCTURE = [
+    {
+      distrito: "LANUS",
+      celulas: [
+        { nombre: "GM LOMAS", tecnicos: [{ name: "GARCIA, CARLOS FACUNDO", role: "GM" }] },
+        { nombre: "PIÑEYRO", tecnicos: [{ name: "ORTIGOZA, EMMANUEL JAVIER", role: "REVISADOR" }] },
+        { nombre: "SARANDI", tecnicos: [{ name: "FALCON, AGUSTIN ALEJANDRO", role: "REVISADOR" }, { name: "TORRES, CHRISTIAN NICOLAS", role: "REVISADOR" }] },
+        { nombre: "MS LANUS", tecnicos: [{ name: "JAIME, MARCELO RAUL", role: "EMPALMADOR" }, { name: "PARED, JUAN MANUEL", role: "EMPALMADOR" }, { name: "RIOS RADO, EMILIO", role: "EMPALMADOR" }] },
+        { nombre: "GM LANUS", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] }
+      ]
+    },
+    {
+      distrito: "MONTE GRANDE",
+      celulas: [
+        { nombre: "BURZACO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISADOR" }, { name: "SALINAS LUCIANO", role: "REVISADOR" }] },
+        { nombre: "LONGCHAMPS", tecnicos: [{ name: "DIANA PABLO", role: "REVISADOR" }] },
+        { nombre: "MS MONTE GRANDE", tecnicos: [{ name: "FIGUEREDO CARLOS", role: "EMPALMADOR" }, { name: "FERNANDEZ FACUNDO", role: "EMPALMADOR" }] }
+      ]
+    },
+    {
+      distrito: "VARELA",
+      celulas: [
+        { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
+        { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LIONEL", role: "REVISADOR" }] }
+      ]
+    }
+  ];
+
+  useEffect(() => {
+    const fetchDnis = async () => {
+      const { data } = await supabase.from('tecnicos').select('nombre, apellido, dni');
+      if (data) {
+        const mapping: Record<string, string> = {};
+        data.forEach(t => {
+          const fullName = `${t.apellido}, ${t.nombre}`.toUpperCase();
+          const altName = `${t.apellido} ${t.nombre}`.toUpperCase();
+          mapping[fullName] = t.dni;
+          mapping[altName] = t.dni;
+        });
+        setTechMapping(mapping);
+      }
+      setLoading(false);
+    };
+    fetchDnis();
+  }, []);
+
+  if (loading) return (
+    <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Activity size={48} className="animate-spin" color="#019df4" />
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>
+      <div style={{ marginBottom: '48px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '40px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', marginBottom: '8px' }}>Directorio de Técnicos</h1>
+        <p style={{ color: '#6B7280', fontWeight: '800', fontSize: '15px' }}>Módulo Seguimiento BP • Organización por Distrito y Célula</p>
+      </div>
+
+      {STRUCTURE.map(dist => (
+        <div key={dist.distrito} style={{ marginBottom: '56px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ height: '2px', flex: 1, backgroundColor: '#e2e8f0' }}></div>
+            <h2 style={{ fontSize: '24px', fontWeight: '950', color: '#1F2937', letterSpacing: '-0.5px' }}>{dist.distrito}</h2>
+            <div style={{ height: '2px', flex: 1, backgroundColor: '#e2e8f0' }}></div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingLeft: '12px' }}>
+            {dist.celulas.map(cel => (
+              <div key={cel.nombre}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <LayoutDashboard size={16} color="#019df4" />
+                  <h3 style={{ fontSize: '13px', fontWeight: '950', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cel.nombre}</h3>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '26px' }}>
+                  {cel.tecnicos.map(tech => {
+                    const dni = techMapping[tech.name.toUpperCase()];
+                    return (
+                      <a 
+                        key={tech.name}
+                        href={dni ? `/seguimiento-bp?dni=${dni}` : '#'}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between', 
+                          padding: '16px 20px', 
+                          backgroundColor: 'white', 
+                          borderRadius: '16px', 
+                          border: '1px solid #e2e8f0',
+                          textDecoration: 'none',
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.borderColor = '#019df4';
+                          e.currentTarget.style.transform = 'translateX(4px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(1,157,244,0.08)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.transform = 'translateX(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '10px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <User size={16} color="#4B5563" />
+                          </div>
+                          <span style={{ fontSize: '15px', fontWeight: '950', color: '#1F2937' }}>{tech.name}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '950', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f8fafc', color: '#6B7280', border: '1px solid #e2e8f0' }}>
+                            {tech.role}
+                          </span>
+                          <ArrowRight size={16} color="#cbd5e1" />
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// --- Main Tracking Component ---
+
 function BPTrackingContent() {
   const searchParams = useSearchParams();
-  const dni = searchParams.get('dni') || '37653458';
+  const dni = searchParams.get('dni');
 
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
@@ -659,6 +797,7 @@ function BPTrackingContent() {
   };
 
   const fetchData = async () => {
+    if (!dni) return;
     setLoading(true);
     try {
       const { data: tech } = await supabase.from('tecnicos').select('*').eq('dni', dni).single();
@@ -731,6 +870,8 @@ function BPTrackingContent() {
   };
 
   useEffect(() => { fetchData(); }, [dni]);
+
+  if (!dni) return <BPDirectory />;
 
   const activeWeek = session?.history[0];
 
