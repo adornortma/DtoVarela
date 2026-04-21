@@ -1336,7 +1336,7 @@ function BPTrackingContent() {
   const prevWeekRow = session.history[1] || session.history[0];
 
   return (
-    <div style={{ backgroundColor: '#EFF3F8', minHeight: '100vh', padding: '24px 32px 120px 32px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#EFF3F8', minHeight: '100vh', padding: '24px 16px 120px 16px', width: '100%', fontFamily: 'Inter, sans-serif' }}>
 
       <header style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -1443,23 +1443,23 @@ function BPTrackingContent() {
             `}</style>
 
             {kpiView === 'table' ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #CBD5E1', overflowX: 'auto', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '1100px' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '24px', border: '1px solid #CBD5E1', overflowX: 'auto', padding: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', minWidth: '950px' }}>
                   <thead style={{ backgroundColor: '#F8FAFC' }}>
                     <tr>
-                      <th style={{ padding: '18px 24px', textAlign: 'left', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '16px 0 0 16px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'left', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '12px 0 0 12px', borderBottom: '1px solid #E5E7EB' }}>SEMANA</th>
                       {['PDI', 'PROD.', 'RESO.', 'REIT.'].map(h => (
-                        <th key={h} title={GLOSSARY[h.replace('.', '') as keyof typeof GLOSSARY]} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
+                        <th key={h} title={GLOSSARY[h.replace('.', '') as keyof typeof GLOSSARY]} style={{ padding: '14px 6px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
                            <span style={{ borderBottom: '1.5px dotted #CBD5E1' }}>{h}</span>
                         </th>
                       ))}
                       {['PT', 'FT', 'TA', 'MA', 'TE', 'RT', 'NE', 'TEA'].map(h => (
-                        <th key={h} title={GLOSSARY[h as keyof typeof GLOSSARY]} style={{ padding: '18px 10px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
+                        <th key={h} title={GLOSSARY[h as keyof typeof GLOSSARY]} style={{ padding: '14px 6px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB', cursor: 'help' }}>
                            <span style={{ borderBottom: '1.5px dotted #CBD5E1' }}>{h}</span>
                         </th>
                       ))}
-                      <th style={{ padding: '18px 24px', textAlign: 'center', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ULT. MODIFICACIÓN</th>
-                      <th style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 16px 16px 0', borderBottom: '1px solid #E5E7EB' }}>ACCIONES</th>
+                      <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderBottom: '1px solid #E5E7EB' }}>ULT. MODIFICACIÓN</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'right', fontSize: '12px', color: '#1C1F23', fontWeight: '700', borderRadius: '0 12px 12px 0', borderBottom: '1px solid #E5E7EB' }}>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1489,16 +1489,16 @@ function BPTrackingContent() {
 
                       return (
                         <tr key={row.id} style={{ backgroundColor: isEditing ? '#f0f9ff' : (isZebra ? '#F9FAFB' : 'transparent'), transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '24px', borderLeft: '1px solid #f1f5f9', borderRadius: '16px 0 0 16px' }}>
+                          <td style={{ padding: '16px', borderLeft: '1px solid #f1f5f9', borderRadius: '12px 0 0 12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ fontWeight: '1000', color: '#1C1F23', fontSize: '15px' }}>{label}</div>
+                              <div style={{ fontWeight: '1000', color: '#1C1F23', fontSize: '14px' }}>{label}</div>
                             </div>
                           </td>
 
                           {kpiVals.map((v: any, i: number) => {
                             const sem = getSemaforo(v || 0, ['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]);
                             return (
-                              <td key={i} style={{ padding: '12px 8px', textAlign: 'center', width: '90px' }}>
+                              <td key={i} style={{ padding: '10px 4px', textAlign: 'center', width: '80px' }}>
                                 {isEditing ? (
                                   <InlineInput 
                                     value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
@@ -1511,7 +1511,7 @@ function BPTrackingContent() {
                                     padding: '10px 4px', 
                                     borderRadius: '10px', 
                                     fontWeight: '1000', 
-                                    fontSize: '15px',
+                                    fontSize: '14px',
                                     border: `1px solid ${sem.border}`
                                   }}>{i === 1 ? (v || 0).toFixed(2) : `${(v || 0).toFixed(1)}%`}</div>
                                 )}
@@ -1520,7 +1520,7 @@ function BPTrackingContent() {
                           })}
 
                           {alarmKeys.map((k, i) => (
-                            <td key={k} style={{ padding: '12px 6px', textAlign: 'center', width: '65px' }}>
+                            <td key={k} style={{ padding: '8px 4px', textAlign: 'center', width: '50px' }}>
                                {isEditing && row.isMonthly ? (
                                  <select
                                    value={tempRowData[k]}
@@ -1551,13 +1551,13 @@ function BPTrackingContent() {
                                      {getStatusLabel(alarms ? alarms[k] : 0).text}
                                    </div>
                                  ) : (
-                                   <div style={{ fontWeight: '1000', fontSize: '16px', color: alarms ? '#1C1F23' : '#94a3b8' }}>{alarms ? (alarms as any)[k] : '0'}</div>
+                                   <div style={{ fontWeight: '1000', fontSize: '14px', color: alarms ? '#1C1F23' : '#94a3b8' }}>{alarms ? (alarms as any)[k] : '0'}</div>
                                  )
                                )}
                             </td>
                           ))}
 
-                          <td style={{ padding: '12px 16px', textAlign: 'center', width: '130px' }}>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', width: '110px' }}>
                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: dotColor }}></div>
                                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#5B6470' }}>
@@ -1566,7 +1566,7 @@ function BPTrackingContent() {
                              </div>
                           </td>
 
-                          <td style={{ padding: '16px 24px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderRadius: '0 16px 16px 0', width: '200px' }}>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderRadius: '0 12px 12px 0', width: '140px' }}>
                             {isEditing ? (
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                 <button
