@@ -678,8 +678,7 @@ const BPDirectory = () => {
     <div style={{ backgroundColor: '#F3F7FB', minHeight: '100vh', width: '100%', padding: '60px 20px' }}>
       <div style={{ maxWidth: '850px', margin: '0 auto' }}>
       <div style={{ marginBottom: '64px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '42px', fontWeight: '1000', color: '#111827', letterSpacing: '-1.8px', marginBottom: '12px' }}>Directorio de Técnicos</h1>
-        <p style={{ color: '#4B5563', fontWeight: '900', fontSize: '16px' }}>Módulo Seguimiento BP • Organización por Distrito y Célula</p>
+        <h1 style={{ fontSize: '42px', fontWeight: '1000', color: '#111827', letterSpacing: '-1.8px', marginBottom: '12px' }}>Seguimiento BP</h1>
       </div>
 
       {STRUCTURE.map(dist => (
