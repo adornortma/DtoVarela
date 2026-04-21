@@ -1442,7 +1442,26 @@ function BPTrackingContent() {
                     </div>
                   </div>
                   <ViewToggle options={[{ value: 'weekly', label: 'Semanal' }, { value: 'monthly', label: 'Mensual' }]} active={kpiScale} onChange={setKpiScale} />
-                  {/* Chart analysis toggle removed per user request */}
+                  <ViewToggle 
+                    options={[
+                      { value: 'table', label: 'Tabla', icon: List }, 
+                      { value: 'chart', label: 'Gráfico', icon: BarChart3 }
+                    ]} 
+                    active={kpiView} 
+                    onChange={setKpiView} 
+                  />
+                  {kpiView === 'chart' && (
+                    <ViewToggle 
+                      options={[
+                        { value: 'current', label: 'Actual' },
+                        { value: 'compare-week', label: 'Semanal' },
+                        { value: 'last-4-weeks', label: '4 Sem.' },
+                        { value: 'monthly', label: 'Mensual' }
+                      ]} 
+                      active={alarmMode} 
+                      onChange={setAlarmMode} 
+                    />
+                  )}
                 </div>
             </SectionHeader>
             <style>{`
