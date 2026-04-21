@@ -1119,7 +1119,7 @@ function BPTrackingContent() {
         }
       }
 
-      if (user?.rol === 'LIDER' && orgInfo.cell !== user.celula) {
+      if (user?.rol === 'LIDER' && orgInfo.cell !== user?.celula) {
         setAccessDenied(true);
         setLoading(false);
         return;
@@ -1152,7 +1152,10 @@ function BPTrackingContent() {
     fetchData(); 
   }, [dni]);
 
-  if (!dni) return <BPDirectory user={user} onLogout={handleLogout} />;
+  if (!dni) {
+    if (!user) return null;
+    return <BPDirectory user={user} onLogout={handleLogout} />;
+  }
 
   if (accessDenied) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2' }}>
