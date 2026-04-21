@@ -1937,7 +1937,6 @@ function BPTrackingContent() {
           `}</style>
         </div>
       )}
-        </div>
       </div>
     </div>
   );
