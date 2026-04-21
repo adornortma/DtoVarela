@@ -892,8 +892,9 @@ function BPTrackingContent() {
         id: tech.id,
         techName: `${tech.nombre} ${tech.apellido}`,
         dni: tech.dni,
-        cell: 'N/A',
-        district: 'Varela',
+        cell: tech.celula || 'N/A',
+        district: tech.distrito || 'VARELA',
+        role: tech.role || 'Técnico',
         status: 'seguimiento',
         history: weeks,
         actions: (tracking || []).map((t: any) => ({
@@ -1069,7 +1070,15 @@ function BPTrackingContent() {
             </div>
             <div>
               <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', margin: 0 }}>{session.techName}</h1>
-              <p style={{ fontSize: '14px', fontWeight: '800', color: '#4B5563', marginTop: '4px' }}>DNI: {session.dni} • Varela</p>
+              <p style={{ fontSize: '14px', fontWeight: '800', color: '#4B5563', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>DNI: {session.dni}</span>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <span style={{ textTransform: 'capitalize' }}>{session.district.toLowerCase()}</span>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <span>{session.cell}</span>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <span style={{ color: '#019df4', fontWeight: '950' }}>{session.role}</span>
+              </p>
             </div>
           </div>
           <ViewToggle options={[{ value: 'data', label: 'ANÁLISIS', icon: Activity }, { value: 'actions', label: 'HISTORIAL', icon: History }]} active={activeTab} onChange={setActiveTab} />
