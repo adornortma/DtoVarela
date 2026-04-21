@@ -794,7 +794,6 @@ const STRUCTURE = [
     distrito: "VARELA",
     celulas: [
       { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
-      { nombre: "MS QUILMES", tecnicos: [] },
       { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LIONEL", role: "REVISADOR" }] }
     ]
   }

@@ -34,7 +34,7 @@ const users = [
   { usuario: 'ADORNO', pass: 'Bera', rol: 'FULL', distrito: 'VARELA', celula: null },
   { usuario: 'SALDIASP', pass: '32342705', rol: 'LIDER', distrito: 'MONTE GRANDE', celula: 'MS MONTE GRANDE' },
   { usuario: 'MAZEKAITEG', pass: '18350381', rol: 'LIDER', distrito: 'MONTE GRANDE', celula: 'BURZACO,LONGCHAMPS' },
-  { usuario: 'ARMIGNACCO', pass: '22922757', rol: 'LIDER', distrito: 'VARELA', celula: 'MS QUILMES' },
+  { usuario: 'ARMIGNACCO', pass: '22922757', rol: 'LIDER', distrito: 'VARELA', celula: 'MS VARELA' },
   { usuario: 'MEREP', pass: '31907707', rol: 'LIDER', distrito: 'VARELA', celula: 'RANELAGH' },
   { usuario: 'marchatj', pass: '32526140', rol: 'LIDER', distrito: 'LANUS', celula: 'GM LOMAS' },
   { usuario: 'DADAMOL', pass: '31674593', rol: 'LIDER', distrito: 'LANUS', celula: 'GM LANUS' },
