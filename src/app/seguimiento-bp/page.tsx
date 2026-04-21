@@ -205,7 +205,7 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
             <Lock size={32} />
           </div>
           <h2 style={{ fontSize: '28px', fontWeight: '1000', color: '#111827', letterSpacing: '-1px' }}>Acceso Seguimiento BP</h2>
-          <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '8px', fontWeight: '800' }}>Ingresá tus credenciales operativas</p>
+          <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '8px', fontWeight: '800' }}>Ingresá tus credenciales</p>
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -215,7 +215,7 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="EJ: LOPEZF"
+              placeholder=""
               required
               style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
               onFocus={e => e.currentTarget.style.borderColor = '#019df4'}
@@ -230,7 +230,7 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
                 type={showPass ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder=""
                 required
                 style={{ width: '100%', padding: '16px 50px 16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
                 onFocus={e => e.currentTarget.style.borderColor = '#019df4'}
@@ -269,13 +269,11 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
-              gap: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              gap: '10px',
               transition: 'all 0.2s'
             }}
           >
-            {loading ? <Activity className="animate-spin" size={20} /> : <LogIn size={20} />}
-            {loading ? 'Validando...' : 'Entrar al Sistema'}
+            {loading ? <Activity className="animate-spin" size={20} /> : <><LogIn size={18} /> Ingresar</>}
           </button>
         </form>
       </div>
