@@ -1127,7 +1127,11 @@ function BPTrackingContent() {
 
   useEffect(() => { 
     setAccessDenied(false);
-    if (dni && user) fetchData(); 
+    if (dni && user) {
+      fetchData(); 
+    } else {
+      setLoading(false);
+    }
   }, [dni, user]);
 
   const activeWeek = session?.history[0];
