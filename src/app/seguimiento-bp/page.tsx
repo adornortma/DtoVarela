@@ -675,7 +675,8 @@ const BPDirectory = () => {
   );
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>
+    <div style={{ backgroundColor: '#F3F7FB', minHeight: '100vh', width: '100%', padding: '60px 20px' }}>
+      <div style={{ maxWidth: '850px', margin: '0 auto' }}>
       <div style={{ marginBottom: '48px', textAlign: 'center' }}>
         <h1 style={{ fontSize: '40px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', marginBottom: '8px' }}>Directorio de Técnicos</h1>
         <p style={{ color: '#6B7280', fontWeight: '800', fontSize: '15px' }}>Módulo Seguimiento BP • Organización por Distrito y Célula</p>
@@ -689,15 +690,15 @@ const BPDirectory = () => {
             <div style={{ height: '2px', flex: 1, backgroundColor: '#e2e8f0' }}></div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingLeft: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', paddingLeft: '12px' }}>
             {dist.celulas.map(cel => (
-              <div key={cel.nombre} style={{ marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' }}>
-                  <LayoutDashboard size={18} color="#019df4" />
-                  <h3 style={{ fontSize: '15px', fontWeight: '950', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{cel.nombre}</h3>
+              <div key={cel.nombre}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', paddingBottom: '12px', borderBottom: '2px solid #E5EAF0' }}>
+                  <LayoutDashboard size={20} color="#019df4" />
+                  <h3 style={{ fontSize: '16px', fontWeight: '950', color: '#475569', textTransform: 'uppercase', letterSpacing: '1px' }}>{cel.nombre}</h3>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '26px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '34px' }}>
                   {cel.tecnicos.map(tech => {
                     const dni = techMapping[tech.name.toUpperCase()];
                     const rs = getRoleStyle(tech.role);
@@ -709,36 +710,44 @@ const BPDirectory = () => {
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'space-between', 
-                          padding: '18px 24px', 
-                          backgroundColor: 'white', 
-                          borderRadius: '20px', 
-                          border: '1px solid #e2e8f0',
+                          padding: '20px 28px', 
+                          backgroundColor: '#FFFFFF', 
+                          borderRadius: '24px', 
+                          border: '1px solid #E5EAF0',
                           textDecoration: 'none',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
                           marginBottom: '4px',
                           cursor: 'pointer'
                         }}
                         onMouseOver={(e) => {
-                          e.currentTarget.style.borderColor = '#bae6fd';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 10px 25px rgba(1,157,244,0.12)';
-                          e.currentTarget.style.backgroundColor = '#f0f9ff';
+                          e.currentTarget.style.transform = 'translateY(-3px)';
+                          e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)';
+                          e.currentTarget.style.borderColor = '#019df4';
+                          const arrow = e.currentTarget.querySelector('.cta-arrow') as HTMLElement;
+                          if (arrow) {
+                            arrow.style.backgroundColor = '#019df4';
+                            arrow.style.color = 'white';
+                          }
                         }}
                         onMouseOut={(e) => {
-                          e.currentTarget.style.borderColor = '#e2e8f0';
                           e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.02)';
-                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
+                          e.currentTarget.style.borderColor = '#E5EAF0';
+                          const arrow = e.currentTarget.querySelector('.cta-arrow') as HTMLElement;
+                          if (arrow) {
+                            arrow.style.backgroundColor = '#E7F0FF';
+                            arrow.style.color = '#019df4';
+                          }
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '14px', backgroundColor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={20} color="#0369a1" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+                          <div style={{ width: '44px', height: '44px', borderRadius: '16px', backgroundColor: '#F3F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <User size={22} color="#1C1F23" />
                           </div>
-                          <span style={{ fontSize: '16px', fontWeight: '950', color: '#1F2937' }}>{tech.name}</span>
+                          <span style={{ fontSize: '16px', fontWeight: '950', color: '#1C1F23', letterSpacing: '-0.3px' }}>{tech.name}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                           <span style={{ 
                             fontSize: '11px', 
                             fontWeight: '950', 
@@ -747,11 +756,13 @@ const BPDirectory = () => {
                             backgroundColor: rs.bg, 
                             color: rs.color, 
                             border: `1px solid ${rs.border}`,
-                            letterSpacing: '0.5px'
+                            letterSpacing: '0.6px'
                           }}>
                             {tech.role}
                           </span>
-                          <ArrowRight size={18} color="#019df4" style={{ opacity: 0.5 }} />
+                          <div className="cta-arrow" style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#E7F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#019df4', transition: 'all 0.3s' }}>
+                            <ArrowRight size={18} />
+                          </div>
                         </div>
                       </a>
                     );
@@ -761,7 +772,7 @@ const BPDirectory = () => {
             ))}
           </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 };
