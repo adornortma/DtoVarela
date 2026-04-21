@@ -170,7 +170,7 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
       const { data, error: dbError } = await supabase
         .from('usuarios')
         .select('*')
-        .eq('usuario', normalizedUser)
+        .ilike('usuario', normalizedUser)
         .single();
 
       if (dbError || !data) {
@@ -814,7 +814,9 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
     
     return STRUCTURE.map(dist => ({
       ...dist,
-      celulas: dist.celulas.filter(cel => cel.nombre === user.celula)
+      celulas: user.rol === 'LIDER' 
+        ? dist.celulas.filter(cel => cel.nombre === user.celula)
+        : dist.celulas
     })).filter(dist => dist.celulas.length > 0);
   }, [user]);
 
@@ -1004,9 +1006,14 @@ function BPTrackingContent() {
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bp_session');
-    if (saved) {
-      setUser(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('bp_session');
+      if (saved) {
+        setUser(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.error('Error loading session:', err);
+      localStorage.removeItem('bp_session');
     }
     setAuthChecked(true);
   }, []);
@@ -1035,9 +1042,11 @@ function BPTrackingContent() {
     return {
       id: isMonthly ? `monthly-${startStr}` : Math.random().toString(36).substr(2, 9),
       isMonthly,
-      weekLabel: isMonthly ? date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase() : formatDateRange(start, end),
+      weekLabel: isMonthly 
+        ? `${ALL_MONTHS[date.getMonth()]} ${date.getFullYear()}`
+        : formatDateRange(start, end),
       dateRange: startStr,
-      monthLabel: date.toLocaleString('es-ES', { month: 'long' }).toUpperCase(),
+      monthLabel: ALL_MONTHS[date.getMonth()],
       pdi: tracking?.kpi_pdi || 0,
       prod_equivalente: tracking?.kpi_prod_equiv || 0,
       resolucion: tracking?.kpi_resolucion || 0,
@@ -1077,7 +1086,7 @@ function BPTrackingContent() {
         if (mData.status === 'full') {
           months.push(mData);
         } else {
-          const mLabel = dateObj.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+          const mLabel = ALL_MONTHS[dateObj.getMonth()];
           const weeksInMonth = weeks.filter((w: any) => w.monthLabel === mLabel);
           const weeksWithData = weeksInMonth.filter((w: any) => w.status === 'full');
           const count = weeksWithData.length || 1;
@@ -1106,8 +1115,10 @@ function BPTrackingContent() {
       const { data: antData } = await supabase.from('antecedentes_bp').select('*').eq('tecnico_id', tech.id).order('fecha', { ascending: false });
 
       let orgInfo = { district: 'VARELA', cell: 'N/A', role: 'Técnico' };
-      const fullName = `${tech.apellido}, ${tech.nombre}`.toUpperCase();
-      const altName = `${tech.apellido} ${tech.nombre}`.toUpperCase();
+      const lastName = (tech?.apellido || '').toUpperCase();
+      const firstName = (tech?.nombre || '').toUpperCase();
+      const fullName = `${lastName}, ${firstName}`;
+      const altName = `${firstName} ${lastName}`;
 
       for (const dist of STRUCTURE) {
         for (const cel of dist.celulas) {
@@ -1144,7 +1155,18 @@ function BPTrackingContent() {
         antecedentes: (antData || []).map((a: any) => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
       setMonthlyHistory(months.reverse());
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+      } catch (err) { 
+      console.error('Critical fetchData error:', err); 
+      setSession({ 
+        id: 'error', 
+        techName: 'Error de carga', 
+        dni: dni || '', 
+        cell: 'N/A', district: 'N/A', role: 'N/A', status: 'critico', 
+        history: [], actions: [], antecedentes: [] 
+      });
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { 
