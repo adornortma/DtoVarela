@@ -604,37 +604,37 @@ const SnapshotBottomSheet = ({ week, onClose }: { week: WeeklyKPI, onClose: () =
 
 // --- Directory Components ---
 
+const STRUCTURE = [
+  {
+    distrito: "LANUS",
+    celulas: [
+      { nombre: "GM LOMAS", tecnicos: [{ name: "GARCIA, CARLOS FACUNDO", role: "GM" }] },
+      { nombre: "PIÑEYRO", tecnicos: [{ name: "ORTIGOZA, EMMANUEL JAVIER", role: "REVISOR" }] },
+      { nombre: "SARANDI", tecnicos: [{ name: "FALCON, AGUSTIN ALEJANDRO", role: "REVISOR" }, { name: "TORRES, CHRISTIAN NICOLAS", role: "REVISOR" }] },
+      { nombre: "MS LANUS", tecnicos: [{ name: "JAIME, MARCELO RAUL", role: "EMPALMADOR" }, { name: "PARED, JUAN MANUEL", role: "EMPALMADOR" }, { name: "RIOS RADO, EMILIO", role: "EMPALMADOR" }] },
+      { nombre: "GM LANUS", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] }
+    ]
+  },
+  {
+    distrito: "MONTE GRANDE",
+    celulas: [
+      { nombre: "BURZACO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISOR" }, { name: "SALINAS LUCIANO", role: "REVISOR" }] },
+      { nombre: "LONGCHAMPS", tecnicos: [{ name: "DIANA PABLO", role: "REVISOR" }] },
+      { nombre: "MS MONTE GRANDE", tecnicos: [{ name: "FIGUEREDO CARLOS", role: "EMPALMADOR" }, { name: "FERNANDEZ FACUNDO", role: "EMPALMADOR" }] }
+    ]
+  },
+  {
+    distrito: "VARELA",
+    celulas: [
+      { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
+      { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISOR" }, { name: "STELLA SERGIO LEONEL", role: "REVISOR" }] }
+    ]
+  }
+];
+
 const BPDirectory = () => {
   const [techMapping, setTechMapping] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-
-  const STRUCTURE = [
-    {
-      distrito: "LANUS",
-      celulas: [
-        { nombre: "GM LOMAS", tecnicos: [{ name: "GARCIA, CARLOS FACUNDO", role: "GM" }] },
-        { nombre: "PIÑEYRO", tecnicos: [{ name: "ORTIGOZA, EMMANUEL JAVIER", role: "REVISADOR" }] },
-        { nombre: "SARANDI", tecnicos: [{ name: "FALCON, AGUSTIN ALEJANDRO", role: "REVISADOR" }, { name: "TORRES, CHRISTIAN NICOLAS", role: "REVISADOR" }] },
-        { nombre: "MS LANUS", tecnicos: [{ name: "JAIME, MARCELO RAUL", role: "EMPALMADOR" }, { name: "PARED, JUAN MANUEL", role: "EMPALMADOR" }, { name: "RIOS RADO, EMILIO", role: "EMPALMADOR" }] },
-        { nombre: "GM LANUS", tecnicos: [{ name: "ESCOBAR FEDERICO", role: "GM" }] }
-      ]
-    },
-    {
-      distrito: "MONTE GRANDE",
-      celulas: [
-        { nombre: "BURZACO", tecnicos: [{ name: "ARIAS BERNARDO", role: "REVISADOR" }, { name: "SALINAS LUCIANO", role: "REVISADOR" }] },
-        { nombre: "LONGCHAMPS", tecnicos: [{ name: "DIANA PABLO", role: "REVISADOR" }] },
-        { nombre: "MS MONTE GRANDE", tecnicos: [{ name: "FIGUEREDO CARLOS", role: "EMPALMADOR" }, { name: "FERNANDEZ FACUNDO", role: "EMPALMADOR" }] }
-      ]
-    },
-    {
-      distrito: "VARELA",
-      celulas: [
-        { nombre: "MS VARELA", tecnicos: [{ name: "MUÑOZ DIEGO ANGEL", role: "EMPALMADOR" }, { name: "PERNARGIG JULIO", role: "EMPALMADOR" }] },
-        { nombre: "RANELAGH", tecnicos: [{ name: "SEGOVIA JAVIER ANDRES", role: "REVISADOR" }, { name: "STELLA SERGIO LEONEL", role: "REVISADOR" }] }
-      ]
-    }
-  ];
 
   useEffect(() => {
     const fetchDnis = async () => {
@@ -888,13 +888,27 @@ function BPTrackingContent() {
       const { data: tracking } = await supabase.from('seguimiento_bp').select('*').eq('tecnico_id', tech.id).eq('confirmado', true).order('fecha_inicio', { ascending: false });
       const { data: antData } = await supabase.from('antecedentes_bp').select('*').eq('tecnico_id', tech.id).order('fecha', { ascending: false });
 
+      let orgInfo = { district: 'VARELA', cell: 'N/A', role: 'Técnico' };
+      const fullName = `${tech.apellido}, ${tech.nombre}`.toUpperCase();
+      const altName = `${tech.apellido} ${tech.nombre}`.toUpperCase();
+
+      for (const dist of STRUCTURE) {
+        for (const cel of dist.celulas) {
+          const matchedTech = cel.tecnicos.find(t => t.name.toUpperCase() === fullName || t.name.toUpperCase() === altName);
+          if (matchedTech) {
+            orgInfo = { district: dist.distrito, cell: cel.nombre, role: matchedTech.role };
+            break;
+          }
+        }
+      }
+
       setSession({
         id: tech.id,
         techName: `${tech.nombre} ${tech.apellido}`,
         dni: tech.dni,
-        cell: tech.celula || 'N/A',
-        district: tech.distrito || 'VARELA',
-        role: tech.role || 'Técnico',
+        cell: orgInfo.cell,
+        district: orgInfo.district,
+        role: orgInfo.role,
         status: 'seguimiento',
         history: weeks,
         actions: (tracking || []).map((t: any) => ({
