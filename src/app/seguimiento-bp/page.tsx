@@ -198,8 +198,8 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F7FB', padding: '20px' }}>
-      <div style={{ width: '100%', maxWidth: '400px', backgroundColor: 'white', borderRadius: '32px', padding: '48px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', border: '1px solid #E5EAF0' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#E2E8F0', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '400px', backgroundColor: 'white', borderRadius: '32px', padding: '48px', boxShadow: '0 25px 60px rgba(0,0,0,0.12)', border: '1px solid #CBD5E1' }}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <div style={{ width: '64px', height: '64px', backgroundColor: '#1C1F23', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <Lock size={32} />
@@ -217,7 +217,7 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
               onChange={e => setUsername(e.target.value)}
               placeholder="EJ: LOPEZF"
               required
-              style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s' }}
+              style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
               onFocus={e => e.currentTarget.style.borderColor = '#019df4'}
               onBlur={e => e.currentTarget.style.borderColor = '#E2E8F0'}
             />
@@ -232,7 +232,7 @@ const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => 
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                style={{ width: '100%', padding: '16px 50px 16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s' }}
+                style={{ width: '100%', padding: '16px 50px 16px 20px', borderRadius: '16px', border: '2px solid #E2E8F0', fontSize: '15px', fontWeight: '800', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
                 onFocus={e => e.currentTarget.style.borderColor = '#019df4'}
                 onBlur={e => e.currentTarget.style.borderColor = '#E2E8F0'}
               />

@@ -3,6 +3,7 @@
 import Sidebar from "@/components/Sidebar";
 import './globals.css';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Menu, Briefcase } from 'lucide-react';
 
 export default function RootLayout({
@@ -11,6 +12,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const pathname = usePathname();
+  const isBPPage = pathname?.startsWith('/seguimiento-bp');
 
   return (
     <html lang="es">
@@ -21,7 +24,7 @@ export default function RootLayout({
       <body>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
            {/* Sidebar (Desktop focus, drawer on mobile) */}
-           <Sidebar isMobileOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+           {!isBPPage && <Sidebar isMobileOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
            
            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
               {/* Header Mobile (Only visible on max-width 767px) */}
@@ -72,8 +75,8 @@ export default function RootLayout({
               }}>
                  <div style={{ 
                    width: '100%', 
-                   maxWidth: '1400px', 
-                   paddingRight: '40px'
+                   maxWidth: isBPPage ? '100%' : '1400px', 
+                   paddingRight: isBPPage ? '0' : '40px'
                  }}>
                     {children}
                  </div>
