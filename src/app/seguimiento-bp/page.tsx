@@ -153,7 +153,6 @@ const StatCard = ({ title, value, previousValue, kpiKey }: { title: string, valu
     <div style={{ backgroundColor: semaforo.bg, borderRadius: '24px', padding: '24px', border: `1px solid ${semaforo.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', flex: 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <p style={{ fontSize: '13px', fontWeight: '800', color: semaforo.color, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8 }}>{title}</p>
-        <div style={{ backgroundColor: 'white', color: semaforo.color, padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '1000' }}>{semaforo.label}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
         <h4 style={{ fontSize: '40px', fontWeight: '1000', color: semaforo.color, margin: 0, letterSpacing: '-1px' }}>{kpiKey !== 'prod_equivalente' ? `${numValue.toFixed(1)}%` : numValue.toFixed(2)}</h4>
@@ -1217,9 +1216,9 @@ function BPTrackingContent() {
                       }
 
                       const getStatusLabel = (val: number) => {
-                        if (val === 1) return { text: 'OK', bg: '#10b98125', color: '#064e3b', border: '#10b98140' };
-                        if (val === 2) return { text: 'REG', bg: '#f59e0b25', color: '#78350f', border: '#f59e0b40' };
-                        if (val === 3) return { text: 'MAL', bg: '#ef444425', color: '#7f1d1d', border: '#ef444440' };
+                        if (val === 1) return { text: 'OK', bg: '#bbf7d0', color: '#064e3b', border: '#86efac' };
+                        if (val === 2) return { text: 'REG', bg: '#fef08a', color: '#78350f', border: '#fde047' };
+                        if (val === 3) return { text: 'MAL', bg: '#fecaca', color: '#7f1d1d', border: '#fca5a5' };
                         return { text: '—', bg: '#f3f4f6', color: '#374151', border: '#e5e7eb' };
                       };
 
