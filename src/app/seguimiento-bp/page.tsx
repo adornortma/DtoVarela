@@ -977,6 +977,119 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
 
 // --- Main Tracking Component ---
 
+const LoginForm = ({ onLogin }: { onLogin: (session: UserSession) => void }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const { data, error: dbError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .ilike('usuario', username.trim())
+        .single();
+
+      if (dbError || !data) {
+        setError('Usuario no encontrado');
+        setLoading(false);
+        return;
+      }
+
+      if (data.pass !== password) {
+        setError('Contraseña incorrecta');
+        setLoading(false);
+        return;
+      }
+
+      const session: UserSession = {
+        usuario: data.usuario,
+        rol: data.rol,
+        distrito: data.distrito,
+        celula: data.celula
+      };
+
+      localStorage.setItem('bp_session', JSON.stringify(session));
+      onLogin(session);
+    } catch (err) {
+      setError('Error de conexión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F7FB', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '440px', backgroundColor: 'white', padding: '48px', borderRadius: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ width: '64px', height: '64px', backgroundColor: '#1C1F23', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
+            <Lock size={32} />
+          </div>
+          <h2 style={{ fontSize: '32px', fontWeight: '1000', color: '#111827', letterSpacing: '-1px' }}>Acceso Seguimiento BP</h2>
+          <p style={{ color: '#6B7280', marginTop: '12px', fontWeight: '800', fontSize: '15px' }}>Ingresá tus credenciales operativas</p>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '1000', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Usuario</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Ej: LOPEZF"
+                autoFocus
+                style={{ width: '100%', padding: '18px', borderRadius: '18px', border: '2px solid #f1f5f9', outline: 'none', transition: 'all 0.2s', fontSize: '16px', fontWeight: '950', color: '#1C1F23', backgroundColor: '#fcfdfe' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '1000', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Contraseña</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="•••••"
+                style={{ width: '100%', padding: '18px', borderRadius: '18px', border: '2px solid #f1f5f9', outline: 'none', transition: 'all 0.2s', fontSize: '16px', fontWeight: '950', color: '#1C1F23', backgroundColor: '#fcfdfe' }}
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '8px' }}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ padding: '16px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '16px', color: '#EF4444', fontSize: '14px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ marginTop: '8px', padding: '18px', borderRadius: '20px', backgroundColor: '#1C1F23', color: 'white', border: 'none', fontWeight: '950', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', transition: 'all 0.2s', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+          >
+            {loading ? <Activity size={20} className="animate-spin" /> : <><LogIn size={20} /> Entrar al Sistema</>}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 function BPTrackingContent() {
   const searchParams = useSearchParams();
   const dni = searchParams.get('dni');
