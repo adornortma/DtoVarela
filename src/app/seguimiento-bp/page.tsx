@@ -1136,7 +1136,7 @@ function BPTrackingContent() {
       const savedSession = localStorage.getItem('bp_session');
       if (savedSession) {
         const userObj = JSON.parse(savedSession);
-        if (userObj.usuario === 'ADORNO') {
+        if (userObj.usuario?.trim().toUpperCase() === 'ADORNO') {
           const { data: logsData } = await supabase
             .from('seguimiento_bp_log')
             .select('*')
@@ -1548,7 +1548,7 @@ function BPTrackingContent() {
             options={[
               { value: 'data', label: 'SEGUIMIENTO', icon: Activity }, 
               { value: 'actions', label: 'HISTORIAL', icon: History },
-              ...(user?.usuario === 'ADORNO' ? [{ value: 'logs', label: 'AUDITORÍA', icon: ShieldCheck }] : [])
+              ...(user?.usuario?.trim().toUpperCase() === 'ADORNO' ? [{ value: 'logs', label: 'AUDITORÍA', icon: ShieldCheck }] : [])
             ]} 
             active={activeTab} 
             onChange={setActiveTab} 
@@ -2095,7 +2095,7 @@ function BPTrackingContent() {
         </div>
       )}
 
-      {activeTab === 'logs' && user?.usuario === 'ADORNO' && (
+      {activeTab === 'logs' && user?.usuario?.trim().toUpperCase() === 'ADORNO' && (
         <div style={{ width: '100%' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', padding: '40px', marginBottom: '48px' }}>
             <SectionHeader title="AUDITORÍA DE CAMBIOS (ACCESO EXCLUSIVO)" icon={ShieldCheck} />
