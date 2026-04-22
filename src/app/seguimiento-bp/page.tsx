@@ -38,6 +38,7 @@ import {
   BarChart,
   Info,
   Lock,
+  ShieldCheck
   LogIn,
   LogOut,
   Eye,
@@ -1014,10 +1015,11 @@ function BPTrackingContent() {
   const [showAntecedenteModal, setShowAntecedenteModal] = useState(false);
   const [antForm, setAntForm] = useState({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' });
   const [isAntExpanded, setIsAntExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'data' | 'actions'>('data');
+  const [activeTab, setActiveTab] = useState<'data' | 'actions' | 'logs'>('data');
   const [observationText, setObservationText] = useState('');
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [tempRowData, setTempRowData] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showNewTrackingModal, setShowNewTrackingModal] = useState(false);
   const [trackingDate, setTrackingDate] = useState(new Date().toISOString().split('T')[0]);
   const [accessDenied, setAccessDenied] = useState(false);
@@ -1129,6 +1131,21 @@ function BPTrackingContent() {
         antecedentes: (antData || []).map((a: any) => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
       setMonthlyHistory(months.reverse());
+      
+      // Fetch Audit Logs only for ADORNO
+      const savedSession = localStorage.getItem('bp_session');
+      if (savedSession) {
+        const userObj = JSON.parse(savedSession);
+        if (userObj.usuario === 'ADORNO') {
+          const { data: logsData } = await supabase
+            .from('seguimiento_bp_log')
+            .select('*')
+            .eq('tecnico_id', tech.id)
+            .order('fecha', { ascending: false })
+            .limit(50);
+          setAuditLogs(logsData || []);
+        }
+      }
       
       // Log View Event
       logActivity({
@@ -1527,11 +1544,19 @@ function BPTrackingContent() {
               </p>
             </div>
           </div>
-          <ViewToggle options={[{ value: 'data', label: 'SEGUIMIENTO', icon: Activity }, { value: 'actions', label: 'HISTORIAL', icon: History }]} active={activeTab} onChange={setActiveTab} />
+          <ViewToggle 
+            options={[
+              { value: 'data', label: 'SEGUIMIENTO', icon: Activity }, 
+              { value: 'actions', label: 'HISTORIAL', icon: History },
+              ...(user?.usuario === 'ADORNO' ? [{ value: 'logs', label: 'AUDITORÍA', icon: ShieldCheck }] : [])
+            ]} 
+            active={activeTab} 
+            onChange={setActiveTab} 
+          />
         </div>
       </header>
 
-      {activeTab === 'data' ? (
+      {activeTab === 'data' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
 
           <section>
@@ -1780,7 +1805,9 @@ function BPTrackingContent() {
             </div>
           </section>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'actions' && (
         <div style={{ width: '100%', position: 'relative' }}>
           {/* Timeline Sidebar Header */}
           <div style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
@@ -2065,6 +2092,77 @@ function BPTrackingContent() {
               to { transform: translateY(0); }
             }
           `}</style>
+        </div>
+      )}
+
+      {activeTab === 'logs' && user?.usuario === 'ADORNO' && (
+        <div style={{ width: '100%' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', padding: '40px', marginBottom: '48px' }}>
+            <SectionHeader title="AUDITORÍA DE CAMBIOS (ACCESO EXCLUSIVO)" icon={ShieldCheck} />
+            <div style={{ marginTop: '32px' }}>
+              {auditLogs.length === 0 ? (
+                <div style={{ padding: '60px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+                  <p style={{ color: '#64748b', fontWeight: '800', fontSize: '15px' }}>No hay registros de auditoría para este técnico.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {auditLogs.map((log) => (
+                    <div key={log.id} style={{ 
+                      padding: '24px', 
+                      borderRadius: '24px', 
+                      border: '1px solid #f1f5f9', 
+                      backgroundColor: '#f8fafc', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                          <span style={{ fontWeight: '950', color: '#019df4', fontSize: '15px' }}>{log.usuario}</span>
+                          <span style={{ 
+                            fontSize: '10px', 
+                            backgroundColor: log.accion === 'edit' ? '#fef3c7' : (log.accion === 'view' ? '#e0f2fe' : '#dcfce7'),
+                            color: log.accion === 'edit' ? '#92400e' : (log.accion === 'view' ? '#0369a1' : '#166534'),
+                            padding: '4px 12px',
+                            borderRadius: '99px',
+                            fontWeight: '950',
+                            letterSpacing: '0.5px'
+                          }}>{log.accion.toUpperCase()}</span>
+                          {log.campo && <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '800' }}>• {log.campo}</span>}
+                        </div>
+                        {(log.valor_anterior || log.valor_nuevo) && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid #f1f5f9', marginTop: '8px' }}>
+                            {log.valor_anterior && (
+                              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                                <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>ANTERIOR</span>
+                                <span style={{ fontWeight: '800', color: '#ef4444' }}>{log.valor_anterior}</span>
+                              </div>
+                            )}
+                            {log.valor_anterior && log.valor_nuevo && <ChevronRight size={16} color="#cbd5e1" />}
+                            {log.valor_nuevo && (
+                              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                                <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>NUEVO</span>
+                                <span style={{ fontWeight: '800', color: '#10b981' }}>{log.valor_nuevo}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '950', color: '#1e293b' }}>
+                          {new Date(log.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </div>
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#94a3b8', marginTop: '4px' }}>
+                          {new Date(log.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
       </div>
