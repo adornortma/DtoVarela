@@ -38,7 +38,7 @@ import {
   BarChart,
   Info,
   Lock,
-  ShieldCheck
+  ShieldCheck,
   LogIn,
   LogOut,
   Eye,
