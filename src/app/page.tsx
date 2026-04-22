@@ -18,7 +18,8 @@ import {
   Activity,
   ListChecks,
   Search,
-  ArrowRightLeft
+  ArrowRightLeft,
+  ShieldCheck
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
@@ -533,6 +534,18 @@ export default function Home() {
   const [kpiConfig, setKpiConfig] = useState<Record<KpiType, KpiConfigItem>>(DEFAULT_KPI_CONFIG);
   const [districtKPIs, setDistrictKPIs] = useState<any>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('bp_session');
+    if (saved) {
+      try {
+        setUser(JSON.parse(saved));
+      } catch (e) {
+        console.error('Error parsing session');
+      }
+    }
+  }, []);
 
   const handleMonthSelect = (month: string) => {
     setSelectedMonth(month);
@@ -845,6 +858,27 @@ export default function Home() {
             <Activity size={16} />
             Ver Detalle Diario
           </Link>
+          {user?.usuario?.trim().toUpperCase() === 'ADORNO' && (
+            <Link 
+              href="/auditoria"
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: '10px 20px', 
+                backgroundColor: '#019df4', 
+                color: 'white', 
+                borderRadius: '16px', 
+                fontSize: '13px', 
+                fontWeight: '800',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <ShieldCheck size={16} />
+              Auditoría Global
+            </Link>
+          )}
           <div style={{ display: 'flex', gap: '12px', padding: '8px 16px', backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: 'var(--card-shadow)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--movistar-blue)' }}></div>
