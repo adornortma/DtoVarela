@@ -143,3 +143,17 @@ CREATE TABLE IF NOT EXISTS public.usuarios (
     celula TEXT, -- null para FULL, valor específico para LIDER
     created_at TIMESTAMPTZ DEFAULT now()
 );
+-- 11. Registro de Actividad (Logging)
+CREATE TABLE IF NOT EXISTS public.seguimiento_bp_log (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    tecnico_id uuid REFERENCES public.tecnicos(id) ON DELETE CASCADE,
+    usuario text,
+    accion text CHECK (accion IN ('view', 'edit', 'create')),
+    campo text,
+    valor_anterior text,
+    valor_nuevo text,
+    fecha timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_seguimiento_bp_log_tecnico ON public.seguimiento_bp_log(tecnico_id);
+CREATE INDEX IF NOT EXISTS idx_seguimiento_bp_log_fecha ON public.seguimiento_bp_log(fecha);

@@ -349,10 +349,10 @@ const ViewToggle = ({ options, active, onChange }: any) => (
 
 // --- Table Components ---
 
-const InlineInput = ({ value, onChange, placeholder, style = {} }: any) => (
+const InlineInput = ({ value, onChange, placeholder, style = {}, step = "0.1" }: any) => (
   <input
     type="number"
-    step="0.1"
+    step={step}
     value={value}
     onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
     placeholder={placeholder}
@@ -373,6 +373,7 @@ const InlineInput = ({ value, onChange, placeholder, style = {} }: any) => (
     onFocus={(e) => {
       e.currentTarget.style.borderColor = '#019df4';
       e.currentTarget.style.backgroundColor = '#FFFFFF';
+      e.target.select();
     }}
     onBlur={(e) => {
       e.currentTarget.style.borderColor = '#e2e8f0';
@@ -984,6 +985,21 @@ function BPTrackingContent() {
   const searchParams = useSearchParams();
   const dni = searchParams.get('dni');
 
+  const logActivity = async (params: { tecnico_id: string, accion: 'view' | 'edit' | 'create', campo?: string, valor_anterior?: string, valor_nuevo?: string }) => {
+    try {
+      const saved = localStorage.getItem('bp_session');
+      if (!saved) return;
+      const userSession = JSON.parse(saved);
+      await supabase.from('seguimiento_bp_log').insert({
+        ...params,
+        usuario: userSession.usuario,
+        fecha: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Logging error:', err);
+    }
+  };
+
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserSession | null>(null);
   const [session, setSession] = useState<any>(null);
@@ -1113,6 +1129,13 @@ function BPTrackingContent() {
         antecedentes: (antData || []).map((a: any) => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion }))
       });
       setMonthlyHistory(months.reverse());
+      
+      // Log View Event
+      logActivity({
+        tecnico_id: tech.id,
+        accion: 'view'
+      });
+
       } catch (err) { 
       console.error('Critical fetchData error:', err); 
       setSession({ 
@@ -1221,6 +1244,14 @@ function BPTrackingContent() {
       payload.kpi_reitero = kpiData.reitero;
     }
 
+    const { data: current } = await supabase
+      .from('seguimiento_bp')
+      .select('*')
+      .eq('tecnico_id', session.id)
+      .eq('fecha_inicio', startStr)
+      .eq('es_mensual', isMonthlyOverride)
+      .maybeSingle();
+
     const { error } = await supabase.from('seguimiento_bp').upsert(payload, { 
       onConflict: 'tecnico_id, fecha_inicio, es_mensual' 
     });
@@ -1229,6 +1260,51 @@ function BPTrackingContent() {
       console.error('Error saving:', error);
       alert('Error al guardar: ' + error.message);
     } else {
+      // Log Edit/Create Event
+      if (!current) {
+        logActivity({
+          tecnico_id: session.id,
+          accion: 'create'
+        });
+      } else {
+        const fieldsToLog = [
+          'alarma_pt', 'alarma_ft', 'alarma_ta', 'alarma_ma', 
+          'alarma_te', 'alarma_rt', 'alarma_ne', 'alarma_tea',
+          'kpi_pdi', 'kpi_prod_equiv', 'kpi_resolucion', 'kpi_reitero',
+          'observacion_lider'
+        ];
+        
+        const logs: any[] = [];
+        fieldsToLog.forEach(field => {
+          const oldValue = current[field];
+          const newValue = payload[field];
+          // Simple comparison, handles null/undefined as well
+          if (String(oldValue) !== String(newValue) && newValue !== undefined) {
+            logs.push({
+              tecnico_id: session.id,
+              accion: 'edit',
+              campo: field,
+              valor_anterior: oldValue !== null ? String(oldValue) : '',
+              valor_nuevo: String(newValue)
+            });
+          }
+        });
+
+        if (logs.length > 0) {
+          const saved = localStorage.getItem('bp_session');
+          if (saved) {
+            const userSession = JSON.parse(saved);
+            const enrichedLogs = logs.map(l => ({
+              ...l,
+              usuario: userSession.usuario,
+              fecha: new Date().toISOString()
+            }));
+            supabase.from('seguimiento_bp_log').insert(enrichedLogs).then(({error: logErr}) => {
+              if (logErr) console.error('Error batch logging:', logErr);
+            });
+          }
+        }
+      }
       await fetchData(); // Refresh entire state
     }
   };
@@ -1238,16 +1314,48 @@ function BPTrackingContent() {
     const confirm = window.confirm("¿Estás seguro?");
     if (!confirm) return;
     const { start, end } = getWeekRange(new Date(activeWeek.dateRange));
+    const startStr = start.toISOString().split('T')[0];
+
+    const { data: current } = await supabase
+      .from('seguimiento_bp')
+      .select('*')
+      .eq('tecnico_id', session.id)
+      .eq('fecha_inicio', startStr)
+      .maybeSingle();
+
     const { error } = await supabase.from('seguimiento_bp').upsert({
       tecnico_id: session.id,
-      fecha_inicio: start.toISOString().split('T')[0],
+      fecha_inicio: startStr,
       fecha_fin: end.toISOString().split('T')[0],
       observacion_lider: observationText,
       confirmado: true,
       fecha_confirmacion: new Date().toISOString()
     }, { onConflict: 'tecnico_id, fecha_inicio' });
+
     if (error) alert('Error: ' + error.message);
-    else { alert('Guardado!'); fetchData(); }
+    else { 
+      // Log Confirm action
+      logActivity({
+        tecnico_id: session.id,
+        accion: 'edit',
+        campo: 'confirmado',
+        valor_anterior: current?.confirmado ? 'true' : 'false',
+        valor_nuevo: 'true'
+      });
+      
+      if (current?.observacion_lider !== observationText) {
+        logActivity({
+          tecnico_id: session.id,
+          accion: 'edit',
+          campo: 'observacion_lider',
+          valor_anterior: current?.observacion_lider || '',
+          valor_nuevo: observationText
+        });
+      }
+
+      alert('Guardado!'); 
+      fetchData(); 
+    }
   };
 
   const handleInlineEditStart = (row: WeeklyKPI) => {
@@ -1296,7 +1404,19 @@ function BPTrackingContent() {
       descripcion: antForm.descripcion
     });
     if (error) alert('Error: ' + error.message);
-    else { setShowAntecedenteModal(false); setAntForm({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' }); fetchData(); }
+    else { 
+      // Log creation of antecedent
+      logActivity({
+        tecnico_id: session?.id,
+        accion: 'create',
+        campo: 'antecedente',
+        valor_nuevo: antForm.titulo
+      });
+
+      setShowAntecedenteModal(false); 
+      setAntForm({ titulo: '', fecha: new Date().toISOString().split('T')[0], descripcion: '' }); 
+      fetchData(); 
+    }
   };
 
   const openSnapshot = async (dateRange: string) => {
@@ -1524,6 +1644,7 @@ function BPTrackingContent() {
                                   <InlineInput 
                                     value={tempRowData[['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]} 
                                     onChange={(val: number) => setTempRowData({...tempRowData, [['pdi', 'prod_equivalente', 'resolucion', 'reitero'][i]]: val})}
+                                    step="0.1"
                                   />
                                 ) : (
                                   <div style={{ 
@@ -1557,6 +1678,7 @@ function BPTrackingContent() {
                                   <InlineInput 
                                     value={tempRowData[k]} 
                                     onChange={(val: number) => setTempRowData({...tempRowData, [k]: val})}
+                                    step="1"
                                   />
                                ) : (
                                  row.isMonthly && !row.isAverage ? (
