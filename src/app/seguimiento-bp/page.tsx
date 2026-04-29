@@ -809,7 +809,7 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
   
   const [formData, setFormData] = useState({
     nombre: '', apellido: '', dni: '',
-    distrito: '', celula: '', lider: ''
+    distrito: '', celula: '', lider: '', funcion: ''
   });
   const [leaders, setLeaders] = useState<any[]>([]);
 
@@ -846,13 +846,13 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
       if (techData && techData.id) {
         await supabase.from('tecnico_alias').insert({
           tecnico_id: techData.id,
-          valor_original: JSON.stringify({ distrito: formData.distrito, celula: formData.celula, lider: formData.lider }),
+          valor_original: JSON.stringify({ distrito: formData.distrito, celula: formData.celula, lider: formData.lider, funcion: formData.funcion }),
           tipo: 'metadata_assignment'
         });
       }
       
       setMsg({ text: 'Técnico agregado correctamente. Refrescá la página para verlo en la lista.', type: 'success' });
-      setFormData({ nombre: '', apellido: '', dni: '', distrito: '', celula: '', lider: '' });
+      setFormData({ nombre: '', apellido: '', dni: '', distrito: '', celula: '', lider: '', funcion: '' });
     } catch (err: any) {
       setMsg({ text: err.message || 'Error al agregar', type: 'error' });
     } finally {
@@ -941,14 +941,26 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
                 </select>
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Líder a Cargo</label>
-              <select required value={formData.lider} onChange={e => setFormData({...formData, lider: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }}>
-                <option value="" disabled>Seleccione Líder</option>
-                {leaders.map(l => (
-                  <option key={l.usuario} value={l.usuario}>{l.usuario}</option>
-                ))}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Líder a Cargo</label>
+                <select required value={formData.lider} onChange={e => setFormData({...formData, lider: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }}>
+                  <option value="" disabled>Seleccione Líder</option>
+                  {leaders.map(l => (
+                    <option key={l.usuario} value={l.usuario}>{l.usuario}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Función</label>
+                <select required value={formData.funcion} onChange={e => setFormData({...formData, funcion: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }}>
+                  <option value="" disabled>Seleccione Función</option>
+                  <option value="TÉCNICO">Técnico</option>
+                  <option value="EMPALMADOR">Empalmador</option>
+                  <option value="GM">GM</option>
+                  <option value="REVISADOR">Revisador</option>
+                </select>
+              </div>
             </div>
             <button disabled={loading} type="submit" style={{ marginTop: '16px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#019df4', color: 'white', fontWeight: '950', fontSize: '15px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Guardando...' : 'Agregar Técnico'}
@@ -995,7 +1007,7 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
                 if (!exists) {
                   baseStructure[distIndex].celulas[celIndex].tecnicos.push({
                     name: name1,
-                    role: 'REVISADOR' // Default
+                    role: assignment.funcion || 'REVISADOR' // Default
                   });
                 }
               }
@@ -1326,7 +1338,7 @@ function BPTrackingContent() {
           try {
             const parsed = JSON.parse(aliasData.valor_original);
             if (parsed.distrito && parsed.celula) {
-              orgInfo = { district: parsed.distrito, cell: parsed.celula, role: 'Técnico' };
+              orgInfo = { district: parsed.distrito, cell: parsed.celula, role: parsed.funcion || 'Técnico' };
             }
           } catch (e) {
             console.error('Error parsing metadata assignment', e);
