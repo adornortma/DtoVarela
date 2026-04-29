@@ -811,6 +811,18 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
     nombre: '', apellido: '', dni: '',
     distrito: '', celula: '', lider: ''
   });
+  const [leaders, setLeaders] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('usuarios').select('usuario').eq('rol', 'LIDER').then(({ data }) => {
+      if (data) setLeaders(data);
+    });
+  }, []);
+
+  const distritosDisponibles = STRUCTURE.map(d => d.distrito);
+  const celulasDisponibles = formData.distrito 
+    ? STRUCTURE.find(d => d.distrito === formData.distrito)?.celulas.map(c => c.nombre) || []
+    : [];
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -861,8 +873,8 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ backgroundColor: 'white', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', width: '100%', maxWidth: '600px', padding: '40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', padding: '20px' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '24px', width: '100%', maxWidth: '600px', padding: '40px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
           <h3 style={{ fontSize: '24px', fontWeight: '950', letterSpacing: '-0.5px' }}>Gestión de Técnicos</h3>
           <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} color="#64748b" /></button>
@@ -890,30 +902,45 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Nombre</label>
-                <input required type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+                <input required type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
               </div>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Apellido</label>
-                <input required type="text" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+                <input required type="text" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
               </div>
             </div>
             <div>
               <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>DNI (IMPORTANTE: Se usará como ID único)</label>
-              <input required type="number" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              <input required type="number" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Distrito</label>
-                <input required type="text" value={formData.distrito} onChange={e => setFormData({...formData, distrito: e.target.value})} placeholder="Ej: LANUS" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+                <select required value={formData.distrito} onChange={e => setFormData({...formData, distrito: e.target.value, celula: ''})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }}>
+                  <option value="" disabled>Seleccione Distrito</option>
+                  {distritosDisponibles.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</label>
-                <input required type="text" value={formData.celula} onChange={e => setFormData({...formData, celula: e.target.value})} placeholder="Ej: GM LOMAS" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+                <select required value={formData.celula} onChange={e => setFormData({...formData, celula: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }} disabled={!formData.distrito}>
+                  <option value="" disabled>Seleccione Célula</option>
+                  {celulasDisponibles.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div>
               <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Líder a Cargo</label>
-              <input required type="text" value={formData.lider} onChange={e => setFormData({...formData, lider: e.target.value})} placeholder="Ej: MARCHATJ" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              <select required value={formData.lider} onChange={e => setFormData({...formData, lider: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }}>
+                <option value="" disabled>Seleccione Líder</option>
+                {leaders.map(l => (
+                  <option key={l.usuario} value={l.usuario}>{l.usuario}</option>
+                ))}
+              </select>
             </div>
             <button disabled={loading} type="submit" style={{ marginTop: '16px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#019df4', color: 'white', fontWeight: '950', fontSize: '15px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Guardando...' : 'Agregar Técnico'}
@@ -923,7 +950,7 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
           <form onSubmit={handleRemove} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>DNI del Técnico a Eliminar</label>
-              <input required type="number" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              <input required type="number" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
             </div>
             <button disabled={loading} type="submit" style={{ marginTop: '16px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#ef4444', color: 'white', fontWeight: '950', fontSize: '15px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Eliminando...' : 'Eliminar Técnico'}
