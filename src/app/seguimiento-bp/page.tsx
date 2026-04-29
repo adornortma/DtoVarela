@@ -1314,6 +1314,26 @@ function BPTrackingContent() {
         }
       }
 
+      if (orgInfo.district === 'N/A') {
+        const { data: aliasData } = await supabase
+          .from('tecnico_alias')
+          .select('valor_original')
+          .eq('tecnico_id', tech.id)
+          .eq('tipo', 'metadata_assignment')
+          .maybeSingle();
+
+        if (aliasData && aliasData.valor_original) {
+          try {
+            const parsed = JSON.parse(aliasData.valor_original);
+            if (parsed.distrito && parsed.celula) {
+              orgInfo = { district: parsed.distrito, cell: parsed.celula, role: 'Técnico' };
+            }
+          } catch (e) {
+            console.error('Error parsing metadata assignment', e);
+          }
+        }
+      }
+
       if (user?.rol === 'LIDER') {
         const allowed = !user.celula ? [] : (Array.isArray(user.celula) ? user.celula : user.celula.split(',').map(c => c.trim().toUpperCase()));
         if (!allowed.includes(orgInfo.cell.toUpperCase())) {
