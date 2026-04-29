@@ -802,9 +802,143 @@ const STRUCTURE = [
   }
 ];
 
+const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
+  const [tab, setTab] = useState<'add' | 'remove'>('add');
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState({ text: '', type: '' });
+  
+  const [formData, setFormData] = useState({
+    nombre: '', apellido: '', dni: '',
+    distrito: '', celula: '', lider: ''
+  });
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMsg({ text: '', type: '' });
+    try {
+      const nombreNormalizado = `${formData.apellido.trim().toUpperCase()}, ${formData.nombre.trim().toUpperCase()}`;
+      
+      const { error } = await supabase.from('tecnicos').insert({
+        dni: formData.dni,
+        nombre: formData.nombre.trim().toUpperCase(),
+        apellido: formData.apellido.trim().toUpperCase(),
+        nombre_normalizado: nombreNormalizado
+      });
+
+      if (error) {
+        if (error.code === '23505') throw new Error('El DNI ya se encuentra registrado.');
+        throw error;
+      }
+      
+      setMsg({ text: 'Técnico agregado a la BD correctamente. Se requiere actualizar el código para que sea visible en las listas.', type: 'success' });
+      setFormData({ nombre: '', apellido: '', dni: '', distrito: '', celula: '', lider: '' });
+    } catch (err: any) {
+      setMsg({ text: err.message || 'Error al agregar', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemove = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMsg({ text: '', type: '' });
+    try {
+      const { data, error: findErr } = await supabase.from('tecnicos').select('*').eq('dni', formData.dni).single();
+      if (!data) throw new Error('No se encontró un técnico con ese DNI.');
+      
+      const { error } = await supabase.from('tecnicos').delete().eq('dni', formData.dni);
+      if (error) throw error;
+      
+      setMsg({ text: 'Técnico eliminado de la BD correctamente.', type: 'success' });
+      setFormData({ ...formData, dni: '' });
+    } catch (err: any) {
+      setMsg({ text: err.message || 'Error al eliminar', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 10000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+      <div style={{ backgroundColor: 'white', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', width: '100%', maxWidth: '600px', padding: '40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '24px', fontWeight: '950', letterSpacing: '-0.5px' }}>Gestión de Técnicos</h3>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} color="#64748b" /></button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '2px solid #f1f5f9', paddingBottom: '16px' }}>
+          <button 
+            onClick={() => { setTab('add'); setMsg({text:'', type:''}); }}
+            style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', backgroundColor: tab === 'add' ? '#019df4' : 'transparent', color: tab === 'add' ? 'white' : '#64748b', fontWeight: '900', cursor: 'pointer', transition: 'all 0.2s' }}
+          >Agregar Técnico</button>
+          <button 
+            onClick={() => { setTab('remove'); setMsg({text:'', type:''}); }}
+            style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', backgroundColor: tab === 'remove' ? '#ef4444' : 'transparent', color: tab === 'remove' ? 'white' : '#64748b', fontWeight: '900', cursor: 'pointer', transition: 'all 0.2s' }}
+          >Quitar Técnico</button>
+        </div>
+
+        {msg.text && (
+          <div style={{ padding: '16px', borderRadius: '12px', marginBottom: '24px', backgroundColor: msg.type === 'error' ? '#fef2f2' : '#f0fdf4', color: msg.type === 'error' ? '#991b1b' : '#166534', fontWeight: '800', fontSize: '14px', border: `1px solid ${msg.type === 'error' ? '#fecaca' : '#bbf7d0'}` }}>
+            {msg.text}
+          </div>
+        )}
+
+        {tab === 'add' ? (
+          <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Nombre</label>
+                <input required type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Apellido</label>
+                <input required type="text" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>DNI (IMPORTANTE: Se usará como ID único)</label>
+              <input required type="number" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Distrito</label>
+                <input required type="text" value={formData.distrito} onChange={e => setFormData({...formData, distrito: e.target.value})} placeholder="Ej: LANUS" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</label>
+                <input required type="text" value={formData.celula} onChange={e => setFormData({...formData, celula: e.target.value})} placeholder="Ej: GM LOMAS" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Líder a Cargo</label>
+              <input required type="text" value={formData.lider} onChange={e => setFormData({...formData, lider: e.target.value})} placeholder="Ej: MARCHATJ" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+            </div>
+            <button disabled={loading} type="submit" style={{ marginTop: '16px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#019df4', color: 'white', fontWeight: '950', fontSize: '15px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
+              {loading ? 'Guardando...' : 'Agregar Técnico'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRemove} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>DNI del Técnico a Eliminar</label>
+              <input required type="number" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: '800' }} />
+            </div>
+            <button disabled={loading} type="submit" style={{ marginTop: '16px', width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#ef4444', color: 'white', fontWeight: '950', fontSize: '15px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
+              {loading ? 'Eliminando...' : 'Eliminar Técnico'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => void }) => {
   const [techMapping, setTechMapping] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [showTechManager, setShowTechManager] = useState(false);
 
   const filteredStructure = useMemo(() => {
     if (user.rol === 'FULL') return STRUCTURE;
@@ -882,7 +1016,17 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
           </button>
         </div>
         <h1 style={{ fontSize: '42px', fontWeight: '1000', color: '#111827', letterSpacing: '-1.8px', marginBottom: '12px' }}>Seguimiento BP</h1>
+        {user.rol === 'FULL' && (
+          <button 
+            onClick={() => setShowTechManager(true)}
+            style={{ padding: '10px 20px', borderRadius: '14px', border: 'none', backgroundColor: '#1C1F23', color: 'white', fontWeight: '900', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', marginTop: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+          >
+            <Plus size={16} /> Gestionar Técnicos
+          </button>
+        )}
       </div>
+
+      {showTechManager && <ManageTechBottomSheet onClose={() => setShowTechManager(false)} />}
 
       {filteredStructure.map(dist => (
         <div key={dist.distrito} style={{ marginBottom: '72px' }}>
