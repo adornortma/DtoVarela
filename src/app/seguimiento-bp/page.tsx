@@ -964,13 +964,12 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
 
 const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => void }) => {
   const [techMapping, setTechMapping] = useState<Record<string, string>>({});
+  const [dbTecnicos, setDbTecnicos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTechManager, setShowTechManager] = useState(false);
 
   const filteredStructure = useMemo(() => {
-    if (user.rol === 'FULL') return STRUCTURE;
-    
-    return STRUCTURE.map(dist => ({
+    let baseStructure = STRUCTURE.map(dist => ({
       ...dist,
       celulas: user.rol === 'LIDER' 
         ? dist.celulas.filter(cel => {
@@ -982,12 +981,48 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
           })
         : dist.celulas
     })).filter(dist => dist.celulas.length > 0);
-  }, [user]);
+
+    if (user.rol === 'FULL' && dbTecnicos.length > 0) {
+      const structuredNames = new Set<string>();
+      STRUCTURE.forEach(d => {
+        d.celulas.forEach(c => {
+          c.tecnicos.forEach(t => {
+            structuredNames.add(t.name.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase());
+          });
+        });
+      });
+
+      const unassignedTechs = dbTecnicos.filter(dbTech => {
+        const name1 = `${dbTech.apellido} ${dbTech.nombre}`.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+        const name2 = `${dbTech.nombre} ${dbTech.apellido}`.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+        const name3 = dbTech.nombre_normalizado?.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+        return !structuredNames.has(name1) && !structuredNames.has(name2) && !structuredNames.has(name3);
+      });
+
+      if (unassignedTechs.length > 0) {
+        baseStructure.push({
+          distrito: 'NUEVOS (Falta asignar en código o Base de Datos)',
+          celulas: [
+            {
+              nombre: 'Técnicos Recién Agregados',
+              tecnicos: unassignedTechs.map(t => ({
+                name: `${t.apellido}, ${t.nombre}`,
+                role: 'REVISADOR'
+              }))
+            }
+          ]
+        });
+      }
+    }
+
+    return baseStructure;
+  }, [user, dbTecnicos]);
 
   useEffect(() => {
     const fetchDnis = async () => {
-      const { data } = await supabase.from('tecnicos').select('nombre, apellido, dni');
+      const { data } = await supabase.from('tecnicos').select('nombre, apellido, dni, nombre_normalizado');
       if (data) {
+        setDbTecnicos(data);
         const mapping: Record<string, string> = {};
         data.forEach(t => {
           const fullName = `${t.apellido}, ${t.nombre}`.toUpperCase();
