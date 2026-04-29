@@ -831,19 +831,27 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
     try {
       const nombreNormalizado = `${formData.apellido.trim().toUpperCase()}, ${formData.nombre.trim().toUpperCase()}`;
       
-      const { error } = await supabase.from('tecnicos').insert({
+      const { data: techData, error } = await supabase.from('tecnicos').insert({
         dni: formData.dni,
         nombre: formData.nombre.trim().toUpperCase(),
         apellido: formData.apellido.trim().toUpperCase(),
         nombre_normalizado: nombreNormalizado
-      });
+      }).select('id').single();
 
       if (error) {
         if (error.code === '23505') throw new Error('El DNI ya se encuentra registrado.');
         throw error;
       }
+
+      if (techData && techData.id) {
+        await supabase.from('tecnico_alias').insert({
+          tecnico_id: techData.id,
+          valor_original: JSON.stringify({ distrito: formData.distrito, celula: formData.celula, lider: formData.lider }),
+          tipo: 'metadata_assignment'
+        });
+      }
       
-      setMsg({ text: 'Técnico agregado a la BD correctamente. Se requiere actualizar el código para que sea visible en las listas.', type: 'success' });
+      setMsg({ text: 'Técnico agregado correctamente. Refrescá la página para verlo en la lista.', type: 'success' });
       setFormData({ nombre: '', apellido: '', dni: '', distrito: '', celula: '', lider: '' });
     } catch (err: any) {
       setMsg({ text: err.message || 'Error al agregar', type: 'error' });
@@ -969,7 +977,37 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
   const [showTechManager, setShowTechManager] = useState(false);
 
   const filteredStructure = useMemo(() => {
-    let baseStructure = STRUCTURE.map(dist => ({
+    let baseStructure = JSON.parse(JSON.stringify(STRUCTURE)) as typeof STRUCTURE;
+
+    if (dbTecnicos.length > 0) {
+      dbTecnicos.forEach(dbTech => {
+        const assignmentStr = dbTech.tecnico_alias?.find((a: any) => a.tipo === 'metadata_assignment')?.valor_original;
+        if (assignmentStr) {
+          try {
+            const assignment = JSON.parse(assignmentStr);
+            const distIndex = baseStructure.findIndex(d => d.distrito === assignment.distrito);
+            if (distIndex !== -1) {
+              const celIndex = baseStructure[distIndex].celulas.findIndex(c => c.nombre === assignment.celula);
+              if (celIndex !== -1) {
+                const name1 = `${dbTech.apellido}, ${dbTech.nombre}`.toUpperCase();
+                // Check if not already in structure
+                const exists = baseStructure[distIndex].celulas[celIndex].tecnicos.some(t => t.name.replace(/\s+/g,'') === name1.replace(/\s+/g,''));
+                if (!exists) {
+                  baseStructure[distIndex].celulas[celIndex].tecnicos.push({
+                    name: name1,
+                    role: 'REVISADOR' // Default
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            // ignore JSON parse error
+          }
+        }
+      });
+    }
+
+    baseStructure = baseStructure.map(dist => ({
       ...dist,
       celulas: user.rol === 'LIDER' 
         ? dist.celulas.filter(cel => {
@@ -982,45 +1020,12 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
         : dist.celulas
     })).filter(dist => dist.celulas.length > 0);
 
-    if (user.rol === 'FULL' && dbTecnicos.length > 0) {
-      const structuredNames = new Set<string>();
-      STRUCTURE.forEach(d => {
-        d.celulas.forEach(c => {
-          c.tecnicos.forEach(t => {
-            structuredNames.add(t.name.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase());
-          });
-        });
-      });
-
-      const unassignedTechs = dbTecnicos.filter(dbTech => {
-        const name1 = `${dbTech.apellido} ${dbTech.nombre}`.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
-        const name2 = `${dbTech.nombre} ${dbTech.apellido}`.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
-        const name3 = dbTech.nombre_normalizado?.replace(/,/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
-        return !structuredNames.has(name1) && !structuredNames.has(name2) && !structuredNames.has(name3);
-      });
-
-      if (unassignedTechs.length > 0) {
-        baseStructure.push({
-          distrito: 'NUEVOS (Falta asignar en código o Base de Datos)',
-          celulas: [
-            {
-              nombre: 'Técnicos Recién Agregados',
-              tecnicos: unassignedTechs.map(t => ({
-                name: `${t.apellido}, ${t.nombre}`,
-                role: 'REVISADOR'
-              }))
-            }
-          ]
-        });
-      }
-    }
-
     return baseStructure;
   }, [user, dbTecnicos]);
 
   useEffect(() => {
     const fetchDnis = async () => {
-      const { data } = await supabase.from('tecnicos').select('nombre, apellido, dni, nombre_normalizado');
+      const { data } = await supabase.from('tecnicos').select('id, nombre, apellido, dni, nombre_normalizado, tecnico_alias(tipo, valor_original)');
       if (data) {
         setDbTecnicos(data);
         const mapping: Record<string, string> = {};
