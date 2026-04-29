@@ -955,7 +955,6 @@ const ManageTechBottomSheet = ({ onClose }: { onClose: () => void }) => {
                 <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Función</label>
                 <select required value={formData.funcion} onChange={e => setFormData({...formData, funcion: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #e2e8f0', backgroundColor: '#f8fafc', outline: 'none', fontSize: '14px', fontWeight: '800' }}>
                   <option value="" disabled>Seleccione Función</option>
-                  <option value="TÉCNICO">Técnico</option>
                   <option value="EMPALMADOR">Empalmador</option>
                   <option value="GM">GM</option>
                   <option value="REVISADOR">Revisador</option>
