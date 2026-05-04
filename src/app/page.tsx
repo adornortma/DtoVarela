@@ -752,7 +752,7 @@ export default function Home() {
             setLastUpdate(distData.updated_at);
         }
 
-        // --- Auto-select last loaded week on mount ---
+        // --- Auto-select latest month with data ---
         const { data: lastMetric } = await supabase
           .from('metricas')
           .select('fecha')
@@ -760,20 +760,41 @@ export default function Home() {
           .limit(1)
           .maybeSingle();
         
-        if (lastMetric) {
-          const date = new Date(lastMetric.fecha);
-          const monthName = MONTHS[date.getUTCMonth()];
-          const week = getWeekOfDate(date);
+        const { data: lastMonthly } = await supabase
+          .from('metricas_mensuales')
+          .select('mes')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastMetric || lastMonthly) {
+          let date;
+          let monthName;
           
-          setSelectedMonth(monthName);
-          setSelectedWeek(week);
-          
-          // Adjust visible months if needed
-          if (!visibleMonths.includes(monthName)) {
-             const monthIdx = MONTHS.indexOf(monthName);
-             setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 1), Math.max(0, monthIdx - 1) + 4));
+          if (calendarMode === 'operativo' && lastMetric) {
+            date = new Date(lastMetric.fecha);
+            monthName = MONTHS[date.getUTCMonth()];
+          } else if (calendarMode === 'mensual' && lastMonthly) {
+            monthName = lastMonthly.mes;
+          } else if (lastMetric) {
+            date = new Date(lastMetric.fecha);
+            monthName = MONTHS[date.getUTCMonth()];
+          } else {
+            monthName = lastMonthly?.mes || selectedMonth;
+          }
+
+          if (monthName && MONTHS.includes(monthName)) {
+            setSelectedMonth(monthName);
+            if (lastMetric && MONTHS[new Date(lastMetric.fecha).getUTCMonth()] === monthName) {
+              setSelectedWeek(getWeekOfDate(new Date(lastMetric.fecha)));
+            }
+            
+            // Adjust visible months
+            const monthIdx = MONTHS.indexOf(monthName);
+            setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 2), Math.max(0, monthIdx - 2) + 5));
           }
         }
+
     };
     fetchConfig();
   }, []);
@@ -1295,9 +1316,16 @@ export default function Home() {
               boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)'
             }}>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   setCalendarMode('mensual');
                   setViewMode('semanal');
+                  
+                  // Auto-select latest month with data if current is empty
+                  const { data: hasData } = await supabase.from('metricas_mensuales').select('id').eq('mes', selectedMonth).limit(1).maybeSingle();
+                  if (!hasData) {
+                    const { data: latest } = await supabase.from('metricas_mensuales').select('mes').order('created_at', { ascending: false }).limit(1).maybeSingle();
+                    if (latest) handleMonthSelect(latest.mes);
+                  }
                 }}
                 style={{ 
                   padding: '8px 20px', 
@@ -1319,9 +1347,25 @@ export default function Home() {
                 Mensual
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   setCalendarMode('operativo');
                   setViewMode('semanal');
+                  
+                  // Check current month data
+                  const monthIdx = MONTHS.indexOf(selectedMonth);
+                  const year = new Date().getFullYear();
+                  const start = new Date(year, monthIdx, 1).toISOString();
+                  const end = new Date(year, monthIdx + 1, 0, 23, 59, 59).toISOString();
+                  
+                  const { data: hasData } = await supabase.from('metricas').select('id').gte('fecha', start).lte('fecha', end).limit(1).maybeSingle();
+                  if (!hasData) {
+                    const { data: latest } = await supabase.from('metricas').select('fecha').order('fecha', { ascending: false }).limit(1).maybeSingle();
+                    if (latest) {
+                      const latestMonth = MONTHS[new Date(latest.fecha).getUTCMonth()];
+                      handleMonthSelect(latestMonth);
+                      setSelectedWeek(getWeekOfDate(new Date(latest.fecha)));
+                    }
+                  }
                 }}
                 style={{ 
                   padding: '8px 20px', 
@@ -1343,10 +1387,27 @@ export default function Home() {
                 Semanal
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   setCalendarMode('operativo');
                   setViewMode('indicador');
+                  
+                  // Same logic as Semanal
+                  const monthIdx = MONTHS.indexOf(selectedMonth);
+                  const year = new Date().getFullYear();
+                  const start = new Date(year, monthIdx, 1).toISOString();
+                  const end = new Date(year, monthIdx + 1, 0, 23, 59, 59).toISOString();
+                  
+                  const { data: hasData } = await supabase.from('metricas').select('id').gte('fecha', start).lte('fecha', end).limit(1).maybeSingle();
+                  if (!hasData) {
+                    const { data: latest } = await supabase.from('metricas').select('fecha').order('fecha', { ascending: false }).limit(1).maybeSingle();
+                    if (latest) {
+                      const latestMonth = MONTHS[new Date(latest.fecha).getUTCMonth()];
+                      handleMonthSelect(latestMonth);
+                      setSelectedWeek(getWeekOfDate(new Date(latest.fecha)));
+                    }
+                  }
                 }}
+
                 style={{ 
                   padding: '8px 20px', 
                   borderRadius: '12px', 
