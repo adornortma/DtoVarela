@@ -474,11 +474,10 @@ const CellGroup = ({
         `}</style>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
-                <col style={{ width: '30%' }} />
-                <col style={{ width: '30%' }} />
+                <col style={{ width: '33.333%' }} />
                 {viewMode === 'semanal' && calendarMode === 'operativo'
-                    ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
-                    : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '17.5%' }} />)
+                    ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '13.333%' }} />)
+                    : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '16.666%' }} />)
                 }
             </colgroup>
             <tbody>
@@ -1112,35 +1111,41 @@ export default function Home() {
       <section style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* 🟦 BLOQUE 1: MESES (FILTRO PRINCIPAL) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {visibleMonths.map(month => (
-              <button 
-                key={month} 
-                onClick={() => handleMonthSelect(month)} 
-                style={{ 
-                  padding: '8px 16px', 
-                  borderRadius: '12px', 
-                  fontSize: '13px', 
-                  fontWeight: selectedMonth === month ? '900' : '700', 
-                  backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : '#f1f5f9', 
-                  color: selectedMonth === month ? 'white' : '#475569', 
-                  transition: 'all 0.2s ease', 
-                  border: 'none',
-                  cursor: 'pointer', 
-                  boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
-                }}
-              >
-                {month}
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {calendarMode === 'mensual' && (
+               <span style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Mes seleccionado
+               </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: calendarMode === 'mensual' ? '12px' : '8px' }}>
+              {visibleMonths.map(month => (
+                <button 
+                  key={month} 
+                  onClick={() => handleMonthSelect(month)} 
+                  style={{ 
+                    padding: calendarMode === 'mensual' ? '12px 24px' : '8px 16px', 
+                    borderRadius: '12px', 
+                    fontSize: calendarMode === 'mensual' ? '15px' : '13px', 
+                    fontWeight: selectedMonth === month ? '900' : '700', 
+                    backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : (calendarMode === 'mensual' ? '#e2e8f0' : '#f1f5f9'), 
+                    color: selectedMonth === month ? 'white' : (calendarMode === 'mensual' ? '#1e293b' : '#475569'), 
+                    transition: 'all 0.2s ease', 
+                    border: selectedMonth === month && calendarMode === 'mensual' ? '1px solid rgba(0,0,0,0.1)' : '1px solid transparent',
+                    cursor: 'pointer', 
+                    boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                  }}
+                >
+                  {calendarMode === 'mensual' ? `📅 ${month}` : month}
+                </button>
+              ))}
             
             <div style={{ position: 'relative' }}>
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 style={{ 
-                  padding: '12px 16px', 
-                  borderRadius: '14px', 
-                  fontSize: '14px', 
+                  padding: calendarMode === 'mensual' ? '12px 24px' : '8px 16px', 
+                  borderRadius: '12px', 
+                  fontSize: calendarMode === 'mensual' ? '15px' : '13px', 
                   fontWeight: '950', 
                   backgroundColor: 'white', 
                   color: '#64748b', 
@@ -1201,6 +1206,7 @@ export default function Home() {
                 </div>
               )}
             </div>
+          </div>
           </div>
 
           {/* 🟪 BLOQUE 2: MODO (SWITCH CONFIG) */}
@@ -1358,22 +1364,22 @@ export default function Home() {
                 <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '2px solid rgba(0,0,0,0.1)', margin: '0 -20px 12px -20px', padding: '20px 20px 12px 20px' }}>
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
-                        <col style={{ width: '30%' }} />
+                        <col style={{ width: '33.333%' }} />
                         {viewMode === 'semanal' && calendarMode === 'operativo'
-                            ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
-                            : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '17.5%' }} />)
+                            ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '13.333%' }} />)
+                            : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '16.666%' }} />)
                         }
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
-                            <th style={{ padding: '0 24px' }}></th>
+                            <th style={{ padding: '8px 16px' }}></th>
                             {viewMode === 'semanal' && calendarMode === 'operativo' ? (
                                 weekLabels.map(label => (
-                                  <th key={label} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{label}</th>
+                                  <th key={label} style={{ padding: '8px 2px', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{label}</th>
                                 ))
                             ) : (
                               (Object.keys(kpiConfig) as KpiType[]).map(k => (
-                                <th key={k} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{kpiConfig[k].label}</th>
+                                <th key={k} style={{ padding: '8px 2px', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{kpiConfig[k].label}</th>
                               ))
                             )}
                         </tr>
