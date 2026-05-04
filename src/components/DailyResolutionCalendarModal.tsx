@@ -35,27 +35,45 @@ export default function DailyResolutionCalendarModal({ isOpen, onClose, month, c
       setLoading(true);
       try {
         const monthIndex = MONTHS.indexOf(month);
-        const year = 2026; // Current logic hardcoded to 2026 in app
+        const year = new Date().getFullYear();
         
         const startDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
         const lastDay = new Date(year, monthIndex + 1, 0).getDate();
         const endDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-        let query = supabase
-          .from('actuaciones')
-          .select('fecha_cita, estado, tx_celula')
-          .gte('fecha_cita', startDate)
-          .lte('fecha_cita', endDate)
-          .limit(5000);
-          
-        if (celula) {
-          query = query.eq('tx_celula', celula);
+        let allActs: any[] = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          let query = supabase
+            .from('actuaciones')
+            .select('fecha_cita, estado, tx_celula')
+            .gte('fecha_cita', startDate)
+            .lte('fecha_cita', endDate)
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+            
+          if (celula) {
+            query = query.eq('tx_celula', celula);
+          }
+
+          const { data: acts, error } = await query;
+          if (error) throw error;
+
+          if (!acts || acts.length === 0) {
+            hasMore = false;
+          } else {
+            allActs = [...allActs, ...acts];
+            if (acts.length < pageSize) {
+              hasMore = false;
+            } else {
+              page++;
+            }
+          }
         }
 
-        const { data: acts, error } = await query;
-        if (error) throw error;
-
-        let filteredActs = acts || [];
+        let filteredActs = allActs;
         if (!celula) {
           // Filtrar igual que en Detalle Diario para el Distrito (conservando los nulos)
           filteredActs = filteredActs.filter(a => a.tx_celula?.toUpperCase() !== 'ACCESO VARELA');
