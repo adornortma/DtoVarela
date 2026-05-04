@@ -223,23 +223,10 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
 
   return (
     <div style={{ marginBottom: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+      <div style={{ marginBottom: '12px' }}>
         <p style={{ fontSize: '11px', fontWeight: '900', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
             Indicadores del distrito (última actualización: {formattedDate})
         </p>
-        {calendarMode === 'mensual' && onOpenCalendar && (
-          <button 
-            onClick={onOpenCalendar}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '6px', 
-              padding: '6px 12px', backgroundColor: '#e0f2fe', color: '#0284c7', 
-              borderRadius: '8px', border: '1px solid #bae6fd', 
-              fontSize: '12px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' 
-            }}
-          >
-            <CalendarIcon size={14} /> Calendario
-          </button>
-        )}
       </div>
       <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
         {stats.map((stat) => {
@@ -253,10 +240,26 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
               borderRadius: '20px',
               border: `2px solid ${colors.text}44`, // Subtly more intense than bg but matching text
               transition: 'all 0.3s ease',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+              position: 'relative'
             }}>
               <div style={{ marginBottom: '10px' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h3 style={{ fontSize: '10px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</h3>
+                  {stat.kpi === 'resolucion' && calendarMode === 'mensual' && onOpenCalendar && (
+                    <button 
+                      onClick={onOpenCalendar}
+                      style={{ 
+                        padding: '4px', backgroundColor: 'rgba(255,255,255,0.5)', color: colors.text, 
+                        borderRadius: '6px', border: `1px solid ${colors.text}33`, 
+                        cursor: 'pointer', transition: 'all 0.2s' 
+                      }}
+                      title="Ver calendario"
+                    >
+                      <CalendarIcon size={14} />
+                    </button>
+                  )}
+                </div>
                 <div style={{ fontSize: '10px', fontWeight: '800', color: colors.text, display: 'inline-block', padding: '2px 8px', border: `1px solid ${colors.text}33`, borderRadius: '6px', marginTop: '4px' }}>Objetivo: {targets.green}{unit}</div>
               </div>
               
