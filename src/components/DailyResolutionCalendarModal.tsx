@@ -45,7 +45,8 @@ export default function DailyResolutionCalendarModal({ isOpen, onClose, month, c
           .from('actuaciones')
           .select('fecha_cita, estado, tx_celula')
           .gte('fecha_cita', startDate)
-          .lte('fecha_cita', endDate);
+          .lte('fecha_cita', endDate)
+          .limit(5000);
           
         if (celula) {
           query = query.eq('tx_celula', celula);
