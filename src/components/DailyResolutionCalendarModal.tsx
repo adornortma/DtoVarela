@@ -49,16 +49,20 @@ export default function DailyResolutionCalendarModal({ isOpen, onClose, month, c
           
         if (celula) {
           query = query.eq('tx_celula', celula);
-        } else {
-          query = query.neq('tx_celula', 'ACCESO VARELA');
         }
 
         const { data: acts, error } = await query;
         if (error) throw error;
 
+        let filteredActs = acts || [];
+        if (!celula) {
+          // Filtrar igual que en Detalle Diario para el Distrito (conservando los nulos)
+          filteredActs = filteredActs.filter(a => a.tx_celula?.toUpperCase() !== 'ACCESO VARELA');
+        }
+
         const dailyCounts: Record<string, { c: number; nr: number; s: number; t: number }> = {};
         
-        (acts || []).forEach(act => {
+        filteredActs.forEach(act => {
           const date = act.fecha_cita;
           const e = act.estado.toUpperCase();
           if (!dailyCounts[date]) {
