@@ -38,7 +38,8 @@ const WEATHER_DATA: Record<string, Record<string, string[]>> = {
 // --- Types ---
 type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
 type ViewMode = 'semanal' | 'indicador';
-type WeekKey = 's1' | 's2' | 's3' | 's4' | 's5';
+type WeekKey = 's1' | 's2' | 's3' | 's4' | 's5' | 's6';
+type CalendarMode = 'operativo' | 'mensual';
 
 interface MetricEntry {
   value: number | null;
@@ -52,6 +53,16 @@ interface MetricData {
   s3: MetricEntry;
   s4: MetricEntry;
   s5: MetricEntry;
+  s6?: MetricEntry;
+}
+
+interface CalendarWeekDef {
+  key: WeekKey;
+  start: Date;
+  end: Date;
+  label: string;
+  isPartial: boolean;
+  daysCount: number;
 }
 
 interface ItemRow {
@@ -127,23 +138,84 @@ const getMondayOfNextWeek = (year: number, monthIndex: number, weekIndex: number
     return result;
 };
 
-const calculateAverage = (metrics: MetricData): number | null => {
+const getCalendarWeeksForMonth = (year: number, monthIndex: number): CalendarWeekDef[] => {
+  const weeks: CalendarWeekDef[] = [];
+  const firstDay = new Date(Date.UTC(year, monthIndex, 1));
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0));
+  
+  let currentStart = new Date(firstDay);
+  let weekIndex = 1;
+
+  while (currentStart <= lastDay) {
+    let currentEnd = new Date(currentStart);
+    const dayOfWeek = currentEnd.getUTCDay();
+    const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    currentEnd.setUTCDate(currentEnd.getUTCDate() + daysToSunday);
+    
+    if (currentEnd > lastDay) {
+      currentEnd = new Date(lastDay);
+    }
+    
+    const daysCount = Math.round((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const isPartial = daysCount < 7;
+    
+    const startDayStr = currentStart.getUTCDate().toString().padStart(2, '0');
+    const startMonthStr = (currentStart.getUTCMonth() + 1).toString().padStart(2, '0');
+    const endDayStr = currentEnd.getUTCDate().toString().padStart(2, '0');
+    const endMonthStr = (currentEnd.getUTCMonth() + 1).toString().padStart(2, '0');
+    
+    const dayNames = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
+    const startName = dayNames[currentStart.getUTCDay()];
+    const endName = dayNames[currentEnd.getUTCDay()];
+
+    weeks.push({
+      key: `s${weekIndex}` as WeekKey,
+      start: new Date(currentStart),
+      end: new Date(currentEnd),
+      label: `SEMANA ${weekIndex} - ${startName} ${startDayStr}/${startMonthStr} - ${endName} ${endDayStr}/${endMonthStr}`,
+      isPartial,
+      daysCount
+    });
+    
+    currentStart = new Date(currentEnd);
+    currentStart.setUTCDate(currentStart.getUTCDate() + 1);
+    weekIndex++;
+  }
+  
+  return weeks;
+};
+
+const getCalendarWeekOfDate = (dateString: string, year: number, monthIndex: number): WeekKey => {
+  // Try to parse the string safely in UTC
+  const cleanDateStr = dateString.includes('T') ? dateString : `${dateString}T00:00:00Z`;
+  const date = new Date(cleanDateStr);
+  const weeks = getCalendarWeeksForMonth(year, monthIndex);
+  for (const w of weeks) {
+    if (date >= w.start && date <= w.end) return w.key;
+  }
+  return 's1';
+};
+
+const calculateAverage = (metrics: MetricData, calendarMode: CalendarMode = 'operativo', calendarWeeks: CalendarWeekDef[] = []): number | null => {
   if (!metrics) return null;
-  const values = [metrics.s1.value, metrics.s2.value, metrics.s3.value, metrics.s4.value, metrics.s5.value].filter(v => v !== null) as number[];
+  const keys = calendarMode === 'operativo' 
+      ? ['s1', 's2', 's3', 's4', 's5'] as WeekKey[]
+      : calendarWeeks.map(w => w.key);
+      
+  const values = keys.map(k => metrics[k]?.value).filter(v => v !== null && v !== undefined) as number[];
   if (values.length === 0) return null;
   return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
 };
 
 // --- UI Components ---
-const DistrictOverview = ({ config, districtData, lastUpdate }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null }) => {
+const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictData, calendarMode }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null, monthlyDistrictData: Record<KpiType, number> | null, calendarMode: CalendarMode }) => {
   const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
 
-  const safeData = districtData || { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
-  const stats: { kpi: KpiType, value: number }[] = [
-    { kpi: 'resolucion', value: safeData.resolucion || 0 },
-    { kpi: 'reiteros', value: safeData.reiteros || 0 },
-    { kpi: 'puntualidad', value: safeData.puntualidad || 0 },
-    { kpi: 'productividad', value: safeData.productividad || 0 },
+  const stats = [
+    { kpi: 'resolucion' as KpiType, value: calendarMode === 'operativo' ? (districtData?.resolucion ?? 0) : (monthlyDistrictData?.resolucion ?? 0) },
+    { kpi: 'reiteros' as KpiType, value: calendarMode === 'operativo' ? (districtData?.reiteros ?? 0) : (monthlyDistrictData?.reiteros ?? 0) },
+    { kpi: 'puntualidad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.puntualidad ?? 0) : (monthlyDistrictData?.puntualidad ?? 0) },
+    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) }
   ];
 
   return (
@@ -193,7 +265,7 @@ const MetricCard = ({
   isEditable = false, 
   onUpdate 
 }: { 
-  entry: MetricEntry, 
+  entry?: MetricEntry, 
   prevValue?: number | null, 
   kpi: KpiType, 
   unit: string, 
@@ -201,19 +273,19 @@ const MetricCard = ({
   isEditable?: boolean,
   onUpdate?: (newValue: number) => void
 }) => {
-  const [localValue, setLocalValue] = useState<string>(entry.value !== null ? entry.value.toString() : '');
+  const [localValue, setLocalValue] = useState<string>(entry?.value !== null && entry?.value !== undefined ? entry.value.toString() : '');
   const [isFocused, setIsFocused] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const colors = getStatusColors(entry.value, kpi, config);
+  const colors = getStatusColors(entry?.value ?? null, kpi, config);
   
   useEffect(() => {
     if (!isFocused) {
-      setLocalValue(entry.value !== null ? entry.value.toString() : '');
+      setLocalValue(entry?.value !== null && entry?.value !== undefined ? entry.value.toString() : '');
     }
-  }, [entry.value, isFocused]);
+  }, [entry?.value, isFocused]);
 
   let trend = null;
-  if (entry.value !== null && prevValue != null) {
+  if (entry?.value !== null && entry?.value !== undefined && prevValue != null) {
       const diff = entry.value - prevValue;
       const isBetter = config[kpi].targets.reverse ? diff < 0 : diff > 0;
       const Icon = isBetter ? ArrowUpRight : ArrowDownRight;
@@ -228,7 +300,7 @@ const MetricCard = ({
 
   const handleSave = async () => {
     const num = parseFloat(localValue.replace(',', '.'));
-    if (!isNaN(num) && num !== entry.value) {
+    if (!isNaN(num) && num !== (entry?.value ?? null)) {
       setIsSaving(true);
       await onUpdate?.(num);
       setIsSaving(false);
@@ -247,7 +319,7 @@ const MetricCard = ({
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        boxShadow: entry.value !== null ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
+        boxShadow: (entry?.value ?? null) !== null ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
         border: isFocused ? '2px solid var(--movistar-blue)' : '1px solid rgba(255,255,255,0.2)',
         transition: 'all 0.2s',
         cursor: isEditable ? 'text' : 'default'
@@ -313,7 +385,7 @@ const MetricCard = ({
               letterSpacing: '-0.3px',
               lineHeight: '1'
           }}>
-            {entry.value !== null ? (kpi === 'productividad' ? `${entry.value}` : `${entry.value}${unit}`) : '-'}
+            {(entry?.value ?? null) !== null ? (kpi === 'productividad' ? `${entry!.value}` : `${entry!.value}${unit}`) : '-'}
           </span>
         )}
         
@@ -342,6 +414,8 @@ const CellGroup = ({
   viewMode,
   selectedWeek,
   config, 
+  calendarMode,
+  calendarWeeks,
   onUpdateMetric,
   onTechnicianClick
 }: { 
@@ -350,6 +424,8 @@ const CellGroup = ({
   viewMode: ViewMode,
   selectedWeek: WeekKey,
   config: Record<KpiType, KpiConfigItem>,
+  calendarMode: CalendarMode,
+  calendarWeeks: CalendarWeekDef[],
   onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void,
   onTechnicianClick: (tech: ItemRow) => void
 }) => {
@@ -357,13 +433,13 @@ const CellGroup = ({
   const metrics = row.metrics[kpi];
   const unit = config[kpi].unit;
   
-  // Weekly mode sorting (same as before)
-  const average = calculateAverage(metrics);
+  // Weekly mode sorting
+  const average = calculateAverage(metrics, calendarMode, calendarWeeks);
   
   const sortedTechnicians = [...(row.technicians || [])].sort((a, b) => {
     if (viewMode === 'semanal') {
-      const valA = calculateAverage(a.metrics[kpi]) ?? -Infinity;
-      const valB = calculateAverage(b.metrics[kpi]) ?? -Infinity;
+      const valA = calculateAverage(a.metrics[kpi], calendarMode, calendarWeeks) ?? -Infinity;
+      const valB = calculateAverage(b.metrics[kpi], calendarMode, calendarWeeks) ?? -Infinity;
       if (config[kpi].targets.reverse) {
           return (valA === -Infinity ? 1 : (valB === -Infinity ? -1 : valA - valB));
       }
@@ -399,11 +475,10 @@ const CellGroup = ({
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
                 <col style={{ width: '30%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
+                {viewMode === 'semanal' && calendarMode === 'mensual' 
+                    ? calendarWeeks.map(w => <col key={w.key} style={{ width: `${70 / calendarWeeks.length}%` }} />)
+                    : [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                }
             </colgroup>
             <tbody>
                 <tr 
@@ -444,6 +519,7 @@ const CellGroup = ({
                         </div>
                     </td>
                     {viewMode === 'semanal' ? (
+                      calendarMode === 'operativo' ? (
                       <>
                         <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
                         <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
@@ -451,6 +527,13 @@ const CellGroup = ({
                         <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
                         <MetricCard entry={metrics.s5} prevValue={metrics.s4.value} kpi={kpi} unit={unit} config={config} />
                       </>
+                      ) : (
+                      <>
+                        {calendarWeeks.map((w, idx) => (
+                           <MetricCard key={w.key} entry={metrics[w.key]!} prevValue={idx > 0 ? metrics[calendarWeeks[idx-1].key]?.value : undefined} kpi={kpi} unit={unit} config={config} />
+                        ))}
+                      </>
+                      )
                     ) : (
                       <>
                         <MetricCard entry={row.metrics.resolucion[selectedWeek]} kpi="resolucion" unit={config.resolucion.unit} config={config} />
@@ -483,6 +566,7 @@ const CellGroup = ({
                             </div>
                         </td>
                         {viewMode === 'semanal' ? (
+                          calendarMode === 'operativo' ? (
                           (['s1', 's2', 's3', 's4', 's5'] as const).map((s, idx) => {
                              const prevS = idx > 0 ? (['s1', 's2', 's3', 's4', 's5'] as const)[idx-1] : null;
                              return (
@@ -498,6 +582,23 @@ const CellGroup = ({
                                />
                              );
                           })
+                          ) : (
+                            calendarWeeks.map((w, idx) => {
+                               const prevKey = idx > 0 ? calendarWeeks[idx-1].key : null;
+                               return (
+                                 <MetricCard 
+                                   key={w.key}
+                                   entry={tech.metrics[kpi][w.key]!} 
+                                   prevValue={prevKey ? tech.metrics[kpi][prevKey]?.value : undefined} 
+                                   kpi={kpi} 
+                                   unit={unit} 
+                                   config={config} 
+                                   isEditable={kpi === 'puntualidad' && tech.id !== undefined}
+                                   onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[kpi][w.key]!.date, val, row.name)}
+                                 />
+                               );
+                            })
+                          )
                         ) : (
                           (['resolucion', 'reiteros', 'puntualidad', 'productividad'] as const).map((k) => (
                              <MetricCard 
@@ -507,7 +608,7 @@ const CellGroup = ({
                                unit={config[k].unit} 
                                config={config} 
                                isEditable={k === 'puntualidad' && tech.id !== undefined}
-                               onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[k][selectedWeek].date, val, row.name)}
+                               onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[k][selectedWeek]?.date || '', val, row.name)}
                              />
                           ))
                         )}
@@ -521,6 +622,7 @@ const CellGroup = ({
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('indicador');
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>('operativo');
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
   const [visibleMonths, setVisibleMonths] = useState(
@@ -529,13 +631,33 @@ export default function Home() {
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [data, setData] = useState<ItemRow[]>([]);
+  const [metricsRaw, setMetricsRaw] = useState<any[]>([]);
+  const [cellTotalsRaw, setCellTotalsRaw] = useState<any[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<ItemRow | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(true);
   const [kpiConfig, setKpiConfig] = useState<Record<KpiType, KpiConfigItem>>(DEFAULT_KPI_CONFIG);
   const [districtKPIs, setDistrictKPIs] = useState<any>(null);
+  const [monthlyDistrictKPIs, setMonthlyDistrictKPIs] = useState<Record<KpiType, number> | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+
+  const calculateMonthlyDistrictKPIs = (metrics: any[]) => {
+      if (!metrics || metrics.length === 0) return null;
+      
+      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad'];
+      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
+      
+      kpis.forEach(kpi => {
+          const vals = metrics.map(m => m[kpi === 'reiteros' ? 'reitero' : kpi]).filter(v => v !== null && v !== undefined);
+          if (vals.length > 0) {
+              result[kpi] = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
+          } else {
+              result[kpi] = 0;
+          }
+      });
+      return result;
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('bp_session');
@@ -660,7 +782,11 @@ export default function Home() {
         setLoading(false);
         return;
       }
-      setData(processData(metrics, cellTotals, monthIndex, year));
+      
+      setMetricsRaw(metrics);
+      setCellTotalsRaw(cellTotals);
+      setMonthlyDistrictKPIs(calculateMonthlyDistrictKPIs(metrics));
+      setData(processData(metrics, cellTotals, monthIndex, year, calendarMode));
 
       // Auto-select last week of the loaded month data
       const allDates = [...metrics.map(m => m.fecha), ...cellTotals.map(ct => ct.fecha)];
@@ -679,7 +805,13 @@ export default function Home() {
     fetchData();
   }, [selectedMonth]);
 
-  const processData = (metrics: any[], cellTotals: any[], month: number, year: number) => {
+  useEffect(() => {
+    if (metricsRaw.length > 0) {
+      setData(processData(metricsRaw, cellTotalsRaw, MONTHS.indexOf(selectedMonth), new Date().getFullYear(), calendarMode));
+    }
+  }, [calendarMode]);
+
+  const processData = (metrics: any[], cellTotals: any[], month: number, year: number, mode: CalendarMode) => {
     const cellMap: Record<string, ItemRow> = {};
 
     const createEmptyMetricData = (m: number, y: number): MetricData => {
@@ -689,6 +821,7 @@ export default function Home() {
         s3: { value: null, date: new Date(Date.UTC(y, m, 15)).toISOString().split('T')[0] },
         s4: { value: null, date: new Date(Date.UTC(y, m, 22)).toISOString().split('T')[0] },
         s5: { value: null, date: new Date(Date.UTC(y, m, 29)).toISOString().split('T')[0] },
+        s6: { value: null, date: new Date(Date.UTC(y, m, 31)).toISOString().split('T')[0] },
       };
     };
 
@@ -696,7 +829,9 @@ export default function Home() {
       const cellName = (m.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
-      const week = getWeekOfDate(new Date(m.fecha));
+      const week = mode === 'mensual' 
+         ? getCalendarWeekOfDate(m.fecha, year, month) 
+         : getWeekOfDate(new Date(m.fecha));
 
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
@@ -757,7 +892,10 @@ export default function Home() {
 
     cellTotals.forEach(ct => {
       const cellName = (ct.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
-      const week = getWeekOfDate(new Date(ct.fecha));
+      const dateStr = ct.fecha.includes('T') ? ct.fecha : `${ct.fecha}T00:00:00Z`;
+      const week = mode === 'mensual' 
+         ? getCalendarWeekOfDate(dateStr, year, month) 
+         : getWeekOfDate(new Date(dateStr));
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
           name: cellName,
@@ -787,9 +925,9 @@ export default function Home() {
 
     Object.values(cellMap).forEach(cell => {
         (['reiteros', 'resolucion', 'puntualidad', 'productividad', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'] as any[]).forEach(kpi => {
-            (['s1', 's2', 's3', 's4', 's5'] as const).forEach(week => {
-                if (cell.metrics[kpi][week].value === null) {
-                  const techValues = cell.technicians?.map(t => t.metrics[kpi][week].value).filter(v => v !== null) as number[];
+            (['s1', 's2', 's3', 's4', 's5', 's6'] as const).forEach(week => {
+                if (cell.metrics[kpi][week] && cell.metrics[kpi][week].value === null) {
+                  const techValues = cell.technicians?.map(t => t.metrics[kpi][week]?.value).filter(v => v !== null && v !== undefined) as number[];
                   if (techValues.length > 0) {
                       cell.metrics[kpi][week].value = parseFloat((techValues.reduce((a, b) => a + b, 0) / techValues.length).toFixed(1));
                   }
@@ -826,6 +964,7 @@ export default function Home() {
   });
 
   const hiddenMonths = MONTHS.filter(m => !visibleMonths.includes(m));
+  const calendarWeeks = getCalendarWeeksForMonth(currentYear, currentMonthIdx);
 
   return (
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '16px 40px 32px 40px', width: '100%' }}>
@@ -836,10 +975,50 @@ export default function Home() {
             </div>
             <div>
                 <h1 style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.2px', lineHeight: '1' }}>KPIs Resolución</h1>
-                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>Fuente: Persa/incentivos - PBI Productividad</p>
+                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>
+                    {calendarMode === 'operativo' ? 'Fuente: Persa/incentivos - PBI Productividad' : `${selectedMonth} (corte calendario)`}
+                </p>
             </div>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{
+              display: 'flex', 
+              backgroundColor: '#e2e8f0', 
+              borderRadius: '20px', 
+              padding: '4px',
+              gap: '4px'
+          }}>
+              <button 
+                  onClick={() => setCalendarMode('operativo')}
+                  style={{
+                      padding: '8px 16px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      transition: 'all 0.2s',
+                      backgroundColor: calendarMode === 'operativo' ? '#1e293b' : 'transparent',
+                      color: calendarMode === 'operativo' ? 'white' : '#64748b',
+                      boxShadow: calendarMode === 'operativo' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+              >
+                  Semanal (operativo)
+              </button>
+              <button 
+                  onClick={() => setCalendarMode('mensual')}
+                  style={{
+                      padding: '8px 16px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      transition: 'all 0.2s',
+                      backgroundColor: calendarMode === 'mensual' ? '#1e293b' : 'transparent',
+                      color: calendarMode === 'mensual' ? 'white' : '#64748b',
+                      boxShadow: calendarMode === 'mensual' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+              >
+                  Mensual (calendario)
+              </button>
+          </div>
           <Link 
             href="/detalle-diario"
             style={{ 
@@ -892,7 +1071,7 @@ export default function Home() {
       </header>
 
       <section style={{ marginBottom: '20px' }}>
-        <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} />
+        <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} monthlyDistrictData={monthlyDistrictKPIs} calendarMode={calendarMode} />
       </section>
 
 
@@ -1080,10 +1259,16 @@ export default function Home() {
               )
             })
           ) : (
-            (['s1', 's2', 's3', 's4', 's5'] as WeekKey[]).map((week, idx) => {
+            (calendarMode === 'operativo' ? (['s1', 's2', 's3', 's4', 's5'] as WeekKey[]) : calendarWeeks.map(w => w.key as WeekKey)).map((week, idx) => {
               const isActive = selectedWeek === week;
-              const label = weekLabels[idx].split(' - ')[0]; 
-              const subLabel = weekLabels[idx].split(' - ')[1]; 
+              let label, subLabel;
+              if (calendarMode === 'operativo') {
+                label = weekLabels[idx]?.split(' - ')[0] || ''; 
+                subLabel = weekLabels[idx]?.split(' - ')[1] || ''; 
+              } else {
+                label = calendarWeeks[idx].label;
+                subLabel = calendarWeeks[idx].isPartial ? `Parcial (${calendarWeeks[idx].daysCount} días)` : 'Semana completa';
+              }
               return (
                   <button 
                     key={week} 
@@ -1136,19 +1321,27 @@ export default function Home() {
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
                         <col style={{ width: '30%' }} />
-                        <col style={{ width: '14%' }} />
-                        <col style={{ width: '14%' }} />
-                        <col style={{ width: '14%' }} />
-                        <col style={{ width: '14%' }} />
-                        <col style={{ width: '14%' }} />
+                        {viewMode === 'semanal' && calendarMode === 'mensual' 
+                            ? calendarWeeks.map(w => <col key={w.key} style={{ width: `${70 / calendarWeeks.length}%` }} />)
+                            : [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                        }
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
                             <th style={{ padding: '0 24px' }}></th>
                             {viewMode === 'semanal' ? (
-                              weekLabels.map(label => (
-                                <th key={label} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{label}</th>
-                              ))
+                              calendarMode === 'mensual' ? (
+                                calendarWeeks.map(w => (
+                                  <th key={w.key} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>
+                                    {w.label}
+                                    {w.isPartial && <div style={{ fontSize: '9px', color: '#64748b', fontWeight: '700' }}>Parcial ({w.daysCount} días)</div>}
+                                  </th>
+                                ))
+                              ) : (
+                                weekLabels.map(label => (
+                                  <th key={label} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{label}</th>
+                                ))
+                              )
                             ) : (
                               (Object.keys(kpiConfig) as KpiType[]).map(k => (
                                 <th key={k} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{kpiConfig[k].label}</th>
@@ -1181,6 +1374,8 @@ export default function Home() {
                       selectedWeek={selectedWeek}
                       config={kpiConfig} 
                       onUpdateMetric={updatePuntualidad}
+                      calendarMode={calendarMode}
+                      calendarWeeks={calendarWeeks}
                       onTechnicianClick={(tech) => {
                         setSelectedTechnician(tech);
                         setShowDetails(true);
