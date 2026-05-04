@@ -80,7 +80,7 @@ export default function CargaAdminPage() {
   const [lluvia, setLluvia] = useState(false);
   const [mensualData, setMensualData] = useState({
     mes: 'Marzo',
-    distrito: 'Varela',
+    distrito: 'Berazategui',
     resolucion: '',
     reiteros: '',
     puntualidad: '',
@@ -118,12 +118,17 @@ export default function CargaAdminPage() {
     setMensualStatus(null);
     try {
       const { mes, distrito, resolucion, reiteros, puntualidad, productividad } = mensualData;
-      if (!mes || !distrito) throw new Error("Mes y Distrito son requeridos");
+      if (!mes || !distrito) throw new Error("Mes y Célula Operativa son requeridos");
       
       const resVal = resolucion ? parseFloat(resolucion.replace(',', '.')) : null;
       const reiVal = reiteros ? parseFloat(reiteros.replace(',', '.')) : null;
       const punVal = puntualidad ? parseFloat(puntualidad.replace(',', '.')) : null;
       const proVal = productividad ? parseFloat(productividad.replace(',', '.')) : null;
+
+      if (resVal !== null && (resVal < 0 || resVal > 100)) throw new Error("La Resolución debe estar entre 0 y 100");
+      if (reiVal !== null && (reiVal < 0 || reiVal > 100)) throw new Error("Los Reiteros deben estar entre 0 y 100");
+      if (punVal !== null && (punVal < 0 || punVal > 100)) throw new Error("La Puntualidad debe estar entre 0 y 100");
+      if (proVal !== null && proVal < 0) throw new Error("La Productividad debe ser mayor o igual a 0");
 
       const { error } = await supabase
         .from('metricas_mensuales')
@@ -670,17 +675,18 @@ export default function CargaAdminPage() {
                     </select>
                  </div>
                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Distrito</label>
+                    <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Célula Operativa</label>
                     <select 
                       value={mensualData.distrito}
                       onChange={(e) => setMensualData({...mensualData, distrito: e.target.value})}
                       style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
                     >
-                      <option value="Varela">Varela</option>
                       <option value="Berazategui">Berazategui</option>
                       <option value="Bernal">Bernal</option>
                       <option value="Quilmes">Quilmes</option>
-                      <option value="San Fco Solano">San Fco Solano</option>
+                      <option value="Ranelagh">Ranelagh</option>
+                      <option value="Varela 1">Varela 1</option>
+                      <option value="Varela 2">Varela 2</option>
                     </select>
                  </div>
               </div>
