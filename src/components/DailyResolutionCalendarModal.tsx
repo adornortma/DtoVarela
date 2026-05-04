@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Loader2, CloudRain } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -22,6 +22,7 @@ interface DayData {
   noRealizadas: number;
   suspendidas: number;
 }
+const RAINY_DAYS = ['2026-04-06', '2026-04-07', '2026-04-15', '2026-04-16', '2026-04-21'];
 
 export default function DailyResolutionCalendarModal({ isOpen, onClose, month, celula }: Props) {
   const router = useRouter();
@@ -235,7 +236,24 @@ export default function DailyResolutionCalendarModal({ isOpen, onClose, month, c
                          }
                        }}
                      >
-                       <span style={{ fontSize: '16px', fontWeight: '950', color: hasData ? '#1e293b' : '#94a3b8' }}>{d}</span>
+                       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                         <span style={{ fontSize: '16px', fontWeight: '950', color: hasData ? '#1e293b' : '#94a3b8' }}>{d}</span>
+                         {RAINY_DAYS.includes(dateStr) && (
+                           <div style={{ 
+                             position: 'absolute', 
+                             top: '-8px', 
+                             right: '-12px', 
+                             color: '#0284c7',
+                             backgroundColor: 'white',
+                             borderRadius: '50%',
+                             padding: '2px',
+                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                             border: '1px solid #e0f2fe'
+                           }}>
+                             <CloudRain size={10} strokeWidth={3} />
+                           </div>
+                         )}
+                       </div>
                        <span style={{ fontSize: '10px', fontWeight: '900', color: colors.text, marginTop: '2px' }}>
                          {hasData ? `${dayData.resolucion.toFixed(1)}%` : '–'}
                        </span>
