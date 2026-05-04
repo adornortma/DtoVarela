@@ -1163,12 +1163,17 @@ export default function Home() {
                </span>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: calendarMode === 'mensual' ? '12px' : '8px' }}>
-              {visibleMonths.map(month => (
+              {visibleMonths.map(month => {
+                const monthRainyDays = WEATHER_DATA[month] ? Object.values(WEATHER_DATA[month]).flat() : [];
+                const hasRain = calendarMode === 'mensual' && monthRainyDays.length > 0;
+                
+                return (
                 <button 
                   key={month} 
                   onClick={() => handleMonthSelect(month)} 
                   style={{ 
-                    padding: calendarMode === 'mensual' ? '12px 24px' : '8px 16px', 
+                    position: 'relative',
+                    padding: calendarMode === 'mensual' ? `12px ${hasRain ? '48px' : '24px'} 12px 24px` : '8px 16px', 
                     borderRadius: '12px', 
                     fontSize: calendarMode === 'mensual' ? '15px' : '13px', 
                     fontWeight: selectedMonth === month ? '900' : '700', 
@@ -1180,9 +1185,14 @@ export default function Home() {
                     boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
                   }}
                 >
+                  {hasRain && (
+                     <div style={{ transform: 'scale(0.8)', position: 'absolute', top: '1px', right: '-4px' }}>
+                       <WeatherIndicator days={monthRainyDays} />
+                     </div>
+                  )}
                   {calendarMode === 'mensual' ? `📅 ${month}` : month}
                 </button>
-              ))}
+              )})}
             
             <div style={{ position: 'relative' }}>
               <button 
