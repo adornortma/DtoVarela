@@ -19,12 +19,14 @@ import {
   ListChecks,
   Search,
   ArrowRightLeft,
-  ShieldCheck
+  ShieldCheck,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
 import TechnicianDetailsSheet from '@/components/TechnicianDetailsSheet';
 import WeatherIndicator from '@/components/WeatherIndicator';
+import DailyResolutionCalendarModal from '@/components/DailyResolutionCalendarModal';
 
 // --- Weather Data ---
 const WEATHER_DATA: Record<string, Record<string, string[]>> = {
@@ -209,7 +211,7 @@ const calculateAverage = (metrics: MetricData, calendarMode: CalendarMode = 'ope
 };
 
 // --- UI Components ---
-const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictData, calendarMode }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null, monthlyDistrictData: Record<KpiType, number> | null, calendarMode: CalendarMode }) => {
+const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictData, calendarMode, selectedMonth, onOpenCalendar }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null, monthlyDistrictData: Record<KpiType, number> | null, calendarMode: CalendarMode, selectedMonth: string, onOpenCalendar?: () => void }) => {
   const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
 
   const stats = [
@@ -221,9 +223,24 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
 
   return (
     <div style={{ marginBottom: '20px' }}>
-      <p style={{ fontSize: '11px', fontWeight: '900', color: '#6B7280', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          Indicadores del distrito (última actualización: {formattedDate})
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <p style={{ fontSize: '11px', fontWeight: '900', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
+            Indicadores del distrito (última actualización: {formattedDate})
+        </p>
+        {calendarMode === 'mensual' && onOpenCalendar && (
+          <button 
+            onClick={onOpenCalendar}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '6px', 
+              padding: '6px 12px', backgroundColor: '#e0f2fe', color: '#0284c7', 
+              borderRadius: '8px', border: '1px solid #bae6fd', 
+              fontSize: '12px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' 
+            }}
+          >
+            <CalendarIcon size={14} /> Calendario
+          </button>
+        )}
+      </div>
       <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
         {stats.map((stat) => {
           const colors = getStatusColors(stat.value, stat.kpi, config);
@@ -417,8 +434,10 @@ const CellGroup = ({
   config, 
   calendarMode,
   calendarWeeks,
+  selectedMonth,
   onUpdateMetric,
-  onTechnicianClick
+  onTechnicianClick,
+  onOpenCalendar
 }: { 
   row: ItemRow, 
   kpi: KpiType, 
@@ -427,8 +446,10 @@ const CellGroup = ({
   config: Record<KpiType, KpiConfigItem>,
   calendarMode: CalendarMode,
   calendarWeeks: CalendarWeekDef[],
+  selectedMonth: string,
   onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void,
-  onTechnicianClick: (tech: ItemRow) => void
+  onTechnicianClick: (tech: ItemRow) => void,
+  onOpenCalendar?: (celula: string) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const metrics = row.metrics[kpi];
@@ -495,8 +516,10 @@ const CellGroup = ({
                         padding: '8px 16px', 
                         display: 'flex', 
                         alignItems: 'center', 
+                        justifyContent: 'space-between',
                         gap: '10px',
                     }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ 
                             display: 'flex', 
                             alignItems: 'center',
@@ -517,6 +540,21 @@ const CellGroup = ({
                                 {row.name}
                             </span>
                         </div>
+                      </div>
+                      {calendarMode === 'mensual' && row.isCell && onOpenCalendar && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onOpenCalendar(row.name); }}
+                          style={{ 
+                            padding: '6px', backgroundColor: '#f1f5f9', color: '#475569', 
+                            borderRadius: '8px', border: '1px solid #e2e8f0', 
+                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                            transition: 'all 0.2s'
+                          }}
+                          title="Ver calendario"
+                        >
+                          <CalendarIcon size={14} />
+                        </button>
+                      )}
                     </td>
                     {viewMode === 'semanal' && calendarMode === 'operativo' ? (
                       <>
@@ -619,6 +657,9 @@ export default function Home() {
   const [monthlyDistrictKPIs, setMonthlyDistrictKPIs] = useState<Record<KpiType, number> | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [calendarModalCelula, setCalendarModalCelula] = useState<string | null>(null);
 
   const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[]) => {
       if (!monthlyMetrics || monthlyMetrics.length === 0) return null;
@@ -1149,7 +1190,18 @@ export default function Home() {
       </header>
 
       <section style={{ marginBottom: '20px' }}>
-        <DistrictOverview config={kpiConfig} districtData={districtKPIs} lastUpdate={lastUpdate} monthlyDistrictData={monthlyDistrictKPIs} calendarMode={calendarMode} />
+        <DistrictOverview 
+          config={kpiConfig} 
+          districtData={districtKPIs} 
+          lastUpdate={lastUpdate} 
+          monthlyDistrictData={monthlyDistrictKPIs} 
+          calendarMode={calendarMode} 
+          selectedMonth={selectedMonth}
+          onOpenCalendar={() => {
+            setCalendarModalCelula(null);
+            setCalendarModalOpen(true);
+          }}
+        />
       </section>
 
 
@@ -1466,9 +1518,14 @@ export default function Home() {
                       onUpdateMetric={updatePuntualidad}
                       calendarMode={calendarMode}
                       calendarWeeks={calendarWeeks}
+                      selectedMonth={selectedMonth}
                       onTechnicianClick={(tech) => {
                         setSelectedTechnician(tech);
                         setShowDetails(true);
+                      }}
+                      onOpenCalendar={(celula) => {
+                        setCalendarModalCelula(celula);
+                        setCalendarModalOpen(true);
                       }}
                     />
                   ))}
@@ -1497,6 +1554,12 @@ export default function Home() {
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
         technician={selectedTechnician}
+      />
+      <DailyResolutionCalendarModal 
+        isOpen={calendarModalOpen}
+        onClose={() => setCalendarModalOpen(false)}
+        month={selectedMonth}
+        celula={calendarModalCelula}
       />
     </div>
   );
