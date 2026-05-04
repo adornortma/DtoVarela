@@ -1153,7 +1153,7 @@ export default function Home() {
       </section>
 
 
-      <section style={{ marginBottom: '40px' }}>
+      <section style={{ marginBottom: '40px', position: 'relative', zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* 🟦 BLOQUE 1: MESES (FILTRO PRINCIPAL) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
