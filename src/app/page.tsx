@@ -758,7 +758,15 @@ export default function Home() {
       // Fetch monthly data for the selected month (ignoring errors if table doesn't exist yet)
       const { data: dbMonthly } = await supabase
         .from('metricas_mensuales')
-        .select('*')
+        .select(`
+          *,
+          tecnicos (
+            id,
+            dni,
+            nombre,
+            apellido
+          )
+        `)
         .eq('mes', selectedMonth);
         
       const monthlyMetrics = dbMonthly || [];
@@ -816,29 +824,63 @@ export default function Home() {
 
     if (mode === 'mensual') {
        monthlyMetrics.forEach(mm => {
-          const cellName = mm.distrito.toUpperCase().trim();
-          cellMap[cellName] = {
-             name: cellName,
-             isCell: true,
-             metrics: {
-                resolucion: createEmptyMetricData(month, year),
-                reiteros: createEmptyMetricData(month, year),
-                puntualidad: createEmptyMetricData(month, year),
-                productividad: createEmptyMetricData(month, year),
-                inicio: createEmptyMetricData(month, year),
-                ok1: createEmptyMetricData(month, year),
-                completadas: createEmptyMetricData(month, year),
-                no_encontrados: createEmptyMetricData(month, year),
-                deriva_bajadas: createEmptyMetricData(month, year),
-                cierres: createEmptyMetricData(month, year),
-             },
-             technicians: []
-          };
+          const cellName = (mm.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
+          if (!cellMap[cellName]) {
+             cellMap[cellName] = {
+               name: cellName,
+               isCell: true,
+               metrics: {
+                 resolucion: createEmptyMetricData(month, year),
+                 reiteros: createEmptyMetricData(month, year),
+                 puntualidad: createEmptyMetricData(month, year),
+                 productividad: createEmptyMetricData(month, year),
+                 inicio: createEmptyMetricData(month, year),
+                 ok1: createEmptyMetricData(month, year),
+                 completadas: createEmptyMetricData(month, year),
+                 no_encontrados: createEmptyMetricData(month, year),
+                 deriva_bajadas: createEmptyMetricData(month, year),
+                 cierres: createEmptyMetricData(month, year),
+               },
+               technicians: []
+             };
+          }
+          const cell = cellMap[cellName];
           
-          cellMap[cellName].metrics.resolucion['s1'].value = mm.resolucion;
-          cellMap[cellName].metrics.reiteros['s1'].value = mm.reiteros;
-          cellMap[cellName].metrics.puntualidad['s1'].value = mm.puntualidad;
-          cellMap[cellName].metrics.productividad['s1'].value = mm.productividad;
+          if (!mm.tecnico_id) {
+            cell.metrics.resolucion['s1'].value = mm.resolucion;
+            cell.metrics.reiteros['s1'].value = mm.reiteros;
+            cell.metrics.puntualidad['s1'].value = mm.puntualidad;
+            cell.metrics.productividad['s1'].value = mm.productividad;
+          } else {
+            const techId = mm.tecnico_id;
+            const techName = mm.tecnicos ? `${mm.tecnicos.apellido}, ${mm.tecnicos.nombre}` : 'Desconocido';
+            let tech = cell.technicians?.find((t: any) => t.id === techId);
+            if (!tech) {
+              tech = {
+                id: techId,
+                name: techName,
+                dni: mm.tecnicos?.dni,
+                isCell: false,
+                metrics: {
+                  resolucion: createEmptyMetricData(month, year),
+                  reiteros: createEmptyMetricData(month, year),
+                  puntualidad: createEmptyMetricData(month, year),
+                  productividad: createEmptyMetricData(month, year),
+                  inicio: createEmptyMetricData(month, year),
+                  ok1: createEmptyMetricData(month, year),
+                  completadas: createEmptyMetricData(month, year),
+                  no_encontrados: createEmptyMetricData(month, year),
+                  deriva_bajadas: createEmptyMetricData(month, year),
+                  cierres: createEmptyMetricData(month, year),
+                }
+              };
+              cell.technicians?.push(tech);
+            }
+            tech.metrics.resolucion['s1'] = { value: mm.resolucion ?? null, id: mm.id, date: mm.mes };
+            tech.metrics.reiteros['s1'] = { value: mm.reiteros ?? null, id: mm.id, date: mm.mes };
+            tech.metrics.puntualidad['s1'] = { value: mm.puntualidad ?? null, id: mm.id, date: mm.mes };
+            tech.metrics.productividad['s1'] = { value: mm.productividad ?? null, id: mm.id, date: mm.mes };
+          }
        });
        
        return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));

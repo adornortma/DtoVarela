@@ -259,7 +259,8 @@ export default function CargaAdminPage() {
     if (activeTab === 'detalle') {
       return handleProcessActuaciones();
     }
-    if (!pastedData.trim() || !selectedDate) return;
+    if (!pastedData.trim()) return;
+    if (activeTab !== 'mensual' && !selectedDate) return;
     
     setLoading(true);
     setSummary(null);
@@ -364,11 +365,20 @@ export default function CargaAdminPage() {
 
           if (rawTecnico.toUpperCase().includes('TOTAL')) {
             const celulaName = rawCelula || rawTecnico.replace(/TOTAL\s+/i, '').trim();
-            const { data: existingCell } = await supabase.from('metricas_celula').select('id').eq('celula', celulaName).eq('fecha', selectedDate).maybeSingle();
-            if (existingCell) {
-              await supabase.from('metricas_celula').update(updatePayload).eq('id', existingCell.id);
+            if (activeTab === 'mensual') {
+              const { data: existingCell } = await supabase.from('metricas_mensuales').select('id').eq('celula', celulaName).eq('mes', mensualData.mes).is('tecnico_id', null).maybeSingle();
+              if (existingCell) {
+                await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
+              } else {
+                await supabase.from('metricas_mensuales').insert({ celula: celulaName, mes: mensualData.mes, ...updatePayload });
+              }
             } else {
-              await supabase.from('metricas_celula').insert({ celula: celulaName, fecha: selectedDate, ...updatePayload });
+              const { data: existingCell } = await supabase.from('metricas_celula').select('id').eq('celula', celulaName).eq('fecha', selectedDate).maybeSingle();
+              if (existingCell) {
+                await supabase.from('metricas_celula').update(updatePayload).eq('id', existingCell.id);
+              } else {
+                await supabase.from('metricas_celula').insert({ celula: celulaName, fecha: selectedDate, ...updatePayload });
+              }
             }
             cellTotalsCount++;
             processedCount++;
@@ -405,11 +415,22 @@ export default function CargaAdminPage() {
               cellToSave = lastMetric?.celula || "DISTRITO";
             }
 
-            const { data: existingMetric } = await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).maybeSingle();
+            const { data: existingMetric } = activeTab === 'mensual' 
+              ? await supabase.from('metricas_mensuales').select('id').eq('tecnico_id', tecnicoId).eq('mes', mensualData.mes).maybeSingle()
+              : await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).maybeSingle();
+
             if (existingMetric) {
-               await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
+               if (activeTab === 'mensual') {
+                 await supabase.from('metricas_mensuales').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
+               } else {
+                 await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
+               }
             } else {
-               await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
+               if (activeTab === 'mensual') {
+                 await supabase.from('metricas_mensuales').insert({ tecnico_id: tecnicoId, mes: mensualData.mes, celula: cellToSave, ...updatePayload });
+               } else {
+                 await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
+               }
             }
             processedCount++;
           } else if (techInput.dni) {
@@ -422,12 +443,21 @@ export default function CargaAdminPage() {
 
             if (n) {
               autoCreatedCount++;
-              await supabase.from('metricas').insert({
-                tecnico_id: n.id,
-                fecha: selectedDate,
-                celula: rawCelula || "DISTRITO",
-                ...updatePayload
-              });
+              if (activeTab === 'mensual') {
+                await supabase.from('metricas_mensuales').insert({
+                  tecnico_id: n.id,
+                  mes: mensualData.mes,
+                  celula: rawCelula || "DISTRITO",
+                  ...updatePayload
+                });
+              } else {
+                await supabase.from('metricas').insert({
+                  tecnico_id: n.id,
+                  fecha: selectedDate,
+                  celula: rawCelula || "DISTRITO",
+                  ...updatePayload
+                });
+              }
               processedCount++;
             }
           } else {
@@ -658,90 +688,37 @@ export default function CargaAdminPage() {
           )}
 
           {activeTab === 'mensual' ? (
-            <form onSubmit={handleProcessMensual}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                 <div>
-                    <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Mes</label>
-                    <select 
-                      value={mensualData.mes}
-                      onChange={(e) => setMensualData({...mensualData, mes: e.target.value})}
-                      style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
-                    >
-                      <option value="Marzo">Marzo</option>
-                      <option value="Abril">Abril</option>
-                      <option value="Mayo">Mayo</option>
-                      <option value="Junio">Junio</option>
-                      <option value="Julio">Julio</option>
-                    </select>
+            <form onSubmit={handleProcessData}>
+              <div style={{ marginBottom: '24px' }}>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900' }}>
+                       MES DE MÉTRICAS
+                   </label>
                  </div>
-                 <div>
-                    <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Célula Operativa</label>
-                    <select 
-                      value={mensualData.distrito}
-                      onChange={(e) => setMensualData({...mensualData, distrito: e.target.value})}
-                      style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
-                    >
-                      <option value="Berazategui">Berazategui</option>
-                      <option value="Bernal">Bernal</option>
-                      <option value="Quilmes">Quilmes</option>
-                      <option value="Ranelagh">Ranelagh</option>
-                      <option value="Varela 1">Varela 1</option>
-                      <option value="Varela 2">Varela 2</option>
-                    </select>
-                 </div>
+                 <select 
+                   value={mensualData.mes}
+                   onChange={(e) => setMensualData({...mensualData, mes: e.target.value})}
+                   style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
+                 >
+                   <option value="Marzo">Marzo</option>
+                   <option value="Abril">Abril</option>
+                   <option value="Mayo">Mayo</option>
+                   <option value="Junio">Junio</option>
+                   <option value="Julio">Julio</option>
+                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                <div>
-                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Resolución (%)</label>
-                   <input 
-                     type="text" 
-                     placeholder="Ej: 85.5"
-                     value={mensualData.resolucion}
-                     onChange={(e) => setMensualData({...mensualData, resolucion: e.target.value})}
-                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
-                   />
-                </div>
-                <div>
-                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Reiteros (%)</label>
-                   <input 
-                     type="text" 
-                     placeholder="Ej: 12.3"
-                     value={mensualData.reiteros}
-                     onChange={(e) => setMensualData({...mensualData, reiteros: e.target.value})}
-                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
-                   />
-                </div>
-                <div>
-                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Puntualidad (%)</label>
-                   <input 
-                     type="text" 
-                     placeholder="Ej: 95.0"
-                     value={mensualData.puntualidad}
-                     onChange={(e) => setMensualData({...mensualData, puntualidad: e.target.value})}
-                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
-                   />
-                </div>
-                <div>
-                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Productividad</label>
-                   <input 
-                     type="text" 
-                     placeholder="Ej: 4.2"
-                     value={mensualData.productividad}
-                     onChange={(e) => setMensualData({...mensualData, productividad: e.target.value})}
-                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
-                   />
-                </div>
+              <div style={{ marginBottom: '24px' }}>
+                  <textarea 
+                    value={pastedData} 
+                    onChange={(e) => setPastedData(e.target.value)} 
+                    placeholder="Pega aquí (Técnico, Productividad, Resolución, Reiteros, Puntualidad...)" 
+                    style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
+                  />
               </div>
 
-              {mensualStatus && (
-                 <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: mensualStatus.includes('✅') ? '#f0fdf4' : '#fef2f2', color: mensualStatus.includes('✅') ? '#166534' : '#991b1b', fontWeight: '800', marginBottom: '24px', textAlign: 'center' }}>
-                    {mensualStatus}
-                 </div>
-              )}
-
-              <button type="submit" disabled={mensualLoading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
-                  {mensualLoading ? "Guardando..." : "Guardar Datos Mensuales"}
+              <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
+                  {loading ? "Procesando..." : "Sincronizar Cloud (KPIs Mensuales)"}
               </button>
             </form>
           ) : (
