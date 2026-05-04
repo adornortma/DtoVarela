@@ -130,19 +130,32 @@ export default function CargaAdminPage() {
       if (punVal !== null && (punVal < 0 || punVal > 100)) throw new Error("La Puntualidad debe estar entre 0 y 100");
       if (proVal !== null && proVal < 0) throw new Error("La Productividad debe ser mayor o igual a 0");
 
-      const { error } = await supabase
-        .from('metricas_mensuales')
-        .upsert({
-          mes,
-          distrito,
-          resolucion: resVal,
-          reiteros: reiVal,
-          puntualidad: punVal,
-          productividad: proVal
-        }, { onConflict: 'mes,distrito' });
+      const updatePayload = {
+        resolucion: resVal,
+        reiteros: reiVal,
+        puntualidad: punVal,
+        productividad: proVal
+      };
 
-      if (error) throw error;
-      setMensualStatus("✅ Datos mensuales guardados con éxito.");
+      const { data: existingCell } = await supabase
+        .from('metricas_mensuales')
+        .select('id')
+        .eq('celula', distrito)
+        .eq('mes', mes)
+        .is('tecnico_id', null)
+        .maybeSingle();
+
+      let dbError = null;
+      if (existingCell) {
+         const { error } = await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
+         dbError = error;
+      } else {
+         const { error } = await supabase.from('metricas_mensuales').insert({ celula: distrito, mes, ...updatePayload });
+         dbError = error;
+      }
+
+      if (dbError) throw dbError;
+      setMensualStatus("✅ Datos mensuales de Célula/Distrito guardados con éxito.");
       setTimeout(() => setMensualStatus(null), 3000);
     } catch (err: any) {
       console.error(err);
@@ -688,39 +701,121 @@ export default function CargaAdminPage() {
           )}
 
           {activeTab === 'mensual' ? (
-            <form onSubmit={handleProcessData}>
-              <div style={{ marginBottom: '24px' }}>
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900' }}>
-                       MES DE MÉTRICAS
-                   </label>
-                 </div>
-                 <select 
-                   value={mensualData.mes}
-                   onChange={(e) => setMensualData({...mensualData, mes: e.target.value})}
-                   style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
-                 >
-                   <option value="Marzo">Marzo</option>
-                   <option value="Abril">Abril</option>
-                   <option value="Mayo">Mayo</option>
-                   <option value="Junio">Junio</option>
-                   <option value="Julio">Julio</option>
-                 </select>
-              </div>
+            <>
+              <form onSubmit={handleProcessData}>
+                <div style={{ marginBottom: '24px' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900' }}>
+                         MES DE MÉTRICAS (Aplica para ambos formularios)
+                     </label>
+                   </div>
+                   <select 
+                     value={mensualData.mes}
+                     onChange={(e) => setMensualData({...mensualData, mes: e.target.value})}
+                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
+                   >
+                     <option value="Marzo">Marzo</option>
+                     <option value="Abril">Abril</option>
+                     <option value="Mayo">Mayo</option>
+                     <option value="Junio">Junio</option>
+                     <option value="Julio">Julio</option>
+                   </select>
+                </div>
 
-              <div style={{ marginBottom: '24px' }}>
-                  <textarea 
-                    value={pastedData} 
-                    onChange={(e) => setPastedData(e.target.value)} 
-                    placeholder="Pega aquí (Técnico, Productividad, Resolución, Reiteros, Puntualidad...)" 
-                    style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
-                  />
-              </div>
+                <div style={{ marginBottom: '24px' }}>
+                   <label style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '8px', display: 'block' }}>1. Carga Masiva de Técnicos (Pegar desde Excel)</label>
+                    <textarea 
+                      value={pastedData} 
+                      onChange={(e) => setPastedData(e.target.value)} 
+                      placeholder="Pega aquí (Técnico, Productividad, Resolución, Reiteros, Puntualidad...)" 
+                      style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
+                    />
+                </div>
 
-              <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
-                  {loading ? "Procesando..." : "Sincronizar Cloud (KPIs Mensuales)"}
-              </button>
-            </form>
+                <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)', marginBottom: '40px' }}>
+                    {loading ? "Procesando..." : "Sincronizar Cloud (KPIs Mensuales)"}
+                </button>
+              </form>
+
+              <div style={{ height: '1px', backgroundColor: '#e2e8f0', marginBottom: '40px' }} />
+
+              <form onSubmit={handleProcessMensual}>
+                <div style={{ marginBottom: '24px' }}>
+                   <label style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '8px', display: 'block' }}>2. Carga Manual de Totales (Distrito / Células)</label>
+                   <p style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '16px' }}>Usa este formulario para cargar las tarjetas globales que aparecen en la parte superior del Dashboard.</p>
+                   
+                   <div style={{ marginBottom: '16px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Entidad Operativa</label>
+                      <select 
+                        value={mensualData.distrito}
+                        onChange={(e) => setMensualData({...mensualData, distrito: e.target.value})}
+                        style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
+                      >
+                        <option value="DISTRITO">Total Distrito Varela (Tarjetas Globales)</option>
+                        <option value="Berazategui">Berazategui</option>
+                        <option value="Bernal">Bernal</option>
+                        <option value="Quilmes">Quilmes</option>
+                        <option value="Ranelagh">Ranelagh</option>
+                        <option value="Varela 1">Varela 1</option>
+                        <option value="Varela 2">Varela 2</option>
+                      </select>
+                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                  <div>
+                     <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Resolución (%)</label>
+                     <input 
+                       type="text" 
+                       placeholder="Ej: 85.5"
+                       value={mensualData.resolucion}
+                       onChange={(e) => setMensualData({...mensualData, resolucion: e.target.value})}
+                       style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                     />
+                  </div>
+                  <div>
+                     <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Reiteros (%)</label>
+                     <input 
+                       type="text" 
+                       placeholder="Ej: 12.3"
+                       value={mensualData.reiteros}
+                       onChange={(e) => setMensualData({...mensualData, reiteros: e.target.value})}
+                       style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                     />
+                  </div>
+                  <div>
+                     <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Puntualidad (%)</label>
+                     <input 
+                       type="text" 
+                       placeholder="Ej: 95.0"
+                       value={mensualData.puntualidad}
+                       onChange={(e) => setMensualData({...mensualData, puntualidad: e.target.value})}
+                       style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                     />
+                  </div>
+                  <div>
+                     <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Productividad</label>
+                     <input 
+                       type="text" 
+                       placeholder="Ej: 4.2"
+                       value={mensualData.productividad}
+                       onChange={(e) => setMensualData({...mensualData, productividad: e.target.value})}
+                       style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                     />
+                  </div>
+                </div>
+
+                {mensualStatus && (
+                   <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: mensualStatus.includes('✅') ? '#f0fdf4' : '#fef2f2', color: mensualStatus.includes('✅') ? '#166534' : '#991b1b', fontWeight: '800', marginBottom: '24px', textAlign: 'center' }}>
+                      {mensualStatus}
+                   </div>
+                )}
+
+                <button type="submit" disabled={mensualLoading} style={{ width: '100%', backgroundColor: '#1e293b', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(0,0,0, 0.1)' }}>
+                    {mensualLoading ? "Guardando..." : "Guardar Totales Mensuales"}
+                </button>
+              </form>
+            </>
           ) : (
             <form onSubmit={handleProcessData}>
                 <div style={{ marginBottom: '24px' }}>

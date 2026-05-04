@@ -622,12 +622,26 @@ export default function Home() {
 
   const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[]) => {
       if (!monthlyMetrics || monthlyMetrics.length === 0) return null;
-      
+
       const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad'];
       const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
       
+      // Intentar encontrar el registro manual "DISTRITO" (sin tecnico)
+      const distritoRecord = monthlyMetrics.find(m => m.celula === 'DISTRITO' && m.tecnico_id === null);
+
+      if (distritoRecord) {
+          kpis.forEach(kpi => {
+             result[kpi] = distritoRecord[kpi] !== null && distritoRecord[kpi] !== undefined ? parseFloat(Number(distritoRecord[kpi]).toFixed(1)) : 0;
+          });
+          return result;
+      }
+      
+      // Fallback: Promedio de totales de células (tecnico_id == null), o en el peor caso de todo.
+      const cellTotals = monthlyMetrics.filter(m => m.tecnico_id === null && m.celula !== 'DISTRITO');
+      const dataToAverage = cellTotals.length > 0 ? cellTotals : monthlyMetrics;
+
       kpis.forEach(kpi => {
-          const vals = monthlyMetrics.map(m => m[kpi]).filter(v => v !== null && v !== undefined);
+          const vals = dataToAverage.map(m => m[kpi]).filter(v => v !== null && v !== undefined);
           if (vals.length > 0) {
               result[kpi] = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
           } else {
