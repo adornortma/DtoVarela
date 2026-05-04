@@ -1103,44 +1103,7 @@ export default function Home() {
             </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{
-              display: 'flex', 
-              backgroundColor: '#e2e8f0', 
-              borderRadius: '20px', 
-              padding: '4px',
-              gap: '4px'
-          }}>
-              <button 
-                  onClick={() => setCalendarMode('operativo')}
-                  style={{
-                      padding: '8px 16px',
-                      borderRadius: '16px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      transition: 'all 0.2s',
-                      backgroundColor: calendarMode === 'operativo' ? '#1e293b' : 'transparent',
-                      color: calendarMode === 'operativo' ? 'white' : '#64748b',
-                      boxShadow: calendarMode === 'operativo' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
-                  }}
-              >
-                  Semanal (operativo)
-              </button>
-              <button 
-                  onClick={() => setCalendarMode('mensual')}
-                  style={{
-                      padding: '8px 16px',
-                      borderRadius: '16px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      transition: 'all 0.2s',
-                      backgroundColor: calendarMode === 'mensual' ? '#1e293b' : 'transparent',
-                      color: calendarMode === 'mensual' ? 'white' : '#64748b',
-                      boxShadow: calendarMode === 'mensual' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
-                  }}
-              >
-                  Mensual (calendario)
-              </button>
-          </div>
+
           <Link 
             href="/detalle-diario"
             style={{ 
@@ -1320,7 +1283,6 @@ export default function Home() {
           </div>
 
           {/* 🟪 BLOQUE 2: MODO (SWITCH CONFIG) */}
-          {calendarMode === 'operativo' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '1px' }}>Vista:</span>
             <div style={{ 
@@ -1333,15 +1295,42 @@ export default function Home() {
               boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)'
             }}>
               <button 
-                onClick={() => setViewMode('semanal')}
+                onClick={() => {
+                  setCalendarMode('mensual');
+                  setViewMode('semanal');
+                }}
                 style={{ 
                   padding: '8px 20px', 
                   borderRadius: '12px', 
                   fontSize: '12px', 
                   fontWeight: '900', 
-                  backgroundColor: viewMode === 'semanal' ? 'white' : 'transparent', 
-                  color: viewMode === 'semanal' ? '#0f172a' : '#f1f5f9', 
-                  boxShadow: viewMode === 'semanal' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
+                  backgroundColor: calendarMode === 'mensual' ? 'white' : 'transparent', 
+                  color: calendarMode === 'mensual' ? '#0f172a' : '#f1f5f9', 
+                  boxShadow: calendarMode === 'mensual' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: 'none'
+                }}
+              >
+                <CalendarIcon size={15} />
+                Mensual
+              </button>
+              <button 
+                onClick={() => {
+                  setCalendarMode('operativo');
+                  setViewMode('semanal');
+                }}
+                style={{ 
+                  padding: '8px 20px', 
+                  borderRadius: '12px', 
+                  fontSize: '12px', 
+                  fontWeight: '900', 
+                  backgroundColor: (calendarMode === 'operativo' && viewMode === 'semanal') ? 'white' : 'transparent', 
+                  color: (calendarMode === 'operativo' && viewMode === 'semanal') ? '#0f172a' : '#f1f5f9', 
+                  boxShadow: (calendarMode === 'operativo' && viewMode === 'semanal') ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -1354,15 +1343,18 @@ export default function Home() {
                 Semanal
               </button>
               <button 
-                onClick={() => setViewMode('indicador')}
+                onClick={() => {
+                  setCalendarMode('operativo');
+                  setViewMode('indicador');
+                }}
                 style={{ 
                   padding: '8px 20px', 
                   borderRadius: '12px', 
                   fontSize: '12px', 
                   fontWeight: '900', 
-                  backgroundColor: viewMode === 'indicador' ? 'white' : 'transparent', 
-                  color: viewMode === 'indicador' ? '#0f172a' : '#f1f5f9', 
-                  boxShadow: viewMode === 'indicador' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
+                  backgroundColor: (calendarMode === 'operativo' && viewMode === 'indicador') ? 'white' : 'transparent', 
+                  color: (calendarMode === 'operativo' && viewMode === 'indicador') ? '#0f172a' : '#f1f5f9', 
+                  boxShadow: (calendarMode === 'operativo' && viewMode === 'indicador') ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -1376,7 +1368,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          )}
+
         </div>
       </section>
 
