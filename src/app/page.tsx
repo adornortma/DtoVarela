@@ -73,6 +73,7 @@ interface ItemRow {
   isCell: boolean;
   technicians?: ItemRow[];
   celula?: string;
+  tempMonthly?: Record<string, number[]>;
 }
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -433,11 +434,9 @@ const CellGroup = ({
   const metrics = row.metrics[kpi];
   const unit = config[kpi].unit;
   
-  // Weekly mode sorting
-  const average = calculateAverage(metrics, calendarMode, calendarWeeks);
-  
+  // Sorting logic
   const sortedTechnicians = [...(row.technicians || [])].sort((a, b) => {
-    if (viewMode === 'semanal') {
+    if (viewMode === 'semanal' && calendarMode === 'operativo') {
       const valA = calculateAverage(a.metrics[kpi], calendarMode, calendarWeeks) ?? -Infinity;
       const valB = calculateAverage(b.metrics[kpi], calendarMode, calendarWeeks) ?? -Infinity;
       if (config[kpi].targets.reverse) {
@@ -445,6 +444,7 @@ const CellGroup = ({
       }
       return valB - valA;
     }
+    // For mensual or indicador, we can sort alphabetically as a fallback
     return a.name.localeCompare(b.name);
   });
 
@@ -475,9 +475,10 @@ const CellGroup = ({
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
                 <col style={{ width: '30%' }} />
-                {viewMode === 'semanal' && calendarMode === 'mensual' 
-                    ? calendarWeeks.map(w => <col key={w.key} style={{ width: `${70 / calendarWeeks.length}%` }} />)
-                    : [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                <col style={{ width: '30%' }} />
+                {viewMode === 'semanal' && calendarMode === 'operativo'
+                    ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                    : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '17.5%' }} />)
                 }
             </colgroup>
             <tbody>
@@ -518,8 +519,7 @@ const CellGroup = ({
                             </span>
                         </div>
                     </td>
-                    {viewMode === 'semanal' ? (
-                      calendarMode === 'operativo' ? (
+                    {viewMode === 'semanal' && calendarMode === 'operativo' ? (
                       <>
                         <MetricCard entry={metrics.s1} kpi={kpi} unit={unit} config={config} />
                         <MetricCard entry={metrics.s2} prevValue={metrics.s1.value} kpi={kpi} unit={unit} config={config} />
@@ -527,19 +527,12 @@ const CellGroup = ({
                         <MetricCard entry={metrics.s4} prevValue={metrics.s3.value} kpi={kpi} unit={unit} config={config} />
                         <MetricCard entry={metrics.s5} prevValue={metrics.s4.value} kpi={kpi} unit={unit} config={config} />
                       </>
-                      ) : (
-                      <>
-                        {calendarWeeks.map((w, idx) => (
-                           <MetricCard key={w.key} entry={metrics[w.key]!} prevValue={idx > 0 ? metrics[calendarWeeks[idx-1].key]?.value : undefined} kpi={kpi} unit={unit} config={config} />
-                        ))}
-                      </>
-                      )
                     ) : (
                       <>
-                        <MetricCard entry={row.metrics.resolucion[selectedWeek]} kpi="resolucion" unit={config.resolucion.unit} config={config} />
-                        <MetricCard entry={row.metrics.reiteros[selectedWeek]} kpi="reiteros" unit={config.reiteros.unit} config={config} />
-                        <MetricCard entry={row.metrics.puntualidad[selectedWeek]} kpi="puntualidad" unit={config.puntualidad.unit} config={config} />
-                        <MetricCard entry={row.metrics.productividad[selectedWeek]} kpi="productividad" unit={config.productividad.unit} config={config} />
+                        <MetricCard entry={row.metrics.resolucion[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="resolucion" unit={config.resolucion.unit} config={config} />
+                        <MetricCard entry={row.metrics.reiteros[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="reiteros" unit={config.reiteros.unit} config={config} />
+                        <MetricCard entry={row.metrics.puntualidad[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="puntualidad" unit={config.puntualidad.unit} config={config} />
+                        <MetricCard entry={row.metrics.productividad[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="productividad" unit={config.productividad.unit} config={config} />
                       </>
                     )}
                 </tr>
@@ -565,8 +558,7 @@ const CellGroup = ({
                                 <span style={{ fontSize: '13px', color: '#4B5563', fontWeight: '700' }}>{tech.name}</span>
                             </div>
                         </td>
-                        {viewMode === 'semanal' ? (
-                          calendarMode === 'operativo' ? (
+                        {viewMode === 'semanal' && calendarMode === 'operativo' ? (
                           (['s1', 's2', 's3', 's4', 's5'] as const).map((s, idx) => {
                              const prevS = idx > 0 ? (['s1', 's2', 's3', 's4', 's5'] as const)[idx-1] : null;
                              return (
@@ -582,35 +574,21 @@ const CellGroup = ({
                                />
                              );
                           })
-                          ) : (
-                            calendarWeeks.map((w, idx) => {
-                               const prevKey = idx > 0 ? calendarWeeks[idx-1].key : null;
-                               return (
-                                 <MetricCard 
-                                   key={w.key}
-                                   entry={tech.metrics[kpi][w.key]!} 
-                                   prevValue={prevKey ? tech.metrics[kpi][prevKey]?.value : undefined} 
-                                   kpi={kpi} 
-                                   unit={unit} 
-                                   config={config} 
-                                   isEditable={kpi === 'puntualidad' && tech.id !== undefined}
-                                   onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[kpi][w.key]!.date, val, row.name)}
-                                 />
-                               );
-                            })
-                          )
                         ) : (
-                          (['resolucion', 'reiteros', 'puntualidad', 'productividad'] as const).map((k) => (
-                             <MetricCard 
-                               key={k}
-                               entry={tech.metrics[k][selectedWeek]} 
-                               kpi={k} 
-                               unit={config[k].unit} 
-                               config={config} 
-                               isEditable={k === 'puntualidad' && tech.id !== undefined}
-                               onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[k][selectedWeek]?.date || '', val, row.name)}
-                             />
-                          ))
+                          (['resolucion', 'reiteros', 'puntualidad', 'productividad'] as const).map((k) => {
+                             const weekKey = calendarMode === 'mensual' ? 's1' : selectedWeek;
+                             return (
+                               <MetricCard 
+                                 key={k}
+                                 entry={tech.metrics[k][weekKey]} 
+                                 kpi={k} 
+                                 unit={config[k].unit} 
+                                 config={config} 
+                                 isEditable={k === 'puntualidad' && tech.id !== undefined}
+                                 onUpdate={(val) => tech.id && onUpdateMetric(tech.id, tech.metrics[k][weekKey]?.date || '', val, row.name)}
+                               />
+                             );
+                          })
                         )}
                     </tr>
                 ))}
@@ -830,7 +808,7 @@ export default function Home() {
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
       const week = mode === 'mensual' 
-         ? getCalendarWeekOfDate(m.fecha, year, month) 
+         ? 's1'
          : getWeekOfDate(new Date(m.fecha));
 
       if (!cellMap[cellName]) {
@@ -878,23 +856,39 @@ export default function Home() {
         cell.technicians?.push(tech);
       }
 
-      tech.metrics.reiteros[week] = { value: m.reitero ?? null, id: m.id, date: m.fecha };
-      tech.metrics.resolucion[week] = { value: m.resolucion ?? null, id: m.id, date: m.fecha };
-      tech.metrics.puntualidad[week] = { value: m.puntualidad ?? null, id: m.id, date: m.fecha };
-      tech.metrics.productividad[week] = { value: m.productividad ?? null, id: m.id, date: m.fecha };
-      tech.metrics.inicio[week] = { value: m.inicio ?? null, id: m.id, date: m.fecha };
-      tech.metrics.ok1[week] = { value: m.ok1 ?? null, id: m.id, date: m.fecha };
-      tech.metrics.completadas[week] = { value: m.completadas ?? null, id: m.id, date: m.fecha };
-      tech.metrics.no_encontrados[week] = { value: m.no_encontrados ?? null, id: m.id, date: m.fecha };
-      tech.metrics.deriva_bajadas[week] = { value: m.deriva_bajadas ?? null, id: m.id, date: m.fecha };
-      tech.metrics.cierres[week] = { value: m.cierres ?? null, id: m.id, date: m.fecha };
+      if (mode === 'mensual') {
+        if (!tech.tempMonthly) {
+          tech.tempMonthly = { resolucion: [], reiteros: [], puntualidad: [], productividad: [], inicio: [], ok1: [], completadas: [], no_encontrados: [], deriva_bajadas: [], cierres: [] };
+        }
+        if (m.reitero !== null && m.reitero !== undefined) tech.tempMonthly.reiteros.push(m.reitero);
+        if (m.resolucion !== null && m.resolucion !== undefined) tech.tempMonthly.resolucion.push(m.resolucion);
+        if (m.puntualidad !== null && m.puntualidad !== undefined) tech.tempMonthly.puntualidad.push(m.puntualidad);
+        if (m.productividad !== null && m.productividad !== undefined) tech.tempMonthly.productividad.push(m.productividad);
+        if (m.inicio !== null && m.inicio !== undefined) tech.tempMonthly.inicio.push(m.inicio);
+        if (m.ok1 !== null && m.ok1 !== undefined) tech.tempMonthly.ok1.push(m.ok1);
+        if (m.completadas !== null && m.completadas !== undefined) tech.tempMonthly.completadas.push(m.completadas);
+        if (m.no_encontrados !== null && m.no_encontrados !== undefined) tech.tempMonthly.no_encontrados.push(m.no_encontrados);
+        if (m.deriva_bajadas !== null && m.deriva_bajadas !== undefined) tech.tempMonthly.deriva_bajadas.push(m.deriva_bajadas);
+        if (m.cierres !== null && m.cierres !== undefined) tech.tempMonthly.cierres.push(m.cierres);
+      } else {
+        tech.metrics.reiteros[week] = { value: m.reitero ?? null, id: m.id, date: m.fecha };
+        tech.metrics.resolucion[week] = { value: m.resolucion ?? null, id: m.id, date: m.fecha };
+        tech.metrics.puntualidad[week] = { value: m.puntualidad ?? null, id: m.id, date: m.fecha };
+        tech.metrics.productividad[week] = { value: m.productividad ?? null, id: m.id, date: m.fecha };
+        tech.metrics.inicio[week] = { value: m.inicio ?? null, id: m.id, date: m.fecha };
+        tech.metrics.ok1[week] = { value: m.ok1 ?? null, id: m.id, date: m.fecha };
+        tech.metrics.completadas[week] = { value: m.completadas ?? null, id: m.id, date: m.fecha };
+        tech.metrics.no_encontrados[week] = { value: m.no_encontrados ?? null, id: m.id, date: m.fecha };
+        tech.metrics.deriva_bajadas[week] = { value: m.deriva_bajadas ?? null, id: m.id, date: m.fecha };
+        tech.metrics.cierres[week] = { value: m.cierres ?? null, id: m.id, date: m.fecha };
+      }
     });
 
     cellTotals.forEach(ct => {
       const cellName = (ct.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const dateStr = ct.fecha.includes('T') ? ct.fecha : `${ct.fecha}T00:00:00Z`;
       const week = mode === 'mensual' 
-         ? getCalendarWeekOfDate(dateStr, year, month) 
+         ? 's1'
          : getWeekOfDate(new Date(dateStr));
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
@@ -917,14 +911,49 @@ export default function Home() {
       }
       
       const cell = cellMap[cellName];
-      cell.metrics.reiteros[week] = { value: ct.reitero, id: ct.id, date: ct.fecha };
-      cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
-      cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
-      cell.metrics.productividad[week] = { value: ct.productividad, id: ct.id, date: ct.fecha };
+      if (mode === 'mensual') {
+        if (!cell.tempMonthly) {
+          cell.tempMonthly = { resolucion: [], reiteros: [], puntualidad: [], productividad: [], inicio: [], ok1: [], completadas: [], no_encontrados: [], deriva_bajadas: [], cierres: [] };
+        }
+        if (ct.reitero !== null && ct.reitero !== undefined) cell.tempMonthly.reiteros.push(ct.reitero);
+        if (ct.resolucion !== null && ct.resolucion !== undefined) cell.tempMonthly.resolucion.push(ct.resolucion);
+        if (ct.puntualidad !== null && ct.puntualidad !== undefined) cell.tempMonthly.puntualidad.push(ct.puntualidad);
+        if (ct.productividad !== null && ct.productividad !== undefined) cell.tempMonthly.productividad.push(ct.productividad);
+      } else {
+        cell.metrics.reiteros[week] = { value: ct.reitero, id: ct.id, date: ct.fecha };
+        cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
+        cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
+        cell.metrics.productividad[week] = { value: ct.productividad, id: ct.id, date: ct.fecha };
+      }
     });
 
     Object.values(cellMap).forEach(cell => {
-        (['reiteros', 'resolucion', 'puntualidad', 'productividad', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'] as any[]).forEach(kpi => {
+        const kpisToAverage = ['reiteros', 'resolucion', 'puntualidad', 'productividad', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'];
+        
+        if (mode === 'mensual') {
+           // Calculate averages for cell
+           if (cell.tempMonthly) {
+             kpisToAverage.forEach(kpi => {
+               const vals = cell.tempMonthly![kpi];
+               if (vals && vals.length > 0) {
+                 cell.metrics[kpi]['s1'].value = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
+               }
+             });
+           }
+           // Calculate averages for technicians
+           cell.technicians?.forEach(tech => {
+             if (tech.tempMonthly) {
+               kpisToAverage.forEach(kpi => {
+                 const vals = tech.tempMonthly![kpi];
+                 if (vals && vals.length > 0) {
+                   tech.metrics[kpi]['s1'].value = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
+                 }
+               });
+             }
+           });
+        }
+        
+        kpisToAverage.forEach(kpi => {
             (['s1', 's2', 's3', 's4', 's5', 's6'] as const).forEach(week => {
                 if (cell.metrics[kpi][week] && cell.metrics[kpi][week].value === null) {
                   const techValues = cell.technicians?.map(t => t.metrics[kpi][week]?.value).filter(v => v !== null && v !== undefined) as number[];
@@ -975,9 +1004,14 @@ export default function Home() {
             </div>
             <div>
                 <h1 style={{ fontSize: '28px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.2px', lineHeight: '1' }}>KPIs Resolución</h1>
-                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', marginTop: '4px' }}>
-                    {calendarMode === 'operativo' ? 'Fuente: Persa/incentivos - PBI Productividad' : `${selectedMonth} (corte calendario)`}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700' }}>
+                      {calendarMode === 'operativo' ? 'Fuente: Persa/incentivos - PBI Productividad' : `${selectedMonth} (corte calendario)`}
+                  </p>
+                  {calendarMode === 'mensual' && (
+                    <span style={{ backgroundColor: '#e2e8f0', color: '#475569', fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Datos del mes completo</span>
+                  )}
+                </div>
             </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1170,6 +1204,7 @@ export default function Home() {
           </div>
 
           {/* 🟪 BLOQUE 2: MODO (SWITCH CONFIG) */}
+          {calendarMode === 'operativo' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '1px' }}>Vista:</span>
             <div style={{ 
@@ -1225,9 +1260,11 @@ export default function Home() {
               </button>
             </div>
           </div>
+          )}
         </div>
       </section>
 
+      {calendarMode === 'operativo' && (
       <section style={{ marginBottom: '24px', position: 'relative', zIndex: 100 }}>
         <div className="filter-tabs" style={{ display: 'flex', gap: '10px', overflow: 'visible', paddingBottom: '8px', paddingTop: '2px', paddingLeft: '4px', paddingRight: '4px' }}>
           {viewMode === 'semanal' ? (
@@ -1302,6 +1339,7 @@ export default function Home() {
           )}
         </div>
       </section>
+      )}
 
       <div style={{ 
         width: '100%', 
@@ -1321,27 +1359,18 @@ export default function Home() {
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
                         <col style={{ width: '30%' }} />
-                        {viewMode === 'semanal' && calendarMode === 'mensual' 
-                            ? calendarWeeks.map(w => <col key={w.key} style={{ width: `${70 / calendarWeeks.length}%` }} />)
-                            : [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                        {viewMode === 'semanal' && calendarMode === 'operativo'
+                            ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                            : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '17.5%' }} />)
                         }
                     </colgroup>
                     <thead>
                         <tr style={{ textAlign: 'left' }}>
                             <th style={{ padding: '0 24px' }}></th>
-                            {viewMode === 'semanal' ? (
-                              calendarMode === 'mensual' ? (
-                                calendarWeeks.map(w => (
-                                  <th key={w.key} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>
-                                    {w.label}
-                                    {w.isPartial && <div style={{ fontSize: '9px', color: '#64748b', fontWeight: '700' }}>Parcial ({w.daysCount} días)</div>}
-                                  </th>
-                                ))
-                              ) : (
+                            {viewMode === 'semanal' && calendarMode === 'operativo' ? (
                                 weekLabels.map(label => (
                                   <th key={label} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{label}</th>
                                 ))
-                              )
                             ) : (
                               (Object.keys(kpiConfig) as KpiType[]).map(k => (
                                 <th key={k} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{kpiConfig[k].label}</th>
