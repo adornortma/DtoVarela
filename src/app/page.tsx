@@ -756,16 +756,21 @@ export default function Home() {
         const { data: lastMetric } = await supabase
           .from('metricas')
           .select('fecha')
+          .not('resolucion', 'is', null) // Only consider records with actual KPI data
           .order('fecha', { ascending: false })
           .limit(1)
           .maybeSingle();
         
-        const { data: lastMonthly } = await supabase
+        const { data: allMonthly } = await supabase
           .from('metricas_mensuales')
-          .select('mes')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .select('mes');
+        
+        let lastMonthlyMonth = null;
+        if (allMonthly && allMonthly.length > 0) {
+          const unique = Array.from(new Set(allMonthly.map(m => m.mes)));
+          lastMonthlyMonth = unique.reduce((a, b) => MONTHS.indexOf(a) > MONTHS.indexOf(b) ? a : b);
+        }
+
 
         if (lastMetric || lastMonthly) {
           let date;
@@ -774,14 +779,15 @@ export default function Home() {
           if (calendarMode === 'operativo' && lastMetric) {
             date = new Date(lastMetric.fecha);
             monthName = MONTHS[date.getUTCMonth()];
-          } else if (calendarMode === 'mensual' && lastMonthly) {
-            monthName = lastMonthly.mes;
+          } else if (calendarMode === 'mensual' && lastMonthlyMonth) {
+            monthName = lastMonthlyMonth;
           } else if (lastMetric) {
             date = new Date(lastMetric.fecha);
             monthName = MONTHS[date.getUTCMonth()];
           } else {
-            monthName = lastMonthly?.mes || selectedMonth;
+            monthName = lastMonthlyMonth || selectedMonth;
           }
+
 
           if (monthName && MONTHS.includes(monthName)) {
             setSelectedMonth(monthName);
@@ -1323,10 +1329,15 @@ export default function Home() {
                   // Auto-select latest month with data if current is empty
                   const { data: hasData } = await supabase.from('metricas_mensuales').select('id').eq('mes', selectedMonth).limit(1).maybeSingle();
                   if (!hasData) {
-                    const { data: latest } = await supabase.from('metricas_mensuales').select('mes').order('created_at', { ascending: false }).limit(1).maybeSingle();
-                    if (latest) handleMonthSelect(latest.mes);
+                    const { data: allM } = await supabase.from('metricas_mensuales').select('mes');
+                    if (allM && allM.length > 0) {
+                      const unique = Array.from(new Set(allM.map(m => m.mes)));
+                      const latest = unique.reduce((a, b) => MONTHS.indexOf(a) > MONTHS.indexOf(b) ? a : b);
+                      handleMonthSelect(latest);
+                    }
                   }
                 }}
+
                 style={{ 
                   padding: '8px 20px', 
                   borderRadius: '12px', 
@@ -1397,9 +1408,24 @@ export default function Home() {
                   const start = new Date(year, monthIdx, 1).toISOString();
                   const end = new Date(year, monthIdx + 1, 0, 23, 59, 59).toISOString();
                   
-                  const { data: hasData } = await supabase.from('metricas').select('id').gte('fecha', start).lte('fecha', end).limit(1).maybeSingle();
+                  const { data: hasData } = await supabase
+                    .from('metricas')
+                    .select('id')
+                    .gte('fecha', start)
+                    .lte('fecha', end)
+                    .not('resolucion', 'is', null) // Must have data
+                    .limit(1)
+                    .maybeSingle();
+
                   if (!hasData) {
-                    const { data: latest } = await supabase.from('metricas').select('fecha').order('fecha', { ascending: false }).limit(1).maybeSingle();
+                    const { data: latest } = await supabase
+                      .from('metricas')
+                      .select('fecha')
+                      .not('resolucion', 'is', null)
+                      .order('fecha', { ascending: false })
+                      .limit(1)
+                      .maybeSingle();
+
                     if (latest) {
                       const latestMonth = MONTHS[new Date(latest.fecha).getUTCMonth()];
                       handleMonthSelect(latestMonth);
@@ -1407,6 +1433,7 @@ export default function Home() {
                     }
                   }
                 }}
+
 
                 style={{ 
                   padding: '8px 20px', 
