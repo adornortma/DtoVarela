@@ -76,8 +76,18 @@ export default function CargaAdminPage() {
   const [distritoStatus, setDistritoStatus] = useState<string | null>(null);
   const [detectedColumns, setDetectedColumns] = useState<string[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'resumen' | 'detalle'>('resumen');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'detalle' | 'mensual'>('resumen');
   const [lluvia, setLluvia] = useState(false);
+  const [mensualData, setMensualData] = useState({
+    mes: 'Marzo',
+    distrito: 'Varela',
+    resolucion: '',
+    reiteros: '',
+    puntualidad: '',
+    productividad: ''
+  });
+  const [mensualLoading, setMensualLoading] = useState(false);
+  const [mensualStatus, setMensualStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
@@ -101,6 +111,42 @@ export default function CargaAdminPage() {
        setAuthError(true);
     }
   };
+
+  const handleProcessMensual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMensualLoading(true);
+    setMensualStatus(null);
+    try {
+      const { mes, distrito, resolucion, reiteros, puntualidad, productividad } = mensualData;
+      if (!mes || !distrito) throw new Error("Mes y Distrito son requeridos");
+      
+      const resVal = resolucion ? parseFloat(resolucion.replace(',', '.')) : null;
+      const reiVal = reiteros ? parseFloat(reiteros.replace(',', '.')) : null;
+      const punVal = puntualidad ? parseFloat(puntualidad.replace(',', '.')) : null;
+      const proVal = productividad ? parseFloat(productividad.replace(',', '.')) : null;
+
+      const { error } = await supabase
+        .from('metricas_mensuales')
+        .upsert({
+          mes,
+          distrito,
+          resolucion: resVal,
+          reiteros: reiVal,
+          puntualidad: punVal,
+          productividad: proVal
+        }, { onConflict: 'mes,distrito' });
+
+      if (error) throw error;
+      setMensualStatus("✅ Datos mensuales guardados con éxito.");
+      setTimeout(() => setMensualStatus(null), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setMensualStatus(`❌ Error: ${err.message}`);
+    } finally {
+      setMensualLoading(false);
+    }
+  };
+
 
   const parseNum = (val: string, type: 'percentage' | 'number'): number => {
     if (!val || val === "") return 0;
@@ -563,16 +609,32 @@ export default function CargaAdminPage() {
              >
                Detalle Actuaciones
              </button>
+             <button 
+                onClick={() => setActiveTab('mensual')}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px', 
+                  borderRadius: '12px', 
+                  backgroundColor: activeTab === 'mensual' ? 'white' : 'transparent',
+                  color: activeTab === 'mensual' ? '#019df4' : '#64748b',
+                  fontWeight: '900',
+                  boxShadow: activeTab === 'mensual' ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+             >
+               Carga Mensual
+             </button>
           </div>
 
           <div style={{ marginBottom: '32px' }}>
             <h2 style={{ fontSize: '22px', fontWeight: '950', color: '#1a1a1a', marginBottom: '8px' }}>
-              {activeTab === 'resumen' ? 'Importación Resumen KPI' : 'Importación Detalle Diario'}
+              {activeTab === 'resumen' ? 'Importación Resumen KPI' : activeTab === 'detalle' ? 'Importación Detalle Diario' : 'Carga de KPIs Mensuales'}
             </h2>
             <p style={{ color: '#64748b', fontWeight: '700' }}>
                {activeTab === 'resumen' 
                 ? 'Reporte de productividad agregada por técnico.' 
-                : 'Detalle individual de cada actuación realzada hoy.'}
+                : activeTab === 'detalle' ? 'Detalle individual de cada actuación realzada hoy.' : 'Carga de resultados cerrados de mes completo por Distrito.'}
             </p>
           </div>
 
@@ -590,35 +652,123 @@ export default function CargaAdminPage() {
             </div>
           )}
 
-          <form onSubmit={handleProcessData}>
-              <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900' }}>
-                        <Calendar size={18} color="#019df4" /> {activeTab === 'resumen' ? 'FECHA DE MÉTRICAS' : 'FECHA DE ACTUACIONES'}
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', backgroundColor: lluvia ? '#e0f2fe' : '#f8fafc', padding: '6px 12px', borderRadius: '10px', border: lluvia ? '1px solid #bae6fd' : '1px solid #e2e8f0', transition: 'all 0.2s' }}>
-                      <input type="checkbox" checked={lluvia} onChange={(e) => setLluvia(e.target.checked)} style={{ width: '16px', height: '16px' }} />
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: lluvia ? '#0369a1' : '#64748b' }}>🌧️ Hubo lluvia hoy</span>
-                    </label>
-                  </div>
-                  <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '18px', border: '2px solid #f1f5f9', fontWeight: '800' }} />
-              </div>
-              
-              <div style={{ marginBottom: '24px' }}>
-                  <textarea 
-                    value={pastedData} 
-                    onChange={(e) => setPastedData(e.target.value)} 
-                    placeholder={activeTab === 'resumen' 
-                        ? "Pega aquí (Técnico, Productividad, Resolución...)" 
-                        : "Pega aquí (Célula, Fecha, Estado, Recurso, Resolución...)"} 
-                    style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
-                  />
+          {activeTab === 'mensual' ? (
+            <form onSubmit={handleProcessMensual}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                 <div>
+                    <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Mes</label>
+                    <select 
+                      value={mensualData.mes}
+                      onChange={(e) => setMensualData({...mensualData, mes: e.target.value})}
+                      style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
+                    >
+                      <option value="Marzo">Marzo</option>
+                      <option value="Abril">Abril</option>
+                      <option value="Mayo">Mayo</option>
+                      <option value="Junio">Junio</option>
+                      <option value="Julio">Julio</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Distrito</label>
+                    <select 
+                      value={mensualData.distrito}
+                      onChange={(e) => setMensualData({...mensualData, distrito: e.target.value})}
+                      style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
+                    >
+                      <option value="Varela">Varela</option>
+                      <option value="Berazategui">Berazategui</option>
+                      <option value="Bernal">Bernal</option>
+                      <option value="Quilmes">Quilmes</option>
+                      <option value="San Fco Solano">San Fco Solano</option>
+                    </select>
+                 </div>
               </div>
 
-              <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
-                  {loading ? "Procesando..." : `Sincronizar Cloud (${activeTab === 'resumen' ? 'KPIs' : 'Detalle'})`}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                <div>
+                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Resolución (%)</label>
+                   <input 
+                     type="text" 
+                     placeholder="Ej: 85.5"
+                     value={mensualData.resolucion}
+                     onChange={(e) => setMensualData({...mensualData, resolucion: e.target.value})}
+                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                   />
+                </div>
+                <div>
+                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Reiteros (%)</label>
+                   <input 
+                     type="text" 
+                     placeholder="Ej: 12.3"
+                     value={mensualData.reiteros}
+                     onChange={(e) => setMensualData({...mensualData, reiteros: e.target.value})}
+                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                   />
+                </div>
+                <div>
+                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Puntualidad (%)</label>
+                   <input 
+                     type="text" 
+                     placeholder="Ej: 95.0"
+                     value={mensualData.puntualidad}
+                     onChange={(e) => setMensualData({...mensualData, puntualidad: e.target.value})}
+                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                   />
+                </div>
+                <div>
+                   <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Productividad</label>
+                   <input 
+                     type="text" 
+                     placeholder="Ej: 4.2"
+                     value={mensualData.productividad}
+                     onChange={(e) => setMensualData({...mensualData, productividad: e.target.value})}
+                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px' }}
+                   />
+                </div>
+              </div>
+
+              {mensualStatus && (
+                 <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: mensualStatus.includes('✅') ? '#f0fdf4' : '#fef2f2', color: mensualStatus.includes('✅') ? '#166534' : '#991b1b', fontWeight: '800', marginBottom: '24px', textAlign: 'center' }}>
+                    {mensualStatus}
+                 </div>
+              )}
+
+              <button type="submit" disabled={mensualLoading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
+                  {mensualLoading ? "Guardando..." : "Guardar Datos Mensuales"}
               </button>
-          </form>
+            </form>
+          ) : (
+            <form onSubmit={handleProcessData}>
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '900' }}>
+                          <Calendar size={18} color="#019df4" /> {activeTab === 'resumen' ? 'FECHA DE MÉTRICAS' : 'FECHA DE ACTUACIONES'}
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', backgroundColor: lluvia ? '#e0f2fe' : '#f8fafc', padding: '6px 12px', borderRadius: '10px', border: lluvia ? '1px solid #bae6fd' : '1px solid #e2e8f0', transition: 'all 0.2s' }}>
+                        <input type="checkbox" checked={lluvia} onChange={(e) => setLluvia(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                        <span style={{ fontSize: '12px', fontWeight: '800', color: lluvia ? '#0369a1' : '#64748b' }}>🌧️ Hubo lluvia hoy</span>
+                      </label>
+                    </div>
+                    <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '18px', border: '2px solid #f1f5f9', fontWeight: '800' }} />
+                </div>
+                
+                <div style={{ marginBottom: '24px' }}>
+                    <textarea 
+                      value={pastedData} 
+                      onChange={(e) => setPastedData(e.target.value)} 
+                      placeholder={activeTab === 'resumen' 
+                          ? "Pega aquí (Técnico, Productividad, Resolución...)" 
+                          : "Pega aquí (Célula, Fecha, Estado, Recurso, Resolución...)"} 
+                      style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
+                    />
+                </div>
+
+                <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)' }}>
+                    {loading ? "Procesando..." : `Sincronizar Cloud (${activeTab === 'resumen' ? 'KPIs' : 'Detalle'})`}
+                </button>
+            </form>
+          )}
 
           {summary && (
               <div style={{ marginTop: '32px' }}>

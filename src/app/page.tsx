@@ -603,13 +603,14 @@ export default function Home() {
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
   const [visibleMonths, setVisibleMonths] = useState(
-    MONTHS.slice(Math.max(0, new Date().getMonth() - 1), Math.max(0, new Date().getMonth() - 1) + 4)
+    MONTHS.slice(Math.max(0, new Date().getMonth() - 2), Math.max(0, new Date().getMonth() - 2) + 5)
   );
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('resolucion');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [data, setData] = useState<ItemRow[]>([]);
   const [metricsRaw, setMetricsRaw] = useState<any[]>([]);
   const [cellTotalsRaw, setCellTotalsRaw] = useState<any[]>([]);
+  const [monthlyMetricsRaw, setMonthlyMetricsRaw] = useState<any[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<ItemRow | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -619,14 +620,14 @@ export default function Home() {
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
-  const calculateMonthlyDistrictKPIs = (metrics: any[]) => {
-      if (!metrics || metrics.length === 0) return null;
+  const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[]) => {
+      if (!monthlyMetrics || monthlyMetrics.length === 0) return null;
       
       const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad'];
       const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
       
       kpis.forEach(kpi => {
-          const vals = metrics.map(m => m[kpi === 'reiteros' ? 'reitero' : kpi]).filter(v => v !== null && v !== undefined);
+          const vals = monthlyMetrics.map(m => m[kpi]).filter(v => v !== null && v !== undefined);
           if (vals.length > 0) {
               result[kpi] = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
           } else {
@@ -754,6 +755,14 @@ export default function Home() {
 
       const cellTotals = dbCellTotals || [];
 
+      // Fetch monthly data for the selected month (ignoring errors if table doesn't exist yet)
+      const { data: dbMonthly } = await supabase
+        .from('metricas_mensuales')
+        .select('*')
+        .eq('mes', selectedMonth);
+        
+      const monthlyMetrics = dbMonthly || [];
+
       if (error) {
         console.error('Error fetching data:', error);
         setLoading(false);
@@ -762,8 +771,11 @@ export default function Home() {
       
       setMetricsRaw(metrics);
       setCellTotalsRaw(cellTotals);
-      setMonthlyDistrictKPIs(calculateMonthlyDistrictKPIs(metrics));
-      setData(processData(metrics, cellTotals, monthIndex, year, calendarMode));
+      setMonthlyMetricsRaw(monthlyMetrics);
+      
+      // Calculate top KPIs using actual monthly data, not averages of weekly metrics
+      setMonthlyDistrictKPIs(calculateMonthlyDistrictKPIs(monthlyMetrics));
+      setData(processData(metrics, cellTotals, monthlyMetrics, monthIndex, year, calendarMode));
 
       // Auto-select last week of the loaded month data
       const allDates = [...metrics.map(m => m.fecha), ...cellTotals.map(ct => ct.fecha)];
@@ -783,12 +795,12 @@ export default function Home() {
   }, [selectedMonth]);
 
   useEffect(() => {
-    if (metricsRaw.length > 0) {
-      setData(processData(metricsRaw, cellTotalsRaw, MONTHS.indexOf(selectedMonth), new Date().getFullYear(), calendarMode));
+    if (metricsRaw.length > 0 || monthlyMetricsRaw.length > 0) {
+      setData(processData(metricsRaw, cellTotalsRaw, monthlyMetricsRaw, MONTHS.indexOf(selectedMonth), new Date().getFullYear(), calendarMode));
     }
   }, [calendarMode]);
 
-  const processData = (metrics: any[], cellTotals: any[], month: number, year: number, mode: CalendarMode) => {
+  const processData = (metrics: any[], cellTotals: any[], monthlyMetrics: any[], month: number, year: number, mode: CalendarMode) => {
     const cellMap: Record<string, ItemRow> = {};
 
     const createEmptyMetricData = (m: number, y: number): MetricData => {
@@ -802,13 +814,41 @@ export default function Home() {
       };
     };
 
+    if (mode === 'mensual') {
+       monthlyMetrics.forEach(mm => {
+          const cellName = mm.distrito.toUpperCase().trim();
+          cellMap[cellName] = {
+             name: cellName,
+             isCell: true,
+             metrics: {
+                resolucion: createEmptyMetricData(month, year),
+                reiteros: createEmptyMetricData(month, year),
+                puntualidad: createEmptyMetricData(month, year),
+                productividad: createEmptyMetricData(month, year),
+                inicio: createEmptyMetricData(month, year),
+                ok1: createEmptyMetricData(month, year),
+                completadas: createEmptyMetricData(month, year),
+                no_encontrados: createEmptyMetricData(month, year),
+                deriva_bajadas: createEmptyMetricData(month, year),
+                cierres: createEmptyMetricData(month, year),
+             },
+             technicians: []
+          };
+          
+          cellMap[cellName].metrics.resolucion['s1'].value = mm.resolucion;
+          cellMap[cellName].metrics.reiteros['s1'].value = mm.reiteros;
+          cellMap[cellName].metrics.puntualidad['s1'].value = mm.puntualidad;
+          cellMap[cellName].metrics.productividad['s1'].value = mm.productividad;
+       });
+       
+       return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     metrics.forEach(m => {
       const cellName = (m.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
-      const week = mode === 'mensual' 
-         ? 's1'
-         : getWeekOfDate(new Date(m.fecha));
+      const week = getWeekOfDate(new Date(m.fecha));
 
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
@@ -855,40 +895,22 @@ export default function Home() {
         cell.technicians?.push(tech);
       }
 
-      if (mode === 'mensual') {
-        if (!tech.tempMonthly) {
-          tech.tempMonthly = { resolucion: [], reiteros: [], puntualidad: [], productividad: [], inicio: [], ok1: [], completadas: [], no_encontrados: [], deriva_bajadas: [], cierres: [] };
-        }
-        if (m.reitero !== null && m.reitero !== undefined) tech.tempMonthly.reiteros.push(m.reitero);
-        if (m.resolucion !== null && m.resolucion !== undefined) tech.tempMonthly.resolucion.push(m.resolucion);
-        if (m.puntualidad !== null && m.puntualidad !== undefined) tech.tempMonthly.puntualidad.push(m.puntualidad);
-        if (m.productividad !== null && m.productividad !== undefined) tech.tempMonthly.productividad.push(m.productividad);
-        if (m.inicio !== null && m.inicio !== undefined) tech.tempMonthly.inicio.push(m.inicio);
-        if (m.ok1 !== null && m.ok1 !== undefined) tech.tempMonthly.ok1.push(m.ok1);
-        if (m.completadas !== null && m.completadas !== undefined) tech.tempMonthly.completadas.push(m.completadas);
-        if (m.no_encontrados !== null && m.no_encontrados !== undefined) tech.tempMonthly.no_encontrados.push(m.no_encontrados);
-        if (m.deriva_bajadas !== null && m.deriva_bajadas !== undefined) tech.tempMonthly.deriva_bajadas.push(m.deriva_bajadas);
-        if (m.cierres !== null && m.cierres !== undefined) tech.tempMonthly.cierres.push(m.cierres);
-      } else {
-        tech.metrics.reiteros[week] = { value: m.reitero ?? null, id: m.id, date: m.fecha };
-        tech.metrics.resolucion[week] = { value: m.resolucion ?? null, id: m.id, date: m.fecha };
-        tech.metrics.puntualidad[week] = { value: m.puntualidad ?? null, id: m.id, date: m.fecha };
-        tech.metrics.productividad[week] = { value: m.productividad ?? null, id: m.id, date: m.fecha };
-        tech.metrics.inicio[week] = { value: m.inicio ?? null, id: m.id, date: m.fecha };
-        tech.metrics.ok1[week] = { value: m.ok1 ?? null, id: m.id, date: m.fecha };
-        tech.metrics.completadas[week] = { value: m.completadas ?? null, id: m.id, date: m.fecha };
-        tech.metrics.no_encontrados[week] = { value: m.no_encontrados ?? null, id: m.id, date: m.fecha };
-        tech.metrics.deriva_bajadas[week] = { value: m.deriva_bajadas ?? null, id: m.id, date: m.fecha };
-        tech.metrics.cierres[week] = { value: m.cierres ?? null, id: m.id, date: m.fecha };
-      }
+      tech.metrics.reiteros[week] = { value: m.reitero ?? null, id: m.id, date: m.fecha };
+      tech.metrics.resolucion[week] = { value: m.resolucion ?? null, id: m.id, date: m.fecha };
+      tech.metrics.puntualidad[week] = { value: m.puntualidad ?? null, id: m.id, date: m.fecha };
+      tech.metrics.productividad[week] = { value: m.productividad ?? null, id: m.id, date: m.fecha };
+      tech.metrics.inicio[week] = { value: m.inicio ?? null, id: m.id, date: m.fecha };
+      tech.metrics.ok1[week] = { value: m.ok1 ?? null, id: m.id, date: m.fecha };
+      tech.metrics.completadas[week] = { value: m.completadas ?? null, id: m.id, date: m.fecha };
+      tech.metrics.no_encontrados[week] = { value: m.no_encontrados ?? null, id: m.id, date: m.fecha };
+      tech.metrics.deriva_bajadas[week] = { value: m.deriva_bajadas ?? null, id: m.id, date: m.fecha };
+      tech.metrics.cierres[week] = { value: m.cierres ?? null, id: m.id, date: m.fecha };
     });
 
     cellTotals.forEach(ct => {
       const cellName = (ct.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const dateStr = ct.fecha.includes('T') ? ct.fecha : `${ct.fecha}T00:00:00Z`;
-      const week = mode === 'mensual' 
-         ? 's1'
-         : getWeekOfDate(new Date(dateStr));
+      const week = getWeekOfDate(new Date(dateStr));
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
           name: cellName,
@@ -910,47 +932,14 @@ export default function Home() {
       }
       
       const cell = cellMap[cellName];
-      if (mode === 'mensual') {
-        if (!cell.tempMonthly) {
-          cell.tempMonthly = { resolucion: [], reiteros: [], puntualidad: [], productividad: [], inicio: [], ok1: [], completadas: [], no_encontrados: [], deriva_bajadas: [], cierres: [] };
-        }
-        if (ct.reitero !== null && ct.reitero !== undefined) cell.tempMonthly.reiteros.push(ct.reitero);
-        if (ct.resolucion !== null && ct.resolucion !== undefined) cell.tempMonthly.resolucion.push(ct.resolucion);
-        if (ct.puntualidad !== null && ct.puntualidad !== undefined) cell.tempMonthly.puntualidad.push(ct.puntualidad);
-        if (ct.productividad !== null && ct.productividad !== undefined) cell.tempMonthly.productividad.push(ct.productividad);
-      } else {
-        cell.metrics.reiteros[week] = { value: ct.reitero, id: ct.id, date: ct.fecha };
-        cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
-        cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
-        cell.metrics.productividad[week] = { value: ct.productividad, id: ct.id, date: ct.fecha };
-      }
+      cell.metrics.reiteros[week] = { value: ct.reitero, id: ct.id, date: ct.fecha };
+      cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
+      cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
+      cell.metrics.productividad[week] = { value: ct.productividad, id: ct.id, date: ct.fecha };
     });
 
     Object.values(cellMap).forEach(cell => {
         const kpisToAverage = ['reiteros', 'resolucion', 'puntualidad', 'productividad', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'];
-        
-        if (mode === 'mensual') {
-           // Calculate averages for cell
-           if (cell.tempMonthly) {
-             kpisToAverage.forEach(kpi => {
-               const vals = cell.tempMonthly![kpi];
-               if (vals && vals.length > 0) {
-                 cell.metrics[kpi]['s1'].value = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
-               }
-             });
-           }
-           // Calculate averages for technicians
-           cell.technicians?.forEach(tech => {
-             if (tech.tempMonthly) {
-               kpisToAverage.forEach(kpi => {
-                 const vals = tech.tempMonthly![kpi];
-                 if (vals && vals.length > 0) {
-                   tech.metrics[kpi]['s1'].value = parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
-                 }
-               });
-             }
-           });
-        }
         
         kpisToAverage.forEach(kpi => {
             (['s1', 's2', 's3', 's4', 's5', 's6'] as const).forEach(week => {
