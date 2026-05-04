@@ -772,7 +772,7 @@ export default function Home() {
         }
 
 
-        if (lastMetric || lastMonthly) {
+        if (lastMetric || lastMonthlyMonth) {
           let date;
           let monthName;
           
