@@ -19,9 +19,12 @@ import {
   ArrowUpRight,
   ExternalLink,
   CloudRain,
-  CloudOff
+  CloudOff,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 // --- Types ---
 interface Actuacion {
@@ -506,7 +509,8 @@ const DetailDrawer = ({ isOpen, onClose, tech, date }: { isOpen: boolean, onClos
   );
 };
 
-export default function DetalleDiario() {
+function DetalleDiarioContent() {
+  const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [actuaciones, setActuaciones] = useState<Actuacion[]>([]);
@@ -667,6 +671,19 @@ export default function DetalleDiario() {
 
   useEffect(() => {
     const fetchLatestDate = async () => {
+      // Priorizar fecha desde URL
+      const dateParam = searchParams.get('date');
+      if (dateParam) {
+        setSelectedDate(dateParam);
+        
+        // Si hay una célula en la URL, expandirla automáticamente
+        const celulaParam = searchParams.get('celula');
+        if (celulaParam) {
+          setExpandedCells({ [celulaParam]: true });
+        }
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('actuaciones')
@@ -688,7 +705,7 @@ export default function DetalleDiario() {
     };
     fetchLatestDate();
     fetchRainyDays();
-  }, []);
+  }, [searchParams]);
 
   const toggleCell = (name: string) => {
     setExpandedCells(prev => ({ ...prev, [name]: !prev[name] }));
@@ -1114,5 +1131,16 @@ export default function DetalleDiario() {
         }
       `}</style>
     </div>
+  );
+}
+export default function DetalleDiario() {
+  return (
+    <Suspense fallback={
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+        <Loader2 className="animate-spin" size={48} color="#019df4" />
+      </div>
+    }>
+      <DetalleDiarioContent />
+    </Suspense>
   );
 }
