@@ -42,7 +42,7 @@ interface KpiMappingConfig {
 
 const KPI_CONFIG: KpiMappingConfig[] = [
   { key: 'resolucion', label: 'Resolución', names: ['resolucion', 'resoluciones', 'res', 'res%', '% resolucion'], type: 'percentage' },
-  { key: 'reitero', label: 'Reiteros', names: ['reitero', 'reiteros', 'rtr', 'ret', 'rtr%', '% reitero'], type: 'percentage' },
+  { key: 'reiteros', label: 'Reiteros', names: ['reitero', 'reiteros', 'rtr', 'ret', 'rtr%', '% reitero'], type: 'percentage' },
   { key: 'puntualidad', label: 'Puntualidad', names: ['puntualidad', 'punt', 'pnt', 'pnt%', '% puntualidad'], type: 'percentage' },
   { key: 'productividad', label: 'Productividad', names: ['productividad', 'prod', 'prd', 'prd%'], type: 'number' },
   { key: 'inicio', label: 'Inicio', names: ['inicio', 'ini', 'start', '% cump', '%cump', 'cump'], type: 'number' },
