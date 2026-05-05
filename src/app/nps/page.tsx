@@ -24,7 +24,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend,
-  Cell as RechartsCell
+  Cell as RechartsCell,
+  LabelList
 } from 'recharts';
 
 // --- Types ---
@@ -124,7 +125,9 @@ const TrendChart = ({ data }: { data: any[] }) => {
             strokeWidth={3} 
             dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} 
             activeDot={{ r: 6, strokeWidth: 0 }}
-          />
+          >
+            <LabelList dataKey="nps" position="top" style={{ fontSize: '10px', fontWeight: '900', fill: '#000000' }} offset={10} />
+          </Line>
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -139,6 +142,7 @@ export default function NPSDashboardPage() {
   // Selection State
   const [selectedDistrito] = useState('VARELA');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // MM-YYYY
+  const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
   
   // Expansion State
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
@@ -199,19 +203,33 @@ export default function NPSDashboardPage() {
   };
 
   // Derived Data
+  const availableCells = useMemo(() => {
+    const cells = new Set(agregado.filter(d => d.celula !== null && d.distrito === selectedDistrito).map(d => d.celula!));
+    detalles.forEach(d => cells.add(d.tx_celula));
+    return Array.from(cells).sort();
+  }, [agregado, detalles, selectedDistrito]);
+
   const filteredAgregado = useMemo(() => {
     return agregado.filter(d => d.distrito === selectedDistrito);
   }, [agregado, selectedDistrito]);
 
   const cellStats = useMemo(() => {
     const fromAgg = filteredAgregado.filter(d => d.mes === selectedMonth && d.celula !== null);
-    if (fromAgg.length > 0) return fromAgg;
+    
+    // If a cell is selected, only show that cell
+    const targetAgg = selectedCelula 
+      ? fromAgg.filter(c => c.celula === selectedCelula)
+      : fromAgg;
+
+    if (targetAgg.length > 0) return targetAgg;
 
     const monthDetalles = detalles.filter(d => {
       const date = new Date(d.fecha);
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const y = date.getFullYear();
-      return `${m}-${y}` === selectedMonth;
+      const matchesMonth = `${m}-${y}` === selectedMonth;
+      const matchesCell = selectedCelula ? d.tx_celula === selectedCelula : true;
+      return matchesMonth && matchesCell;
     });
 
     const cellMap = new Map<string, { nps: number, count: number, p: number, d: number }>();
@@ -231,17 +249,19 @@ export default function NPSDashboardPage() {
       nps: Math.round(((stats.p - stats.d) / (stats.count || 1)) * 100),
       total_encuestas: stats.count
     }));
-  }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
+  }, [filteredAgregado, selectedMonth, detalles, selectedDistrito, selectedCelula]);
 
   const currentMonthData = useMemo(() => {
-    const fromAgg = filteredAgregado.find(d => d.mes === selectedMonth && d.celula === null);
+    const fromAgg = filteredAgregado.find(d => d.mes === selectedMonth && d.celula === selectedCelula);
     if (fromAgg) return fromAgg;
     
     const monthDetalles = detalles.filter(d => {
       const date = new Date(d.fecha);
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const y = date.getFullYear();
-      return `${m}-${y}` === selectedMonth;
+      const matchesMonth = `${m}-${y}` === selectedMonth;
+      const matchesCell = selectedCelula ? d.tx_celula === selectedCelula : true;
+      return matchesMonth && matchesCell;
     });
     const p = monthDetalles.reduce((acc, d) => acc + d.promotor, 0);
     const d = monthDetalles.reduce((acc, d) => acc + d.detractor, 0);
@@ -250,16 +270,16 @@ export default function NPSDashboardPage() {
       id: 'total',
       mes: selectedMonth,
       distrito: selectedDistrito,
-      celula: null,
+      celula: selectedCelula,
       nps: Math.round(((p - d) / (monthDetalles.length || 1)) * 100),
       total_encuestas: monthDetalles.length
     };
-  }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
+  }, [filteredAgregado, selectedMonth, detalles, selectedDistrito, selectedCelula]);
 
   const trendData = useMemo(() => {
     // 1. Try to get from aggregate table (fastest/pre-calculated)
     const fromAgg = filteredAgregado
-      .filter(d => d.celula === null)
+      .filter(d => d.celula === selectedCelula)
       .sort((a, b) => {
         const [mA, yA] = a.mes.split('-').map(Number);
         const [mB, yB] = b.mes.split('-').map(Number);
@@ -272,6 +292,8 @@ export default function NPSDashboardPage() {
     const monthlyMap = new Map<string, { nps: number, total_encuestas: number, p: number, d: number }>();
     detalles.forEach(d => {
       if (!d.fecha) return;
+      if (selectedCelula && d.tx_celula !== selectedCelula) return;
+
       const date = new Date(d.fecha);
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const y = date.getFullYear();
@@ -295,7 +317,7 @@ export default function NPSDashboardPage() {
         const [mB, yB] = b.mes.split('-').map(Number);
         return yA !== yB ? yA - yB : mA - mB;
       });
-  }, [filteredAgregado, detalles]);
+  }, [filteredAgregado, detalles, selectedCelula]);
 
   const getNPSColor = (nps: number) => {
     if (nps > 70) return '#10b981';
@@ -339,6 +361,45 @@ export default function NPSDashboardPage() {
       </header>
 
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        {/* Cell Selector Navigation */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px', backgroundColor: 'white', padding: '12px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
+          <button
+            onClick={() => setSelectedCelula(null)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              border: selectedCelula === null ? '2px solid #019df4' : '1px solid #e2e8f0',
+              backgroundColor: selectedCelula === null ? '#019df4' : '#f8fafc',
+              color: selectedCelula === null ? 'white' : '#64748b',
+              fontSize: '11px',
+              fontWeight: '900',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            DISTRITO TOTAL
+          </button>
+          {availableCells.map(cell => (
+            <button
+              key={cell}
+              onClick={() => setSelectedCelula(cell)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '10px',
+                border: selectedCelula === cell ? '2px solid #019df4' : '1px solid #e2e8f0',
+                backgroundColor: selectedCelula === cell ? '#019df4' : 'white',
+                color: selectedCelula === cell ? 'white' : '#64748b',
+                fontSize: '11px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {cell}
+            </button>
+          ))}
+        </div>
+
         {/* Compact Metric Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
           <MetricCard 
@@ -364,7 +425,7 @@ export default function NPSDashboardPage() {
             MES SELECCIONADO
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => {
+            {['01', '02', '03', '04', '05', '06', '07', '08'].map(m => {
               const monthVal = `${m}-2026`;
               const isActive = selectedMonth === monthVal;
               const monthNames: Record<string, string> = {
