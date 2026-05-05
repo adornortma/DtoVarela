@@ -276,10 +276,19 @@ export default function NPSDashboardPage() {
                     </div>
                     <h4 style={{ fontSize: '15px', fontWeight: '900', color: '#1a1a1a' }}>{cell.celula}</h4>
                   </div>
-                  <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '18px', fontWeight: '950', color: getNPSColor(cell.nps), margin: 0, lineHeight: '1' }}>{cell.nps} NPS</p>
-                      <p style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', margin: 0, marginTop: '2px' }}>{cell.total_encuestas} encuestas</p>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ 
+                      backgroundColor: getNPSColor(cell.nps), 
+                      color: 'white', 
+                      padding: '8px 12px', 
+                      borderRadius: '10px', 
+                      boxShadow: `0 4px 10px ${getNPSColor(cell.nps)}40`
+                    }}>
+                      <p style={{ fontSize: '16px', fontWeight: '950', margin: 0, lineHeight: '1' }}>{cell.nps} NPS</p>
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <p style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', margin: 0 }}>{cell.total_encuestas}</p>
+                      <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>encuestas</p>
                     </div>
                   </div>
                 </div>
@@ -307,9 +316,15 @@ export default function NPSDashboardPage() {
                             onClick={() => toggleTech(techKey)}
                             style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <User size={14} color="#64748b" />
-                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#4b5563' }}>{techName}</span>
+                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#4b5563', minWidth: '160px' }}>{techName}</span>
+                              
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {stats.p > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '6px', border: '1px solid #10b98120' }}>{stats.p} PROMOTOR</span>}
+                                {stats.count - stats.p - stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fff7ed', color: '#f59e0b', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f59e0b20' }}>{stats.count - stats.p - stats.d} NEUTRO</span>}
+                                {stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ef444420' }}>{stats.d} DETRACTOR</span>}
+                              </div>
                             </div>
                             <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
                               <div style={{ transform: expandedTechs.has(techKey) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -320,7 +335,7 @@ export default function NPSDashboardPage() {
 
                           {/* Surveys under Technician */}
                           {expandedTechs.has(techKey) && (
-                            <div style={{ padding: '8px 12px 12px 12px', display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #f8fafc', backgroundColor: '#fafbfc' }}>
+                            <div style={{ padding: '12px 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #f8fafc', backgroundColor: '#fafbfc' }}>
                               {stats.surveys.map(enc => {
                                 const isPromotor = enc.promotor === 1;
                                 const isDetractor = enc.detractor === 1;
@@ -340,8 +355,12 @@ export default function NPSDashboardPage() {
                                       </div>
                                       <span style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8' }}>{new Date(enc.fecha).toLocaleDateString()}</span>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      {enc.obs_recomendacion && <p style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>"{enc.obs_recomendacion}"</p>}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      {enc.obs_recomendacion ? (
+                                        <p style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>"{enc.obs_recomendacion}"</p>
+                                      ) : (
+                                        <p style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', margin: 0, fontStyle: 'italic' }}>Sin comentarios del cliente</p>
+                                      )}
                                       {enc.obs_wapp && <p style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', margin: 0, fontStyle: 'italic' }}>WA: {enc.obs_wapp}</p>}
                                     </div>
                                     
