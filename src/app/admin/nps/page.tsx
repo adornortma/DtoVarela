@@ -69,7 +69,7 @@ export default function NPSAdminPage() {
 
       return {
         mes: row[mesIdx],
-        distrito: row[distritoIdx] || 'DISTRITO',
+        distrito: row[distritoIdx] || 'VARELA',
         celula: row[celulaIdx] || null,
         nps: parseFloat(row[npsIdx].replace(',', '.')),
         total_encuestas: parseInt(row[totalIdx] || '0')
