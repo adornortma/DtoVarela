@@ -231,7 +231,7 @@ export default function NPSDashboardPage() {
 
       {/* Main Stats */}
       {viewLevel === 'distrito' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
           <MetricCard 
             title="NPS Actual" 
             value={currentMonthData?.nps || 'N/A'} 
@@ -244,13 +244,6 @@ export default function NPSDashboardPage() {
             subValue={`Mes: ${selectedMonth}`}
             type="total"
           />
-          <div style={{ backgroundColor: '#1a171e', padding: '32px', borderRadius: '32px', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '12px', fontWeight: '800', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Estado de Gestión</p>
-            <h4 style={{ fontSize: '24px', fontWeight: '900' }}>
-              {detalles.filter(d => !d.obs_resoluci).length} Pendientes
-            </h4>
-            <p style={{ fontSize: '14px', opacity: 0.8, marginTop: '4px' }}>De un total de {detalles.length} encuestas recibidas.</p>
-          </div>
         </div>
       )}
 
@@ -284,58 +277,60 @@ export default function NPSDashboardPage() {
             </div>
           </div>
           
-          <div style={{ height: '300px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', paddingBottom: '30px', position: 'relative' }}>
-            {/* Simple Grid Lines */}
-            {[0, 25, 50, 75, 100].map(val => (
-              <div key={val} style={{ position: 'absolute', bottom: `${val}%`, left: 0, right: 0, borderTop: '1px solid #f8fafc', zIndex: 0 }} />
-            ))}
-            
-            {filteredAgregado.filter(d => d.celula === null).map((d, i, arr) => {
-              const maxSurveys = Math.max(...arr.map(x => x.total_encuestas));
-              const barHeight = (d.total_encuestas / maxSurveys) * 100;
-              const npsPoint = (d.nps + 100) / 2; // Map -100..100 to 0..100 for visual (or just use 0..100 if data is 0..100)
-              // Assuming NPS is 0-100 for this visualization, if -100 to 100 adjust accordingly.
-              const dotPos = d.nps; 
+          {filteredAgregado.filter(d => d.celula === null).length > 0 ? (
+            <div style={{ height: '300px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', paddingBottom: '30px', position: 'relative' }}>
+              {/* Simple Grid Lines */}
+              {[0, 25, 50, 75, 100].map(val => (
+                <div key={val} style={{ position: 'absolute', bottom: `${val}%`, left: 0, right: 0, borderTop: '1px solid #f8fafc', zIndex: 0 }} />
+              ))}
+              
+              {filteredAgregado.filter(d => d.celula === null).map((d, i, arr) => {
+                const maxSurveys = Math.max(...arr.map(x => x.total_encuestas));
+                const barHeight = (d.total_encuestas / (maxSurveys || 1)) * 100;
+                const dotPos = Math.max(0, Math.min(100, d.nps)); 
 
-              const isLast = i === arr.length - 1;
+                const isLast = i === arr.length - 1;
 
-              return (
-                <div key={d.mes} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                  {/* Bar for Total Surveys */}
-                  <div style={{ 
-                    width: '100%', 
-                    height: `${barHeight}%`, 
-                    backgroundColor: isLast ? '#e2e8f0' : '#f1f5f9', 
-                    borderRadius: '8px 8px 4px 4px',
-                    transition: 'all 0.5s'
-                  }} />
-                  
-                  {/* Dot for NPS */}
-                  <div style={{ 
-                    position: 'absolute', 
-                    bottom: `${dotPos}%`, 
-                    width: '12px', 
-                    height: '12px', 
-                    backgroundColor: '#019df4', 
-                    borderRadius: '50%', 
-                    border: '3px solid white',
-                    boxShadow: '0 4px 10px rgba(1, 157, 244, 0.4)',
-                    zIndex: 2,
-                    transform: 'translateY(50%)'
-                  }}>
-                    {isLast && (
-                      <div style={{ position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a171e', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', whiteSpace: 'nowrap', fontWeight: '800' }}>
-                        Parcial: {d.nps}
-                        <div style={{ position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #1a171e' }} />
-                      </div>
-                    )}
+                return (
+                  <div key={d.mes} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                    <div style={{ 
+                      width: '100%', 
+                      height: `${barHeight}%`, 
+                      backgroundColor: isLast ? '#e2e8f0' : '#f1f5f9', 
+                      borderRadius: '8px 8px 4px 4px',
+                      transition: 'all 0.5s'
+                    }} />
+                    
+                    <div style={{ 
+                      position: 'absolute', 
+                      bottom: `${dotPos}%`, 
+                      width: '12px', 
+                      height: '12px', 
+                      backgroundColor: '#019df4', 
+                      borderRadius: '50%', 
+                      border: '3px solid white',
+                      boxShadow: '0 4px 10px rgba(1, 157, 244, 0.4)',
+                      zIndex: 2,
+                      transform: 'translateY(50%)'
+                    }}>
+                      {isLast && (
+                        <div style={{ position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a171e', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', whiteSpace: 'nowrap', fontWeight: '800' }}>
+                          Actual: {d.nps}
+                          <div style={{ position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #1a171e' }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <span style={{ position: 'absolute', bottom: '-25px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase' }}>{d.mes}</span>
                   </div>
-
-                  <span style={{ position: 'absolute', bottom: '-25px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase' }}>{d.mes}</span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderRadius: '20px', border: '1px dashed #e2e8f0' }}>
+              <p style={{ color: '#94a3b8', fontWeight: '700' }}>No hay datos disponibles para el período seleccionado</p>
+            </div>
+          )}
         </div>
       )}
 
