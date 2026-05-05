@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
   ClipboardCopy, 
@@ -673,6 +674,26 @@ export default function CargaAdminPage() {
              >
                Carga Mensual
              </button>
+             <Link 
+                href="/admin/nps"
+                style={{ 
+                  flex: 1, 
+                  padding: '12px', 
+                  borderRadius: '12px', 
+                  backgroundColor: 'transparent',
+                  color: '#64748b',
+                  fontWeight: '900',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                Carga NPS
+              </Link>
           </div>
 
           <div style={{ marginBottom: '32px' }}>

@@ -18,6 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: '/' },
     { name: 'Detalle Diario', icon: <LayoutDashboard size={20} />, path: '/detalle-diario' },
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
+    { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
   ];
 
