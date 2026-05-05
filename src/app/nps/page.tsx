@@ -634,9 +634,8 @@ export default function NPSDashboardPage() {
                                                 <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                                                   <img src={url} alt="evidencia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                   <button 
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                       const newEv = (enc.evidencia || []).filter((_, i) => i !== idx);
-                                                      await supabase.from('nps_detalles').update({ evidencia: newEv }).eq('access_id', enc.access_id);
                                                       setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, evidencia: newEv } : d));
                                                     }}
                                                     style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', padding: '2px', cursor: 'pointer' }}
@@ -655,15 +654,13 @@ export default function NPSDashboardPage() {
                                                   const input = document.createElement('input');
                                                   input.type = 'file';
                                                   input.accept = 'image/*';
-                                                  input.onchange = async (e: any) => {
+                                                  input.onchange = (e: any) => {
                                                     const file = e.target.files[0];
                                                     if (!file) return;
-                                                    // Note: In a real app, upload to storage first. Mocking for now.
                                                     const reader = new FileReader();
-                                                    reader.onload = async (re: any) => {
+                                                    reader.onload = (re: any) => {
                                                       const fakeUrl = re.target.result; 
                                                       const newEv = [...(enc.evidencia || []), fakeUrl].slice(0, 3);
-                                                      await supabase.from('nps_detalles').update({ evidencia: newEv }).eq('access_id', enc.access_id);
                                                       setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, evidencia: newEv } : d));
                                                     };
                                                     reader.readAsDataURL(file);
@@ -689,11 +686,30 @@ export default function NPSDashboardPage() {
                                             </div>
 
                                             <button 
-                                              onClick={async () => {
+                                              onClick={async (e) => {
+                                                const btn = e.currentTarget;
+                                                const originalText = btn.innerHTML;
+                                                btn.disabled = true;
+                                                btn.innerHTML = '<span class="animate-spin">⌛</span> GUARDANDO...';
+                                                
                                                 const el = document.getElementById(`descargo-${enc.access_id}`) as HTMLTextAreaElement;
                                                 const val = el.value;
-                                                await supabase.from('nps_detalles').update({ obs_resoluci: val }).eq('access_id', enc.access_id);
-                                                setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val } : d));
+                                                const ev = enc.evidencia || [];
+                                                
+                                                try {
+                                                  await supabase.from('nps_detalles').update({ 
+                                                    obs_resoluci: val,
+                                                    evidencia: ev 
+                                                  }).eq('access_id', enc.access_id);
+                                                  
+                                                  setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val, evidencia: ev } : d));
+                                                } catch (err) {
+                                                  console.error("Error saving evidence:", err);
+                                                  alert("Error al guardar. Verifique la conexión.");
+                                                } finally {
+                                                  btn.disabled = false;
+                                                  btn.innerHTML = originalText;
+                                                }
                                               }}
                                               style={{ 
                                                 display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px',
