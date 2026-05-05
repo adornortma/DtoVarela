@@ -88,21 +88,21 @@ const TrendChart = ({ data }: { data: any[] }) => {
             dataKey="mes" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} 
+            tick={{ fontSize: 10, fontWeight: 900, fill: '#000000' }} 
             dy={10}
           />
           <YAxis 
             yAxisId="left"
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+            tick={{ fontSize: 10, fontWeight: 900, fill: '#000000' }}
           />
           <YAxis 
             yAxisId="right" 
             orientation="right" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+            tick={{ fontSize: 10, fontWeight: 900, fill: '#000000' }}
           />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontWeight: '700' }}
@@ -111,7 +111,7 @@ const TrendChart = ({ data }: { data: any[] }) => {
             yAxisId="left"
             dataKey="total_encuestas" 
             name="Encuestas" 
-            fill="#e2e8f0" 
+            fill="#1e293b" 
             radius={[4, 4, 0, 0]} 
             barSize={40}
           />
@@ -328,43 +328,12 @@ export default function NPSDashboardPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
             onClick={fetchData}
-            style={{ padding: '8px', backgroundColor: 'white', border: '1px solid #eef2f6', borderRadius: '10px', cursor: 'pointer', color: '#64748b' }}
+            style={{ padding: '8px 12px', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', cursor: 'pointer', color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '11px' }}
           >
             <Loader2 size={14} className={loading ? "animate-spin" : ""} />
+            REFRESCAR
           </button>
-
-          <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-            {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => {
-              const monthVal = `${m}-2026`;
-              const isActive = selectedMonth === monthVal;
-              const monthNames: Record<string, string> = {
-                '01': 'ENE', '02': 'FEB', '03': 'MAR', '04': 'ABR', '05': 'MAY', '06': 'JUN',
-                '07': 'JUL', '08': 'AGO', '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DIC'
-              };
-              
-              return (
-                <button
-                  key={m}
-                  onClick={() => setSelectedMonth(monthVal)}
-                  style={{
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    fontSize: '11px',
-                    fontWeight: '900',
-                    cursor: 'pointer',
-                    backgroundColor: isActive ? '#019df4' : 'transparent',
-                    color: isActive ? 'white' : '#64748b',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {monthNames[m]}
-                </button>
-              );
-            })}
-          </div>
         </div>
       </header>
 
@@ -387,6 +356,48 @@ export default function NPSDashboardPage() {
 
         {/* Trend Chart */}
         <TrendChart data={trendData} />
+
+        {/* Month Selector */}
+        <div style={{ marginBottom: '32px' }}>
+          <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px', paddingLeft: '4px' }}>
+            MES SELECCIONADO
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => {
+              const monthVal = `${m}-2026`;
+              const isActive = selectedMonth === monthVal;
+              const monthNames: Record<string, string> = {
+                '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio',
+                '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+              };
+
+              return (
+                <button
+                  key={m}
+                  onClick={() => setSelectedMonth(monthVal)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 20px',
+                    borderRadius: '14px',
+                    border: isActive ? '2px solid #019df4' : '1px solid #cbd5e1',
+                    backgroundColor: isActive ? '#019df4' : 'white',
+                    color: isActive ? 'white' : '#475569',
+                    fontSize: '13px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.3)' : '0 2px 4px rgba(0,0,0,0.02)',
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>📅</span>
+                  {monthNames[m]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Expandable Hierarchy Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
