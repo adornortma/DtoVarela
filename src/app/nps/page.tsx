@@ -83,7 +83,7 @@ const TrendChart = ({ data }: { data: any[] }) => {
         </h3>
       </div>
       <ResponsiveContainer width="100%" height="85%">
-        <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 30, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis 
             dataKey="mes" 
@@ -104,6 +104,7 @@ const TrendChart = ({ data }: { data: any[] }) => {
             axisLine={false} 
             tickLine={false} 
             tick={{ fontSize: 10, fontWeight: 900, fill: '#000000' }}
+            domain={[-100, 110]}
           />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontWeight: '700' }}
@@ -206,7 +207,10 @@ export default function NPSDashboardPage() {
   const availableCells = useMemo(() => {
     const cells = new Set(agregado.filter(d => d.celula !== null && d.distrito === selectedDistrito).map(d => d.celula!));
     detalles.forEach(d => cells.add(d.tx_celula));
-    return Array.from(cells).sort();
+    
+    // Filter out unwanted cells
+    const filtered = Array.from(cells).filter(c => c !== 'ACCESO_VARELA');
+    return filtered.sort();
   }, [agregado, detalles, selectedDistrito]);
 
   const filteredAgregado = useMemo(() => {
