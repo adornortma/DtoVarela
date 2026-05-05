@@ -93,22 +93,39 @@ export default function NPSDashboardPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: aggData } = await supabase.from('nps_agregado').select('*').order('mes', { ascending: true });
-    const { data: detData } = await supabase.from('nps_detalles').select('*').order('fecha', { ascending: false });
-    
-    setAgregado(aggData || []);
-    setDetalles(detData || []);
-    
-    // Set default month to the latest available
-    if (aggData && aggData.length > 0) {
-      const sortedMonths = [...new Set(aggData.map(d => d.mes))].sort((a, b) => {
+    try {
+      const { data: aggData } = await supabase.from('nps_agregado').select('*').order('mes', { ascending: true });
+      const { data: detData } = await supabase.from('nps_detalles').select('*').order('fecha', { ascending: false });
+      
+      const safeAgg = aggData || [];
+      const safeDet = detData || [];
+      
+      setAgregado(safeAgg);
+      setDetalles(safeDet);
+      
+      // Get all available months from both sources
+      const aggMonths = safeAgg.map(d => d.mes);
+      const detMonths = safeDet.map(d => {
+        const date = new Date(d.fecha);
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear();
+        return `${m}-${y}`;
+      });
+      
+      const allMonths = [...new Set([...aggMonths, ...detMonths])].sort((a, b) => {
         const [mA, yA] = a.split('-').map(Number);
         const [mB, yB] = b.split('-').map(Number);
         return yB !== yA ? yB - yA : mB - mA;
       });
-      setSelectedMonth(sortedMonths[0]);
+
+      if (allMonths.length > 0 && !selectedMonth) {
+        setSelectedMonth(allMonths[0]);
+      }
+    } catch (err) {
+      console.error("Error fetching NPS data:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Derived Data
@@ -214,6 +231,17 @@ export default function NPSDashboardPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '16px' }}>
+          <button 
+            onClick={fetchData}
+            style={{ 
+              padding: '12px', backgroundColor: 'white', border: '1px solid #eef2f6', 
+              borderRadius: '16px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px'
+            }}
+            title="Refrescar Datos"
+          >
+            <Loader2 size={18} className={loading ? "animate-spin" : ""} />
+          </button>
+
           <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '16px', border: '1px solid #eef2f6', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Calendar size={18} color="#94a3b8" />
             <select 
@@ -221,9 +249,17 @@ export default function NPSDashboardPage() {
               onChange={(e) => setSelectedMonth(e.target.value)}
               style={{ border: 'none', fontWeight: '800', fontSize: '14px', outline: 'none', backgroundColor: 'transparent' }}
             >
-              {[...new Set(agregado.map(d => d.mes))].sort().reverse().map(m => (
+              {Array.from(new Set([...agregado.map(d => d.mes), ...detalles.map(d => {
+                const date = new Date(d.fecha);
+                return `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+              })])).sort((a, b) => {
+                const [mA, yA] = a.split('-').map(Number);
+                const [mB, yB] = b.split('-').map(Number);
+                return yB !== yA ? yB - yA : mB - mA;
+              }).map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
+              {selectedMonth === '' && <option value="">Sin Datos</option>}
             </select>
           </div>
         </div>
