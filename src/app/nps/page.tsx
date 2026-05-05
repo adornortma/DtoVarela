@@ -11,8 +11,21 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  TrendingUp
 } from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  ComposedChart, 
+  Line, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend,
+  Cell as RechartsCell
+} from 'recharts';
 
 // --- Types ---
 interface NPSAgregado {
@@ -53,6 +66,70 @@ const MetricCard = ({ title, value, subValue, type }: { title: string, value: st
     {subValue && <p style={{ fontSize: '10px', fontWeight: '700', color: '#019df4', margin: 0 }}>{subValue}</p>}
   </div>
 );
+
+const TrendChart = ({ data }: { data: any[] }) => {
+  if (data.length === 0) return null;
+
+  return (
+    <div style={{ 
+      backgroundColor: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #cbd5e1', 
+      marginBottom: '24px', height: '320px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' 
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <TrendingUp size={16} color="#019df4" />
+        <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Evolución Histórica NPS
+        </h3>
+      </div>
+      <ResponsiveContainer width="100%" height="85%">
+        <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis 
+            dataKey="mes" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} 
+            dy={10}
+          />
+          <YAxis 
+            yAxisId="left"
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+          />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+          />
+          <Tooltip 
+            contentStyle={{ borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontWeight: '700' }}
+          />
+          <Bar 
+            yAxisId="left"
+            dataKey="total_encuestas" 
+            name="Encuestas" 
+            fill="#e2e8f0" 
+            radius={[4, 4, 0, 0]} 
+            barSize={40}
+          />
+          <Line 
+            yAxisId="right"
+            type="monotone" 
+            dataKey="nps" 
+            name="NPS" 
+            stroke="#10b981" 
+            strokeWidth={3} 
+            dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} 
+            activeDot={{ r: 6, strokeWidth: 0 }}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 export default function NPSDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -179,6 +256,16 @@ export default function NPSDashboardPage() {
     };
   }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
 
+  const trendData = useMemo(() => {
+    return filteredAgregado
+      .filter(d => d.celula === null)
+      .sort((a, b) => {
+        const [mA, yA] = a.mes.split('-').map(Number);
+        const [mB, yB] = b.mes.split('-').map(Number);
+        return yA !== yB ? yA - yB : mA - mB;
+      });
+  }, [filteredAgregado]);
+
   const getNPSColor = (nps: number) => {
     if (nps > 70) return '#10b981';
     if (nps >= 50) return '#f59e0b';
@@ -266,6 +353,9 @@ export default function NPSDashboardPage() {
             type="total"
           />
         </div>
+
+        {/* Trend Chart */}
+        <TrendChart data={trendData} />
 
         {/* Expandable Hierarchy Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
