@@ -144,7 +144,6 @@ export default function NPSDashboardPage() {
   const [selectedDistrito] = useState('VARELA');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // MM-YYYY
   const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
-  const [selectedSentiment, setSelectedSentiment] = useState<'TODOS' | 'PROMOTORES' | 'NEUTROS' | 'DETRACTORES'>('TODOS');
   
   // Expansion State
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
@@ -322,7 +321,22 @@ export default function NPSDashboardPage() {
         const [mB, yB] = b.mes.split('-').map(Number);
         return yA !== yB ? yA - yB : mA - mB;
       });
-  }, [filteredAgregado, detalles, selectedCelula]);
+  const sentimentCounts = useMemo(() => {
+    const monthDetalles = detalles.filter(d => {
+      const dDate = new Date(d.fecha);
+      const monthStr = `${String(dDate.getMonth() + 1).padStart(2, '0')}-${dDate.getFullYear()}`;
+      const matchesMonth = monthStr === selectedMonth;
+      const matchesCell = selectedCelula ? d.tx_celula === selectedCelula : true;
+      return matchesMonth && matchesCell;
+    });
+
+    return monthDetalles.reduce((acc, d) => {
+      if (d.promotor === 1) acc.p++;
+      else if (d.detractor === 1) acc.d++;
+      else acc.n++;
+      return acc;
+    }, { p: 0, n: 0, d: 0 });
+  }, [detalles, selectedMonth, selectedCelula]);
 
   const getNPSColor = (nps: number) => {
     if (nps > 70) return '#10b981';
@@ -454,46 +468,26 @@ export default function NPSDashboardPage() {
           </div>
         </div>
 
-        {/* 3. Sentiment Filter */}
+        {/* 3. Sentiment Counters (Static) */}
         <div style={{ marginBottom: '32px' }}>
           <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', paddingLeft: '4px' }}>
-            FILTRAR POR SENTIMIENTO
+            RESUMEN DE ENCUESTAS
           </p>
-          <div style={{ display: 'flex', gap: '8px', backgroundColor: 'white', padding: '10px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
-            {[
-              { id: 'TODOS', label: 'TODOS', color: '#019df4', emoji: '👥' },
-              { id: 'PROMOTORES', label: 'PROMOTORES', color: '#10b981', emoji: '✅' },
-              { id: 'NEUTROS', label: 'NEUTROS', color: '#f59e0b', emoji: '⚖️' },
-              { id: 'DETRACTORES', label: 'DETRACTORES', color: '#ef4444', emoji: '❌' }
-            ].map(f => {
-              const isActive = selectedSentiment === f.id;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setSelectedSentiment(f.id as any)}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    border: isActive ? `2px solid ${f.color}` : '1px solid #e2e8f0',
-                    backgroundColor: isActive ? f.color : 'white',
-                    color: isActive ? 'white' : '#64748b',
-                    fontSize: '11px',
-                    fontWeight: '900',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: isActive ? `0 4px 12px ${f.color}40` : 'none'
-                  }}
-                >
-                  <span>{f.emoji}</span>
-                  {f.label}
-                </button>
-              );
-            })}
+          <div style={{ display: 'flex', gap: '12px', backgroundColor: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <p style={{ fontSize: '24px', fontWeight: '950', color: '#10b981', margin: 0 }}>{sentimentCounts.p}</p>
+              <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>Promotores</p>
+            </div>
+            <div style={{ width: '1px', backgroundColor: '#e2e8f0' }} />
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <p style={{ fontSize: '24px', fontWeight: '950', color: '#f59e0b', margin: 0 }}>{sentimentCounts.n}</p>
+              <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>Neutros</p>
+            </div>
+            <div style={{ width: '1px', backgroundColor: '#e2e8f0' }} />
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <p style={{ fontSize: '24px', fontWeight: '950', color: '#ef4444', margin: 0 }}>{sentimentCounts.d}</p>
+              <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>Detractores</p>
+            </div>
           </div>
         </div>
 
@@ -540,11 +534,6 @@ export default function NPSDashboardPage() {
                     {Object.entries(
                       detalles.filter(d => d.tx_celula === cell.celula && (`${String(new Date(d.fecha).getMonth() + 1).padStart(2, '0')}-${new Date(d.fecha).getFullYear()}` === selectedMonth))
                         .reduce((acc, d) => {
-                          // Apply sentiment filter
-                          if (selectedSentiment === 'PROMOTORES' && d.promotor !== 1) return acc;
-                          if (selectedSentiment === 'DETRACTORES' && d.detractor !== 1) return acc;
-                          if (selectedSentiment === 'NEUTROS' && (d.promotor === 1 || d.detractor === 1)) return acc;
-
                           if (!acc[d.nombre_tecnico]) acc[d.nombre_tecnico] = { count: 0, p: 0, d: 0, surveys: [] };
                           acc[d.nombre_tecnico].count++;
                           acc[d.nombre_tecnico].p += d.promotor;
@@ -554,7 +543,6 @@ export default function NPSDashboardPage() {
                         }, {} as Record<string, { count: number, p: number, d: number, surveys: NPSEncuesta[] }>)
                     ).map(([techName, stats]) => {
                       const techKey = `${cell.celula}-${techName}`;
-                      if (stats.surveys.length === 0) return null;
                       
                       return (
                         <div key={techKey} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', backgroundColor: 'white' }}>
@@ -567,9 +555,9 @@ export default function NPSDashboardPage() {
                               <span style={{ fontSize: '13px', fontWeight: '800', color: '#4b5563', minWidth: '160px' }}>{techName}</span>
                               
                               <div style={{ display: 'flex', gap: '6px' }}>
-                                {(selectedSentiment === 'TODOS' || selectedSentiment === 'PROMOTORES') && stats.p > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '6px', border: '1px solid #10b98120' }}>{stats.p} PROMOTOR</span>}
-                                {(selectedSentiment === 'TODOS' || selectedSentiment === 'NEUTROS') && (stats.count - stats.p - stats.d) > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fff7ed', color: '#f59e0b', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f59e0b20' }}>{stats.count - stats.p - stats.d} NEUTRO</span>}
-                                {(selectedSentiment === 'TODOS' || selectedSentiment === 'DETRACTORES') && stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ef444420' }}>{stats.d} DETRACTOR</span>}
+                                {stats.p > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '6px', border: '1px solid #10b98120' }}>{stats.p} PROMOTOR</span>}
+                                {stats.count - stats.p - stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fff7ed', color: '#f59e0b', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f59e0b20' }}>{stats.count - stats.p - stats.d} NEUTRO</span>}
+                                {stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ef444420' }}>{stats.d} DETRACTOR</span>}
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
