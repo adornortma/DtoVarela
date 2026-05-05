@@ -98,9 +98,19 @@ export default function NPSAdminPage() {
 
       if (accessIdIdx === -1 || fechaIdx === -1) throw new Error('Faltan columnas críticas (access_id, fecha)');
 
-      // Handle Excel date format or string date
+      // Handle Excel date format (DD/MM/YYYY HH:MM) or string date
       let fecha = row[fechaIdx];
-      if (!isNaN(Date.parse(fecha))) {
+      if (fecha.includes('/')) {
+        const parts = fecha.split(' ');
+        const dateParts = parts[0].split('/');
+        if (dateParts.length === 3) {
+          const day = dateParts[0].padStart(2, '0');
+          const month = dateParts[1].padStart(2, '0');
+          const year = dateParts[2];
+          const time = parts[1] || '00:00';
+          fecha = `${year}-${month}-${day}T${time}:00`;
+        }
+      } else if (!isNaN(Date.parse(fecha))) {
         fecha = new Date(fecha).toISOString();
       }
 
