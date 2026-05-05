@@ -82,19 +82,25 @@ export default function NPSAdminPage() {
   };
 
   const handleProcessDetalles = async (headers: string[], rows: string[][]) => {
-    // Fuzzy header matching
-    const getIdx = (variants: string[]) => headers.findIndex(h => variants.some(v => h.includes(v)));
+    // Prioritize variants in order
+    const getIdx = (variants: string[]) => {
+      for (const variant of variants) {
+        const idx = headers.findIndex(h => h.includes(variant));
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    };
 
     const accessIdIdx = getIdx(['access', 'id']);
     const fechaIdx = getIdx(['fecha', 'cita', 'date']);
     const celulaIdx = getIdx(['celula', 'tx_celula', 'unidad']);
-    const dniIdx = getIdx(['dni', 'documento']);
-    const nombreIdx = getIdx(['nombre', 'tecnico', 'agente']);
+    const dniIdx = getIdx(['dni', 'documento', 'legajo']);
+    const nombreIdx = getIdx(['nombre', 'agente', 'apellido', 'tecnico']);
     const recIdx = getIdx(['recomendacion', 'score']);
     const cordIdx = getIdx(['cordialidad']);
     const promIdx = getIdx(['promotor']);
     const detrIdx = getIdx(['detractor']);
-    const obsRecIdx = getIdx(['obs_recomendacion', 'comentario']);
+    const obsRecIdx = getIdx(['obs_recomendacion', 'comentario', 'observacion']);
     const obsWappIdx = getIdx(['obs_wapp', 'whatsapp']);
     const obsResIdx = getIdx(['obs_resoluci', 'descargo', 'gestion']);
 
