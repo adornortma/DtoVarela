@@ -152,6 +152,7 @@ export default function NPSDashboardPage() {
   // Expansion State
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [expandedTechs, setExpandedTechs] = useState<Set<string>>(new Set());
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -631,7 +632,19 @@ export default function NPSDashboardPage() {
                                           {(enc.evidencia || []).length > 0 && (
                                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                                               {(enc.evidencia || []).map((url, idx) => (
-                                                <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                <div 
+                                                  key={idx} 
+                                                  style={{ 
+                                                    position: 'relative', 
+                                                    width: '60px', 
+                                                    height: '60px', 
+                                                    borderRadius: '8px', 
+                                                    overflow: 'hidden', 
+                                                    border: '1px solid #e2e8f0',
+                                                    cursor: 'pointer' 
+                                                  }}
+                                                  onClick={() => setPreviewImage(url)}
+                                                >
                                                   <img src={url} alt="evidencia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                   <button 
                                                     onClick={() => {
@@ -753,7 +766,36 @@ export default function NPSDashboardPage() {
             </div>
           )}
         </div>
-      </div>
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div 
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 1000, padding: '20px'
+          }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }} onClick={e => e.stopPropagation()}>
+            <img 
+              src={previewImage} 
+              alt="Preview" 
+              style={{ width: '100%', height: 'auto', borderRadius: '12px', border: '4px solid white' }} 
+            />
+            <button 
+              onClick={() => setPreviewImage(null)}
+              style={{
+                position: 'absolute', top: '-15px', right: '-15px', width: '30px', height: '30px',
+                borderRadius: '50%', border: 'none', backgroundColor: '#ef4444', color: 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
