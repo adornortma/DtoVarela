@@ -12,7 +12,10 @@ import {
   CheckCircle2,
   Loader2,
   ChevronDown,
-  TrendingUp
+  TrendingUp,
+  Save,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -601,24 +604,107 @@ export default function NPSDashboardPage() {
                                     </div>
                                     
                                     {isDetractor && (
-                                      <div style={{ marginTop: '10px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
-                                        <textarea 
-                                          defaultValue={enc.obs_resoluci || ''}
-                                          onBlur={async (e) => {
-                                            const val = e.target.value;
-                                            if (val === enc.obs_resoluci) return;
-                                            await supabase.from('nps_detalles').update({ obs_resoluci: val }).eq('access_id', enc.access_id);
-                                            setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val } : d));
-                                          }}
-                                          placeholder="Añadir descargo..."
-                                          style={{ 
-                                            width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', 
-                                            fontSize: '11px', fontWeight: '700', outline: 'none', minHeight: '50px', resize: 'vertical'
-                                          }}
-                                        />
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontSize: '9px', fontWeight: '900', color: enc.obs_resoluci ? '#10b981' : '#ef4444' }}>
-                                          {enc.obs_resoluci ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
-                                          {enc.obs_resoluci ? 'GESTIONADO' : 'PENDIENTE'}
+                                      <div style={{ marginTop: '12px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '12px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          <textarea 
+                                            id={`descargo-${enc.access_id}`}
+                                            defaultValue={enc.obs_resoluci || ''}
+                                            placeholder="Describir gestión realizada..."
+                                            style={{ 
+                                              width: '100%', 
+                                              boxSizing: 'border-box',
+                                              padding: '12px', 
+                                              borderRadius: '12px', 
+                                              border: '1px solid #cbd5e1', 
+                                              fontSize: '12px', 
+                                              fontWeight: '600', 
+                                              color: '#1e293b',
+                                              outline: 'none', 
+                                              minHeight: '80px', 
+                                              resize: 'none',
+                                              backgroundColor: '#ffffff'
+                                            }}
+                                          />
+                                          
+                                          {/* Evidence Gallery */}
+                                          {(enc.evidencia || []).length > 0 && (
+                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                              {(enc.evidencia || []).map((url, idx) => (
+                                                <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                  <img src={url} alt="evidencia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                  <button 
+                                                    onClick={async () => {
+                                                      const newEv = (enc.evidencia || []).filter((_, i) => i !== idx);
+                                                      await supabase.from('nps_detalles').update({ evidencia: newEv }).eq('access_id', enc.access_id);
+                                                      setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, evidencia: newEv } : d));
+                                                    }}
+                                                    style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', padding: '2px', cursor: 'pointer' }}
+                                                  >
+                                                    <X size={10} />
+                                                  </button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                              <button
+                                                onClick={() => {
+                                                  const input = document.createElement('input');
+                                                  input.type = 'file';
+                                                  input.accept = 'image/*';
+                                                  input.onchange = async (e: any) => {
+                                                    const file = e.target.files[0];
+                                                    if (!file) return;
+                                                    // Note: In a real app, upload to storage first. Mocking for now.
+                                                    const reader = new FileReader();
+                                                    reader.onload = async (re: any) => {
+                                                      const fakeUrl = re.target.result; 
+                                                      const newEv = [...(enc.evidencia || []), fakeUrl].slice(0, 3);
+                                                      await supabase.from('nps_detalles').update({ evidencia: newEv }).eq('access_id', enc.access_id);
+                                                      setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, evidencia: newEv } : d));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                  };
+                                                  input.click();
+                                                }}
+                                                disabled={(enc.evidencia || []).length >= 3}
+                                                style={{
+                                                  display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
+                                                  borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc',
+                                                  fontSize: '11px', fontWeight: '900', color: '#64748b', cursor: 'pointer',
+                                                  opacity: (enc.evidencia || []).length >= 3 ? 0.5 : 1
+                                                }}
+                                              >
+                                                <ImageIcon size={14} />
+                                                SUBIR EVIDENCIA
+                                              </button>
+                                              
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: '900', color: enc.obs_resoluci ? '#10b981' : '#ef4444' }}>
+                                                {enc.obs_resoluci ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                                                {enc.obs_resoluci ? 'GESTIONADO' : 'PENDIENTE'}
+                                              </div>
+                                            </div>
+
+                                            <button 
+                                              onClick={async () => {
+                                                const el = document.getElementById(`descargo-${enc.access_id}`) as HTMLTextAreaElement;
+                                                const val = el.value;
+                                                await supabase.from('nps_detalles').update({ obs_resoluci: val }).eq('access_id', enc.access_id);
+                                                setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val } : d));
+                                              }}
+                                              style={{ 
+                                                display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px',
+                                                borderRadius: '10px', border: 'none', backgroundColor: '#1e293b',
+                                                color: 'white', fontSize: '12px', fontWeight: '900', cursor: 'pointer',
+                                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                              }}
+                                            >
+                                              <Save size={14} />
+                                              GUARDAR
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
                                     )}
