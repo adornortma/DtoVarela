@@ -417,60 +417,116 @@ export default function NPSDashboardPage() {
         )}
 
         {viewLevel === 'encuestas' && (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#fcfdfe' }}>
-                <th style={{ textAlign: 'left', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Fecha</th>
-                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Tipo</th>
-                <th style={{ textAlign: 'left', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Comentario Cliente</th>
-                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Estado</th>
-                <th style={{ textAlign: 'right', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSurveys.map(enc => {
-                const isPromotor = enc.promotor === 1;
-                const isDetractor = enc.detractor === 1;
-                const typeColor = isPromotor ? '#10b981' : isDetractor ? '#ef4444' : '#f59e0b';
-                const typeIcon = isPromotor ? <Smile size={20} /> : isDetractor ? <Frown size={20} /> : <Meh size={20} />;
-                const comment = [enc.obs_recomendacion, enc.obs_wapp].filter(Boolean).join(' | ');
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '0 8px' }}>
+            {Object.entries(
+              filteredSurveys.reduce((acc, enc) => {
+                const key = enc.nombre_tecnico;
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(enc);
+                return acc;
+              }, {} as Record<string, NPSEncuesta[]>)
+            ).map(([tecnico, tecnicoSurveys]) => (
+              <div key={tecnico} style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #eef2f6', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                <div style={{ padding: '24px 32px', backgroundColor: '#fcfdfe', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', backgroundColor: '#f1f5f9', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                      <User size={24} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '18px', fontWeight: '900', color: '#1a1a1a', margin: 0 }}>{tecnico}</h4>
+                      <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', margin: 0 }}>Célula: {tecnicoSurveys[0].tx_celula}</p>
+                    </div>
+                  </div>
+                  <div style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', borderRadius: '12px', fontSize: '13px', fontWeight: '900', color: '#1a1a1a' }}>
+                    {tecnicoSurveys.length} Encuestas
+                  </div>
+                </div>
 
-                return (
-                  <tr key={enc.access_id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                    <td style={{ padding: '24px 32px', fontSize: '14px', fontWeight: '800', color: '#64748b' }}>
-                      {new Date(enc.fecha).toLocaleDateString('es-AR')}
-                    </td>
-                    <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                      <div style={{ color: typeColor, display: 'inline-flex' }}>{typeIcon}</div>
-                    </td>
-                    <td style={{ padding: '24px 32px', maxWidth: '300px' }}>
-                      <p style={{ fontSize: '13px', fontWeight: '700', color: '#4b5563', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {comment || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Sin comentario</span>}
-                      </p>
-                    </td>
-                    <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                      <span style={{ 
-                        fontSize: '11px', fontWeight: '900', padding: '6px 12px', borderRadius: '20px',
-                        backgroundColor: enc.obs_resoluci ? '#f0fdf4' : '#fef2f2',
-                        color: enc.obs_resoluci ? '#16a34a' : '#dc2626',
-                        border: enc.obs_resoluci ? '1px solid #bbf7d0' : '1px solid #fecaca'
+                <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {tecnicoSurveys.map((enc) => {
+                    const isPromotor = enc.promotor === 1;
+                    const isDetractor = enc.detractor === 1;
+                    const isNeutro = !isPromotor && !isDetractor;
+                    
+                    const statusColor = isPromotor ? '#10b981' : isDetractor ? '#ef4444' : '#f59e0b';
+                    const statusBg = isPromotor ? '#ecfdf5' : isDetractor ? '#fef2f2' : '#fff7ed';
+                    const statusIcon = isPromotor ? <Smile size={20} /> : isDetractor ? <Frown size={20} /> : <Meh size={20} />;
+                    const statusLabel = isPromotor ? 'Promotor' : isDetractor ? 'Detractor' : 'Neutro';
+
+                    return (
+                      <div key={enc.access_id} style={{ 
+                        padding: '24px', borderRadius: '24px', border: `1px solid ${statusColor}20`, 
+                        backgroundColor: statusBg, position: 'relative', overflow: 'hidden' 
                       }}>
-                        {enc.obs_resoluci ? 'Gestionado' : 'Pendiente'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '24px 32px', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => { setSelectedEncuesta(enc); setNewDescargo(enc.obs_resoluci || ''); setIsModalOpen(true); }}
-                        style={{ padding: '10px 20px', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' }}
-                      >
-                        Gestionar
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        {/* Status Badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', borderRadius: '14px', backgroundColor: 'white', border: `1px solid ${statusColor}30`, color: statusColor, fontWeight: '900', fontSize: '13px' }}>
+                            {statusIcon} {statusLabel}
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8' }}>
+                            {new Date(enc.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                        </div>
+
+                        {/* Observations */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: isDetractor ? '24px' : '0' }}>
+                          {enc.obs_recomendacion && (
+                            <div style={{ paddingLeft: '16px', borderLeft: `3px solid ${statusColor}40` }}>
+                              <p style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Observación Recomendación</p>
+                              <p style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.5' }}>"{enc.obs_recomendacion}"</p>
+                            </div>
+                          )}
+                          {enc.obs_wapp && (
+                            <div style={{ paddingLeft: '16px', borderLeft: `3px solid #019df440` }}>
+                              <p style={{ fontSize: '11px', fontWeight: '900', color: '#019df4', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Comentario WhatsApp</p>
+                              <p style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.5' }}>"{enc.obs_wapp}"</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Inline Descargo for Detractors */}
+                        {isDetractor && (
+                          <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                              <MessageSquare size={16} color="#64748b" />
+                              <span style={{ fontSize: '12px', fontWeight: '900', color: '#64748b' }}>Gestión del Líder</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <textarea 
+                                defaultValue={enc.obs_resoluci || ''}
+                                onBlur={async (e) => {
+                                  const val = e.target.value;
+                                  if (val === enc.obs_resoluci) return;
+                                  // Auto-save on blur
+                                  await supabase.from('nps_detalles').update({ obs_resoluci: val }).eq('access_id', enc.access_id);
+                                  setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val } : d));
+                                }}
+                                placeholder="Escribe aquí el descargo sobre este comentario..."
+                                style={{ 
+                                  flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #eef2f6', 
+                                  fontSize: '14px', fontWeight: '700', minHeight: '80px', outline: 'none',
+                                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                                }}
+                              />
+                            </div>
+                            {enc.obs_resoluci ? (
+                              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '12px', fontWeight: '800' }}>
+                                <CheckCircle2 size={14} /> Gestionado
+                              </div>
+                            ) : (
+                              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '12px', fontWeight: '800' }}>
+                                <AlertCircle size={14} /> Pendiente de gestión
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
