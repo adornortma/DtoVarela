@@ -766,6 +766,7 @@ export default function NPSDashboardPage() {
             </div>
           )}
         </div>
+      </div>
       {/* Image Preview Modal */}
       {previewImage && (
         <div 
