@@ -321,6 +321,8 @@ export default function NPSDashboardPage() {
         const [mB, yB] = b.mes.split('-').map(Number);
         return yA !== yB ? yA - yB : mA - mB;
       });
+  }, [filteredAgregado, detalles, selectedCelula]);
+
   const sentimentCounts = useMemo(() => {
     const monthDetalles = detalles.filter(d => {
       const dDate = new Date(d.fecha);
