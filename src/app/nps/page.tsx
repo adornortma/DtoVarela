@@ -328,6 +328,7 @@ export default function NPSDashboardPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
             onClick={fetchData}
             style={{ padding: '8px 12px', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', cursor: 'pointer', color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '11px' }}
           >
