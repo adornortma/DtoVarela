@@ -82,55 +82,73 @@ export default function NPSAdminPage() {
   };
 
   const handleProcessDetalles = async (headers: string[], rows: string[][]) => {
+    // Fuzzy header matching
+    const getIdx = (variants: string[]) => headers.findIndex(h => variants.some(v => h.includes(v)));
+
+    const accessIdIdx = getIdx(['access', 'id']);
+    const fechaIdx = getIdx(['fecha', 'cita', 'date']);
+    const celulaIdx = getIdx(['celula', 'tx_celula', 'unidad']);
+    const dniIdx = getIdx(['dni', 'documento']);
+    const nombreIdx = getIdx(['nombre', 'tecnico', 'agente']);
+    const recIdx = getIdx(['recomendacion', 'score']);
+    const cordIdx = getIdx(['cordialidad']);
+    const promIdx = getIdx(['promotor']);
+    const detrIdx = getIdx(['detractor']);
+    const obsRecIdx = getIdx(['obs_recomendacion', 'comentario']);
+    const obsWappIdx = getIdx(['obs_wapp', 'whatsapp']);
+    const obsResIdx = getIdx(['obs_resoluci', 'descargo', 'gestion']);
+
+    if (accessIdIdx === -1 || fechaIdx === -1) {
+      throw new Error(`Faltan columnas críticas. Detectadas: ${headers.join(', ')}`);
+    }
+
     const dataToInsert = rows.map(row => {
-      const accessIdIdx = headers.indexOf('access_id');
-      const fechaIdx = headers.indexOf('fecha');
-      const celulaIdx = headers.indexOf('tx_celula');
-      const dniIdx = headers.indexOf('dni_tecnico');
-      const nombreIdx = headers.indexOf('nombre_tecnico');
-      const recIdx = headers.indexOf('recomendacion');
-      const cordIdx = headers.indexOf('cordialidad_tecnico');
-      const promIdx = headers.indexOf('promotor');
-      const detrIdx = headers.indexOf('detractor');
-      const obsRecIdx = headers.indexOf('obs_recomendacion');
-      const obsWappIdx = headers.indexOf('obs_wapp');
-      const obsResIdx = headers.indexOf('obs_resoluci');
+      let fechaRaw = row[fechaIdx] || '';
+      let fechaIso = fechaRaw;
 
-      if (accessIdIdx === -1 || fechaIdx === -1) throw new Error('Faltan columnas críticas (access_id, fecha)');
-
-      // Handle Excel date format (DD/MM/YYYY HH:MM) or string date
-      let fecha = row[fechaIdx];
-      if (fecha.includes('/')) {
-        const parts = fecha.split(' ');
+      // Robust date parsing (DD/MM/YYYY HH:MM)
+      if (fechaRaw.includes('/')) {
+        // Split by any whitespace (space, tab, etc.)
+        const parts = fechaRaw.split(/\s+/);
         const dateParts = parts[0].split('/');
+        
         if (dateParts.length === 3) {
-          const day = dateParts[0].padStart(2, '0');
-          const month = dateParts[1].padStart(2, '0');
-          const year = dateParts[2];
+          let [day, month, year] = dateParts;
+          day = day.padStart(2, '0');
+          month = month.padStart(2, '0');
+          
+          // Handle 2-digit years
+          if (year.length === 2) year = '20' + year;
+          
           const time = parts[1] || '00:00';
-          fecha = `${year}-${month}-${day}T${time}:00`;
+          // Ensure time is HH:MM:SS
+          const timeParts = time.split(':');
+          const hh = (timeParts[0] || '00').padStart(2, '0');
+          const mm = (timeParts[1] || '00').padStart(2, '0');
+          const ss = (timeParts[2] || '00').padStart(2, '0');
+          
+          fechaIso = `${year}-${month}-${day}T${hh}:${mm}:${ss}`;
         }
-      } else if (!isNaN(Date.parse(fecha))) {
-        fecha = new Date(fecha).toISOString();
+      } else if (fechaRaw && !isNaN(Date.parse(fechaRaw))) {
+        fechaIso = new Date(fechaRaw).toISOString();
       }
 
       return {
         access_id: row[accessIdIdx],
-        fecha: fecha,
-        tx_celula: row[celulaIdx] || 'SIN CELULA',
-        dni_tecnico: row[dniIdx] || null,
-        nombre_tecnico: row[nombreIdx] || null,
-        recomendacion: parseInt(row[recIdx] || '0'),
-        cordialidad_tecnico: parseInt(row[cordIdx] || '0'),
-        promotor: parseInt(row[promIdx] || '0'),
-        detractor: parseInt(row[detrIdx] || '0'),
-        obs_recomendacion: row[obsRecIdx] || null,
-        obs_wapp: row[obsWappIdx] || null,
-        obs_resoluci: row[obsResIdx] || null
+        fecha: fechaIso,
+        tx_celula: celulaIdx !== -1 ? row[celulaIdx] : 'SIN CELULA',
+        dni_tecnico: dniIdx !== -1 ? row[dniIdx] : null,
+        nombre_tecnico: nombreIdx !== -1 ? row[nombreIdx] : null,
+        recomendacion: recIdx !== -1 ? parseInt(row[recIdx] || '0') : 0,
+        cordialidad_tecnico: cordIdx !== -1 ? parseInt(row[cordIdx] || '0') : 0,
+        promotor: promIdx !== -1 ? parseInt(row[promIdx] || '0') : 0,
+        detractor: detrIdx !== -1 ? parseInt(row[detrIdx] || '0') : 0,
+        obs_recomendacion: obsRecIdx !== -1 ? row[obsRecIdx] : null,
+        obs_wapp: obsWappIdx !== -1 ? row[obsWappIdx] : null,
+        obs_resoluci: obsResIdx !== -1 ? row[obsResIdx] : null
       };
     });
 
-    // Chunking to avoid large request limits if necessary, but upsert handles moderate sizes
     const { error } = await supabase.from('nps_detalles').upsert(dataToInsert, { onConflict: 'access_id' });
     if (error) throw error;
     return dataToInsert.length;

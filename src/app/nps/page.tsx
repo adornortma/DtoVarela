@@ -3,27 +3,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   MessageSquare, 
   User, 
   ChevronRight, 
-  ChevronLeft,
-  Filter,
   BarChart3,
-  Search,
-  ArrowRight,
-  CloudRain,
-  Smile,
-  Frown,
-  Meh,
   Calendar,
   AlertCircle,
   CheckCircle2,
-  X,
-  FileText,
-  Save,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 
 // --- Types ---
@@ -54,15 +42,15 @@ interface NPSEncuesta {
 // --- Components ---
 
 const MetricCard = ({ title, value, subValue, type }: { title: string, value: string | number, subValue?: string, type: 'nps' | 'total' }) => (
-  <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '32px', border: '1px solid #eef2f6', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', flex: 1 }}>
-    <p style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{title}</p>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-      <h3 style={{ fontSize: '48px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-2px' }}>
+  <div style={{ backgroundColor: 'white', padding: '16px 20px', borderRadius: '20px', border: '1px solid #eef2f6', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', flex: 1 }}>
+    <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{title}</p>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+      <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>
         {type === 'nps' ? (typeof value === 'number' ? value.toFixed(0) : value) : value}
       </h3>
-      {type === 'nps' && <span style={{ fontSize: '20px', fontWeight: '800', color: '#94a3b8' }}>pts</span>}
+      {type === 'nps' && <span style={{ fontSize: '14px', fontWeight: '800', color: '#94a3b8' }}>pts</span>}
     </div>
-    {subValue && <p style={{ fontSize: '14px', fontWeight: '700', color: '#019df4', marginTop: '8px' }}>{subValue}</p>}
+    {subValue && <p style={{ fontSize: '11px', fontWeight: '700', color: '#019df4', marginTop: '2px' }}>{subValue}</p>}
   </div>
 );
 
@@ -72,20 +60,12 @@ export default function NPSDashboardPage() {
   const [detalles, setDetalles] = useState<NPSEncuesta[]>([]);
   
   // Selection State
-  const [selectedDistrito, setSelectedDistrito] = useState('VARELA');
-  const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
+  const [selectedDistrito] = useState('VARELA');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // MM-YYYY
   
-  // Navigation State
-  const [viewLevel, setViewLevel] = useState<'distrito' | 'celula' | 'tecnico' | 'encuestas'>('distrito');
-  const [activeCelula, setActiveCelula] = useState<string | null>(null);
-  const [activeTecnico, setActiveTecnico] = useState<string | null>(null);
-
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEncuesta, setSelectedEncuesta] = useState<NPSEncuesta | null>(null);
-  const [newDescargo, setNewDescargo] = useState('');
-  const [savingDescargo, setSavingDescargo] = useState(false);
+  // Expansion State
+  const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
+  const [expandedTechs, setExpandedTechs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchData();
@@ -103,7 +83,6 @@ export default function NPSDashboardPage() {
       setAgregado(safeAgg);
       setDetalles(safeDet);
       
-      // Get all available months from both sources
       const aggMonths = safeAgg.map(d => d.mes);
       const detMonths = safeDet.map(d => {
         const date = new Date(d.fecha);
@@ -128,6 +107,20 @@ export default function NPSDashboardPage() {
     }
   };
 
+  const toggleCell = (cell: string) => {
+    const newExpanded = new Set(expandedCells);
+    if (newExpanded.has(cell)) newExpanded.delete(cell);
+    else newExpanded.add(cell);
+    setExpandedCells(newExpanded);
+  };
+
+  const toggleTech = (techKey: string) => {
+    const newExpanded = new Set(expandedTechs);
+    if (newExpanded.has(techKey)) newExpanded.delete(techKey);
+    else newExpanded.add(techKey);
+    setExpandedTechs(newExpanded);
+  };
+
   // Derived Data
   const filteredAgregado = useMemo(() => {
     return agregado.filter(d => d.distrito === selectedDistrito);
@@ -137,7 +130,6 @@ export default function NPSDashboardPage() {
     const fromAgg = filteredAgregado.filter(d => d.mes === selectedMonth && d.celula !== null);
     if (fromAgg.length > 0) return fromAgg;
 
-    // Fallback: calculate from detalles if agregado is empty for this month
     const monthDetalles = detalles.filter(d => {
       const date = new Date(d.fecha);
       const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -165,78 +157,27 @@ export default function NPSDashboardPage() {
   }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
 
   const currentMonthData = useMemo(() => {
-    if (viewLevel === 'distrito') {
-      const fromAgg = filteredAgregado.find(d => d.mes === selectedMonth && d.celula === null);
-      if (fromAgg) return fromAgg;
-      
-      // Fallback: calculate total district NPS from cellStats
-      const totalSurveys = cellStats.reduce((acc, c) => acc + c.total_encuestas, 0);
-      if (totalSurveys === 0) return undefined;
-      
-      // We can't perfectly calculate total NPS from cell NPS without knowing exact P/D per cell, 
-      // but cellStats has it if derived from fallback. 
-      // Let's just use a simple average or recalculate.
-      const monthDetalles = detalles.filter(d => {
-        const date = new Date(d.fecha);
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const y = date.getFullYear();
-        return `${m}-${y}` === selectedMonth;
-      });
-      const p = monthDetalles.reduce((acc, d) => acc + d.promotor, 0);
-      const d = monthDetalles.reduce((acc, d) => acc + d.detractor, 0);
-      
-      return {
-        id: 'total',
-        mes: selectedMonth,
-        distrito: selectedDistrito,
-        celula: null,
-        nps: Math.round(((p - d) / (monthDetalles.length || 1)) * 100),
-        total_encuestas: monthDetalles.length
-      };
-    } else {
-      return cellStats.find(d => d.celula === activeCelula);
-    }
-  }, [filteredAgregado, selectedMonth, viewLevel, activeCelula, cellStats, detalles, selectedDistrito]);
-
-  const technicianStats = useMemo(() => {
-    if (!activeCelula) return [];
-    const cellSurveys = detalles.filter(d => d.tx_celula === activeCelula);
-    const techMap = new Map<string, { count: number, dni: string }>();
-    cellSurveys.forEach(s => {
-      const entry = techMap.get(s.nombre_tecnico) || { count: 0, dni: s.dni_tecnico };
-      entry.count++;
-      techMap.set(s.nombre_tecnico, entry);
-    });
-    return Array.from(techMap.entries()).map(([name, stats]) => ({
-      nombre_tecnico: name,
-      total_encuestas: stats.count,
-      dni_tecnico: stats.dni
-    }));
-  }, [detalles, activeCelula]);
-
-  const filteredSurveys = useMemo(() => {
-    let base = detalles;
-    if (activeCelula) base = base.filter(d => d.tx_celula === activeCelula);
-    if (activeTecnico) base = base.filter(d => d.nombre_tecnico === activeTecnico);
-    return base;
-  }, [detalles, activeCelula, activeTecnico]);
-
-  const handleSaveDescargo = async () => {
-    if (!selectedEncuesta) return;
-    setSavingDescargo(true);
-    const { error } = await supabase
-      .from('nps_detalles')
-      .update({ obs_resoluci: newDescargo })
-      .eq('access_id', selectedEncuesta.access_id);
+    const fromAgg = filteredAgregado.find(d => d.mes === selectedMonth && d.celula === null);
+    if (fromAgg) return fromAgg;
     
-    if (!error) {
-      // Refresh local state
-      setDetalles(prev => prev.map(d => d.access_id === selectedEncuesta.access_id ? { ...d, obs_resoluci: newDescargo } : d));
-      setIsModalOpen(false);
-      setSelectedEncuesta(null);
-    }
-    setSavingDescargo(false);
-  };
+    const monthDetalles = detalles.filter(d => {
+      const date = new Date(d.fecha);
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      return `${m}-${y}` === selectedMonth;
+    });
+    const p = monthDetalles.reduce((acc, d) => acc + d.promotor, 0);
+    const d = monthDetalles.reduce((acc, d) => acc + d.detractor, 0);
+    
+    return {
+      id: 'total',
+      mes: selectedMonth,
+      distrito: selectedDistrito,
+      celula: null,
+      nps: Math.round(((p - d) / (monthDetalles.length || 1)) * 100),
+      total_encuestas: monthDetalles.length
+    };
+  }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
 
   const getNPSColor = (nps: number) => {
     if (nps > 70) return '#10b981';
@@ -253,54 +194,35 @@ export default function NPSDashboardPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '40px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '24px 40px' }}>
       {/* Header */}
-      <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-             <button 
-               onClick={() => {
-                 if (viewLevel === 'encuestas') setViewLevel('tecnico');
-                 else if (viewLevel === 'tecnico') setViewLevel('distrito');
-                 else setViewLevel('distrito');
-               }}
-               style={{ 
-                 display: viewLevel === 'distrito' ? 'none' : 'flex',
-                 alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: 'white', border: '1px solid #eef2f6', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', fontSize: '13px' 
-               }}
-             >
-               <ChevronLeft size={16} /> Volver
-             </button>
-             <div style={{ padding: '8px', backgroundColor: '#1a171e', borderRadius: '10px', color: 'white' }}>
-               <BarChart3 size={20} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+             <div style={{ padding: '4px', backgroundColor: '#1a171e', borderRadius: '6px', color: 'white' }}>
+               <BarChart3 size={14} />
              </div>
-             <span style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase' }}>Encuestas de Satisfacción</span>
+             <span style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Satisfacción NPS</span>
           </div>
-          <h1 style={{ fontSize: '42px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-2px', lineHeight: '1' }}>
-            {viewLevel === 'distrito' ? `NPS Distrito ${selectedDistrito}` : 
-             viewLevel === 'tecnico' ? `Célula: ${activeCelula}` :
-             viewLevel === 'encuestas' ? `Encuestas: ${activeTecnico}` : `NPS ${selectedDistrito}`}
+          <h1 style={{ fontSize: '24px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>
+            NPS Distrito {selectedDistrito}
           </h1>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button 
             onClick={fetchData}
-            style={{ 
-              padding: '12px', backgroundColor: 'white', border: '1px solid #eef2f6', 
-              borderRadius: '16px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px'
-            }}
-            title="Refrescar Datos"
+            style={{ padding: '8px', backgroundColor: 'white', border: '1px solid #eef2f6', borderRadius: '10px', cursor: 'pointer', color: '#64748b' }}
           >
-            <Loader2 size={18} className={loading ? "animate-spin" : ""} />
+            <Loader2 size={14} className={loading ? "animate-spin" : ""} />
           </button>
 
-          <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '16px', border: '1px solid #eef2f6', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Calendar size={18} color="#94a3b8" />
+          <div style={{ backgroundColor: 'white', padding: '6px 12px', borderRadius: '10px', border: '1px solid #eef2f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Calendar size={14} color="#94a3b8" />
             <select 
               value={selectedMonth} 
               onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ border: 'none', fontWeight: '800', fontSize: '14px', outline: 'none', backgroundColor: 'transparent' }}
+              style={{ border: 'none', fontWeight: '800', fontSize: '12px', outline: 'none', backgroundColor: 'transparent' }}
             >
               {Array.from(new Set([...agregado.map(d => d.mes), ...detalles.map(d => {
                 const date = new Date(d.fecha);
@@ -312,360 +234,154 @@ export default function NPSDashboardPage() {
               }).map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
-              {selectedMonth === '' && <option value="">Sin Datos</option>}
             </select>
           </div>
         </div>
       </header>
 
-      {/* Main Stats */}
-      {viewLevel === 'distrito' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        {/* Compact Metric Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
           <MetricCard 
             title="NPS Actual" 
             value={currentMonthData?.nps || 'N/A'} 
-            subValue={`Objetivo: > 70`}
+            subValue={`Objetivo: 70+`}
             type="nps"
           />
           <MetricCard 
-            title="Total Encuestas" 
+            title="Encuestas" 
             value={currentMonthData?.total_encuestas || 0} 
             subValue={`Mes: ${selectedMonth}`}
             type="total"
           />
         </div>
-      )}
 
-      {viewLevel === 'tecnico' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
-          <MetricCard 
-            title="NPS Célula" 
-            value={currentMonthData?.nps || 'N/A'} 
-            type="nps"
-          />
-          <MetricCard 
-            title="Encuestas Recibidas" 
-            value={technicianStats.reduce((acc, curr) => acc + curr.total_encuestas, 0)} 
-            type="total"
-          />
-        </div>
-      )}
-
-      {/* Chart Section (Only in Distrito View) */}
-      {viewLevel === 'distrito' && (
-        <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '32px', border: '1px solid #eef2f6', marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '950' }}>Evolución Mensual NPS</h3>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: '800', color: '#64748b' }}>
-                <div style={{ width: '12px', height: '12px', backgroundColor: '#019df4', borderRadius: '3px' }} /> Línea NPS
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: '800', color: '#64748b' }}>
-                <div style={{ width: '12px', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '3px' }} /> Barras Encuestas
-              </div>
-            </div>
+        {/* Expandable Hierarchy Section */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ padding: '0 4px', marginBottom: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Desglose por Célula</h3>
           </div>
-          
-          {filteredAgregado.filter(d => d.celula === null).length > 0 ? (
-            <div style={{ height: '300px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', paddingBottom: '30px', position: 'relative' }}>
-              {/* Simple Grid Lines */}
-              {[0, 25, 50, 75, 100].map(val => (
-                <div key={val} style={{ position: 'absolute', bottom: `${val}%`, left: 0, right: 0, borderTop: '1px solid #f8fafc', zIndex: 0 }} />
-              ))}
-              
-              {filteredAgregado.filter(d => d.celula === null).map((d, i, arr) => {
-                const maxSurveys = Math.max(...arr.map(x => x.total_encuestas));
-                const barHeight = (d.total_encuestas / (maxSurveys || 1)) * 100;
-                const dotPos = Math.max(0, Math.min(100, d.nps)); 
 
-                const isLast = i === arr.length - 1;
-
-                return (
-                  <div key={d.mes} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                    <div style={{ 
-                      width: '100%', 
-                      height: `${barHeight}%`, 
-                      backgroundColor: isLast ? '#e2e8f0' : '#f1f5f9', 
-                      borderRadius: '8px 8px 4px 4px',
-                      transition: 'all 0.5s'
-                    }} />
-                    
-                    <div style={{ 
-                      position: 'absolute', 
-                      bottom: `${dotPos}%`, 
-                      width: '12px', 
-                      height: '12px', 
-                      backgroundColor: '#019df4', 
-                      borderRadius: '50%', 
-                      border: '3px solid white',
-                      boxShadow: '0 4px 10px rgba(1, 157, 244, 0.4)',
-                      zIndex: 2,
-                      transform: 'translateY(50%)'
-                    }}>
-                      {isLast && (
-                        <div style={{ position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a171e', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', whiteSpace: 'nowrap', fontWeight: '800' }}>
-                          Actual: {d.nps}
-                          <div style={{ position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #1a171e' }} />
-                        </div>
-                      )}
+          {cellStats.length > 0 ? (
+            cellStats.map(cell => (
+              <div key={cell.celula} style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #eef2f6', overflow: 'hidden' }}>
+                {/* Cell Header */}
+                <div 
+                  onClick={() => toggleCell(cell.celula!)}
+                  style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: expandedCells.has(cell.celula!) ? '#fcfdfe' : 'white' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ transform: expandedCells.has(cell.celula!) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                      <ChevronDown size={16} color="#94a3b8" />
                     </div>
-
-                    <span style={{ position: 'absolute', bottom: '-25px', fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase' }}>{d.mes}</span>
+                    <h4 style={{ fontSize: '15px', fontWeight: '900', color: '#1a1a1a' }}>{cell.celula}</h4>
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '13px', fontWeight: '950', color: getNPSColor(cell.nps), margin: 0 }}>{cell.nps} NPS</p>
+                      <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', margin: 0 }}>{cell.total_encuestas} enc.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technicians under Cell */}
+                {expandedCells.has(cell.celula!) && (
+                  <div style={{ padding: '4px 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: '#fcfdfe' }}>
+                    {Object.entries(
+                      detalles.filter(d => d.tx_celula === cell.celula && (`${String(new Date(d.fecha).getMonth() + 1).padStart(2, '0')}-${new Date(d.fecha).getFullYear()}` === selectedMonth))
+                        .reduce((acc, d) => {
+                          if (!acc[d.nombre_tecnico]) acc[d.nombre_tecnico] = { count: 0, p: 0, d: 0, surveys: [] };
+                          acc[d.nombre_tecnico].count++;
+                          acc[d.nombre_tecnico].p += d.promotor;
+                          acc[d.nombre_tecnico].d += d.detractor;
+                          acc[d.nombre_tecnico].surveys.push(d);
+                          return acc;
+                        }, {} as Record<string, { count: number, p: number, d: number, surveys: NPSEncuesta[] }>)
+                    ).map(([techName, stats]) => {
+                      const techKey = `${cell.celula}-${techName}`;
+                      const techNps = Math.round(((stats.p - stats.d) / (stats.count || 1)) * 100);
+                      
+                      return (
+                        <div key={techKey} style={{ border: '1px solid #f1f5f9', borderRadius: '12px', backgroundColor: 'white' }}>
+                          <div 
+                            onClick={() => toggleTech(techKey)}
+                            style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <User size={14} color="#64748b" />
+                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#4b5563' }}>{techName}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '900', color: getNPSColor(techNps) }}>{techNps} NPS</span>
+                              <div style={{ transform: expandedTechs.has(techKey) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                                <ChevronDown size={14} color="#cbd5e1" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Surveys under Technician */}
+                          {expandedTechs.has(techKey) && (
+                            <div style={{ padding: '8px 12px 12px 12px', display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #f8fafc', backgroundColor: '#fafbfc' }}>
+                              {stats.surveys.map(enc => {
+                                const isPromotor = enc.promotor === 1;
+                                const isDetractor = enc.detractor === 1;
+                                const statusColor = isPromotor ? '#10b981' : isDetractor ? '#ef4444' : '#f59e0b';
+                                const statusBg = isPromotor ? '#ecfdf5' : isDetractor ? '#fef2f2' : '#fff7ed';
+
+                                return (
+                                  <div key={enc.access_id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: statusBg, border: `1px solid ${statusColor}20` }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                      <span style={{ fontSize: '9px', fontWeight: '900', color: statusColor, textTransform: 'uppercase' }}>
+                                        {isPromotor ? 'Promotor' : isDetractor ? 'Detractor' : 'Neutro'}
+                                      </span>
+                                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8' }}>{new Date(enc.fecha).toLocaleDateString()}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {enc.obs_recomendacion && <p style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>"{enc.obs_recomendacion}"</p>}
+                                      {enc.obs_wapp && <p style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', margin: 0, fontStyle: 'italic' }}>WA: {enc.obs_wapp}</p>}
+                                    </div>
+                                    
+                                    {isDetractor && (
+                                      <div style={{ marginTop: '10px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
+                                        <textarea 
+                                          defaultValue={enc.obs_resoluci || ''}
+                                          onBlur={async (e) => {
+                                            const val = e.target.value;
+                                            if (val === enc.obs_resoluci) return;
+                                            await supabase.from('nps_detalles').update({ obs_resoluci: val }).eq('access_id', enc.access_id);
+                                            setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val } : d));
+                                          }}
+                                          placeholder="Añadir descargo..."
+                                          style={{ 
+                                            width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #eef2f6', 
+                                            fontSize: '11px', fontWeight: '700', outline: 'none', minHeight: '50px', resize: 'vertical'
+                                          }}
+                                        />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontSize: '9px', fontWeight: '900', color: enc.obs_resoluci ? '#10b981' : '#ef4444' }}>
+                                          {enc.obs_resoluci ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
+                                          {enc.obs_resoluci ? 'GESTIONADO' : 'PENDIENTE'}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))
           ) : (
-            <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderRadius: '20px', border: '1px dashed #e2e8f0' }}>
-              <p style={{ color: '#94a3b8', fontWeight: '700' }}>No hay datos disponibles para el período seleccionado</p>
+            <div style={{ padding: '40px', textAlign: 'center', backgroundColor: 'white', borderRadius: '24px', border: '1px solid #eef2f6' }}>
+              <p style={{ fontSize: '13px', fontWeight: '800', color: '#94a3b8' }}>Sin datos para este mes.</p>
             </div>
           )}
         </div>
-      )}
-
-      {/* Tables Section */}
-      <div style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #eef2f6', overflow: 'hidden' }}>
-        
-        {viewLevel === 'distrito' && (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#fcfdfe' }}>
-                <th style={{ textAlign: 'left', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</th>
-                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>NPS Mes</th>
-                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Encuestas</th>
-                <th style={{ textAlign: 'right', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cellStats.length > 0 ? cellStats.map(cell => (
-                <tr key={cell.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                  <td style={{ padding: '24px 32px', fontWeight: '900', color: '#1a1a1a', fontSize: '15px' }}>{cell.celula}</td>
-                  <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                    <div style={{ 
-                      display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px', 
-                      backgroundColor: `${getNPSColor(cell.nps)}15`, color: getNPSColor(cell.nps), fontWeight: '950', fontSize: '16px' 
-                    }}>
-                      {cell.nps.toFixed(0)}
-                    </div>
-                  </td>
-                  <td style={{ padding: '24px 32px', textAlign: 'center', fontWeight: '800', color: '#64748b' }}>{cell.total_encuestas}</td>
-                  <td style={{ padding: '24px 32px', textAlign: 'right' }}>
-                    <button 
-                      onClick={() => { setActiveCelula(cell.celula); setViewLevel('tecnico'); }}
-                      style={{ padding: '10px 20px', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '12px', fontWeight: '900', color: '#1a1a1a', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                    >
-                      Ver Célula <ChevronRight size={16} />
-                    </button>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={4} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontWeight: '700' }}>No hay datos por célula para este mes.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-
-        {viewLevel === 'tecnico' && (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#fcfdfe' }}>
-                <th style={{ textAlign: 'left', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Técnico</th>
-                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Encuestas</th>
-                <th style={{ textAlign: 'right', padding: '24px 32px', fontSize: '12px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {technicianStats.map(tech => (
-                <tr key={tech.nombre_tecnico} style={{ borderBottom: '1px solid #f8fafc' }}>
-                  <td style={{ padding: '24px 32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                        <User size={20} />
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: '900', color: '#1a1a1a', fontSize: '15px', margin: 0 }}>{tech.nombre_tecnico}</p>
-                        <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', margin: 0 }}>DNI: {tech.dni_tecnico}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '24px 32px', textAlign: 'center', fontWeight: '950', fontSize: '18px', color: '#1a1a1a' }}>{tech.total_encuestas}</td>
-                  <td style={{ padding: '24px 32px', textAlign: 'right' }}>
-                    <button 
-                      onClick={() => { setActiveTecnico(tech.nombre_tecnico); setViewLevel('encuestas'); }}
-                      style={{ padding: '10px 20px', backgroundColor: '#1a171e', border: 'none', borderRadius: '12px', fontWeight: '900', color: 'white', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                    >
-                      Ver Detalle <ChevronRight size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {viewLevel === 'encuestas' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '0 8px' }}>
-            {Object.entries(
-              filteredSurveys.reduce((acc, enc) => {
-                const key = enc.nombre_tecnico;
-                if (!acc[key]) acc[key] = [];
-                acc[key].push(enc);
-                return acc;
-              }, {} as Record<string, NPSEncuesta[]>)
-            ).map(([tecnico, tecnicoSurveys]) => (
-              <div key={tecnico} style={{ backgroundColor: 'white', borderRadius: '32px', border: '1px solid #eef2f6', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-                <div style={{ padding: '24px 32px', backgroundColor: '#fcfdfe', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '48px', height: '48px', backgroundColor: '#f1f5f9', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                      <User size={24} />
-                    </div>
-                    <div>
-                      <h4 style={{ fontSize: '18px', fontWeight: '900', color: '#1a1a1a', margin: 0 }}>{tecnico}</h4>
-                      <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', margin: 0 }}>Célula: {tecnicoSurveys[0].tx_celula}</p>
-                    </div>
-                  </div>
-                  <div style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', borderRadius: '12px', fontSize: '13px', fontWeight: '900', color: '#1a1a1a' }}>
-                    {tecnicoSurveys.length} Encuestas
-                  </div>
-                </div>
-
-                <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {tecnicoSurveys.map((enc) => {
-                    const isPromotor = enc.promotor === 1;
-                    const isDetractor = enc.detractor === 1;
-                    const isNeutro = !isPromotor && !isDetractor;
-                    
-                    const statusColor = isPromotor ? '#10b981' : isDetractor ? '#ef4444' : '#f59e0b';
-                    const statusBg = isPromotor ? '#ecfdf5' : isDetractor ? '#fef2f2' : '#fff7ed';
-                    const statusIcon = isPromotor ? <Smile size={20} /> : isDetractor ? <Frown size={20} /> : <Meh size={20} />;
-                    const statusLabel = isPromotor ? 'Promotor' : isDetractor ? 'Detractor' : 'Neutro';
-
-                    return (
-                      <div key={enc.access_id} style={{ 
-                        padding: '24px', borderRadius: '24px', border: `1px solid ${statusColor}20`, 
-                        backgroundColor: statusBg, position: 'relative', overflow: 'hidden' 
-                      }}>
-                        {/* Status Badge */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', borderRadius: '14px', backgroundColor: 'white', border: `1px solid ${statusColor}30`, color: statusColor, fontWeight: '900', fontSize: '13px' }}>
-                            {statusIcon} {statusLabel}
-                          </div>
-                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8' }}>
-                            {new Date(enc.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </span>
-                        </div>
-
-                        {/* Observations */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: isDetractor ? '24px' : '0' }}>
-                          {enc.obs_recomendacion && (
-                            <div style={{ paddingLeft: '16px', borderLeft: `3px solid ${statusColor}40` }}>
-                              <p style={{ fontSize: '11px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Observación Recomendación</p>
-                              <p style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.5' }}>"{enc.obs_recomendacion}"</p>
-                            </div>
-                          )}
-                          {enc.obs_wapp && (
-                            <div style={{ paddingLeft: '16px', borderLeft: `3px solid #019df440` }}>
-                              <p style={{ fontSize: '11px', fontWeight: '900', color: '#019df4', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Comentario WhatsApp</p>
-                              <p style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0, lineHeight: '1.5' }}>"{enc.obs_wapp}"</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Inline Descargo for Detractors */}
-                        {isDetractor && (
-                          <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                              <MessageSquare size={16} color="#64748b" />
-                              <span style={{ fontSize: '12px', fontWeight: '900', color: '#64748b' }}>Gestión del Líder</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                              <textarea 
-                                defaultValue={enc.obs_resoluci || ''}
-                                onBlur={async (e) => {
-                                  const val = e.target.value;
-                                  if (val === enc.obs_resoluci) return;
-                                  // Auto-save on blur
-                                  await supabase.from('nps_detalles').update({ obs_resoluci: val }).eq('access_id', enc.access_id);
-                                  setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val } : d));
-                                }}
-                                placeholder="Escribe aquí el descargo sobre este comentario..."
-                                style={{ 
-                                  flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #eef2f6', 
-                                  fontSize: '14px', fontWeight: '700', minHeight: '80px', outline: 'none',
-                                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
-                                }}
-                              />
-                            </div>
-                            {enc.obs_resoluci ? (
-                              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '12px', fontWeight: '800' }}>
-                                <CheckCircle2 size={14} /> Gestionado
-                              </div>
-                            ) : (
-                              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '12px', fontWeight: '800' }}>
-                                <AlertCircle size={14} /> Pendiente de gestión
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
-
-      {/* Descargo Modal */}
-      {isModalOpen && selectedEncuesta && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '32px', width: '90%', maxWidth: '600px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
-              <div>
-                <h3 style={{ fontSize: '24px', fontWeight: '950' }}>Gestionar Descargo</h3>
-                <p style={{ color: '#64748b', fontWeight: '700' }}>Técnico: {selectedEncuesta.nombre_tecnico}</p>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} /></button>
-            </div>
-
-            <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#f8fafc', borderRadius: '20px', border: '1px solid #eef2f6' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <MessageSquare size={16} color="#94a3b8" />
-                  <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comentario del Cliente</span>
-               </div>
-               <p style={{ fontSize: '15px', color: '#1e293b', fontWeight: '700', lineHeight: '1.6', margin: 0 }}>
-                 {[selectedEncuesta.obs_recomendacion, selectedEncuesta.obs_wapp].filter(Boolean).join(' | ') || 'Sin comentarios.'}
-               </p>
-            </div>
-
-            <div style={{ marginBottom: '32px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '12px' }}>
-                <FileText size={16} color="#019df4" /> Descargo del Líder / Resolución
-              </label>
-              <textarea 
-                value={newDescargo}
-                onChange={(e) => setNewDescargo(e.target.value)}
-                placeholder="Escribe aquí el descargo o acción realizada..."
-                style={{ width: '100%', height: '150px', padding: '20px', borderRadius: '16px', border: '2px solid #f1f5f9', fontWeight: '700', fontSize: '14px', outline: 'none' }}
-              />
-            </div>
-
-            <button 
-              onClick={handleSaveDescargo}
-              disabled={savingDescargo}
-              style={{ 
-                width: '100%', padding: '18px', backgroundColor: '#1a171e', color: 'white', borderRadius: '16px', fontWeight: '950', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px'
-              }}
-            >
-              {savingDescargo ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> Guardar Descargo</>}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
