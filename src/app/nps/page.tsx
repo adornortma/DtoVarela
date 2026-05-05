@@ -257,14 +257,45 @@ export default function NPSDashboardPage() {
   }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
 
   const trendData = useMemo(() => {
-    return filteredAgregado
+    // 1. Try to get from aggregate table (fastest/pre-calculated)
+    const fromAgg = filteredAgregado
       .filter(d => d.celula === null)
       .sort((a, b) => {
         const [mA, yA] = a.mes.split('-').map(Number);
         const [mB, yB] = b.mes.split('-').map(Number);
         return yA !== yB ? yA - yB : mA - mB;
       });
-  }, [filteredAgregado]);
+
+    if (fromAgg.length > 0) return fromAgg;
+
+    // 2. Fallback: Calculate from raw details
+    const monthlyMap = new Map<string, { nps: number, total_encuestas: number, p: number, d: number }>();
+    detalles.forEach(d => {
+      if (!d.fecha) return;
+      const date = new Date(d.fecha);
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      const key = `${m}-${y}`;
+      
+      const entry = monthlyMap.get(key) || { nps: 0, total_encuestas: 0, p: 0, d: 0 };
+      entry.total_encuestas++;
+      entry.p += (d.promotor || 0);
+      entry.d += (d.detractor || 0);
+      monthlyMap.set(key, entry);
+    });
+
+    return Array.from(monthlyMap.entries())
+      .map(([mes, stats]) => ({
+        mes,
+        nps: Math.round(((stats.p - stats.d) / (stats.total_encuestas || 1)) * 100),
+        total_encuestas: stats.total_encuestas
+      }))
+      .sort((a, b) => {
+        const [mA, yA] = a.mes.split('-').map(Number);
+        const [mB, yB] = b.mes.split('-').map(Number);
+        return yA !== yB ? yA - yB : mA - mB;
+      });
+  }, [filteredAgregado, detalles]);
 
   const getNPSColor = (nps: number) => {
     if (nps > 70) return '#10b981';
