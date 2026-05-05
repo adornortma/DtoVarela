@@ -42,15 +42,15 @@ interface NPSEncuesta {
 // --- Components ---
 
 const MetricCard = ({ title, value, subValue, type }: { title: string, value: string | number, subValue?: string, type: 'nps' | 'total' }) => (
-  <div style={{ backgroundColor: 'white', padding: '16px 20px', borderRadius: '20px', border: '1px solid #eef2f6', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', flex: 1 }}>
-    <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{title}</p>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-      <h3 style={{ fontSize: '28px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>
+  <div style={{ backgroundColor: 'white', padding: '10px 16px', borderRadius: '16px', border: '1px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', flex: 1 }}>
+    <p style={{ fontSize: '9px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{title}</p>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-0.5px', margin: 0 }}>
         {type === 'nps' ? (typeof value === 'number' ? value.toFixed(0) : value) : value}
       </h3>
-      {type === 'nps' && <span style={{ fontSize: '14px', fontWeight: '800', color: '#94a3b8' }}>pts</span>}
+      {type === 'nps' && <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8' }}>pts</span>}
     </div>
-    {subValue && <p style={{ fontSize: '11px', fontWeight: '700', color: '#019df4', marginTop: '2px' }}>{subValue}</p>}
+    {subValue && <p style={{ fontSize: '10px', fontWeight: '700', color: '#019df4', margin: 0 }}>{subValue}</p>}
   </div>
 );
 
@@ -264,7 +264,7 @@ export default function NPSDashboardPage() {
 
           {cellStats.length > 0 ? (
             cellStats.map(cell => (
-              <div key={cell.celula} style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #eef2f6', overflow: 'hidden' }}>
+              <div key={cell.celula} style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
                 {/* Cell Header */}
                 <div 
                   onClick={() => toggleCell(cell.celula!)}
@@ -311,7 +311,7 @@ export default function NPSDashboardPage() {
                       const techNps = Math.round(((stats.p - stats.d) / (stats.count || 1)) * 100);
                       
                       return (
-                        <div key={techKey} style={{ border: '1px solid #f1f5f9', borderRadius: '12px', backgroundColor: 'white' }}>
+                        <div key={techKey} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', backgroundColor: 'white' }}>
                           <div 
                             onClick={() => toggleTech(techKey)}
                             style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
@@ -343,7 +343,7 @@ export default function NPSDashboardPage() {
                                 const statusBg = isPromotor ? '#ecfdf5' : isDetractor ? '#fef2f2' : '#fff7ed';
 
                                 return (
-                                  <div key={enc.access_id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: statusBg, border: `1px solid ${statusColor}20` }}>
+                                  <div key={enc.access_id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: statusBg, border: `1px solid ${statusColor}60` }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span style={{ fontSize: '9px', fontWeight: '900', color: statusColor, textTransform: 'uppercase' }}>
@@ -376,7 +376,7 @@ export default function NPSDashboardPage() {
                                           }}
                                           placeholder="Añadir descargo..."
                                           style={{ 
-                                            width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #eef2f6', 
+                                            width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', 
                                             fontSize: '11px', fontWeight: '700', outline: 'none', minHeight: '50px', resize: 'vertical'
                                           }}
                                         />
