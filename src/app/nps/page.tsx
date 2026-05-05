@@ -217,24 +217,35 @@ export default function NPSDashboardPage() {
             <Loader2 size={14} className={loading ? "animate-spin" : ""} />
           </button>
 
-          <div style={{ backgroundColor: 'white', padding: '6px 12px', borderRadius: '10px', border: '1px solid #eef2f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={14} color="#94a3b8" />
-            <select 
-              value={selectedMonth} 
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ border: 'none', fontWeight: '800', fontSize: '12px', outline: 'none', backgroundColor: 'transparent' }}
-            >
-              {Array.from(new Set([...agregado.map(d => d.mes), ...detalles.map(d => {
-                const date = new Date(d.fecha);
-                return `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
-              })])).sort((a, b) => {
-                const [mA, yA] = a.split('-').map(Number);
-                const [mB, yB] = b.split('-').map(Number);
-                return yB !== yA ? yB - yA : mB - mA;
-              }).map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+          <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+            {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => {
+              const monthVal = `${m}-2026`;
+              const isActive = selectedMonth === monthVal;
+              const monthNames: Record<string, string> = {
+                '01': 'ENE', '02': 'FEB', '03': 'MAR', '04': 'ABR', '05': 'MAY', '06': 'JUN',
+                '07': 'JUL', '08': 'AGO', '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DIC'
+              };
+              
+              return (
+                <button
+                  key={m}
+                  onClick={() => setSelectedMonth(monthVal)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: '900',
+                    cursor: 'pointer',
+                    backgroundColor: isActive ? '#019df4' : 'transparent',
+                    color: isActive ? 'white' : '#64748b',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {monthNames[m]}
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>
