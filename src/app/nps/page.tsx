@@ -133,17 +133,70 @@ export default function NPSDashboardPage() {
     return agregado.filter(d => d.distrito === selectedDistrito);
   }, [agregado, selectedDistrito]);
 
+  const cellStats = useMemo(() => {
+    const fromAgg = filteredAgregado.filter(d => d.mes === selectedMonth && d.celula !== null);
+    if (fromAgg.length > 0) return fromAgg;
+
+    // Fallback: calculate from detalles if agregado is empty for this month
+    const monthDetalles = detalles.filter(d => {
+      const date = new Date(d.fecha);
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      return `${m}-${y}` === selectedMonth;
+    });
+
+    const cellMap = new Map<string, { nps: number, count: number, p: number, d: number }>();
+    monthDetalles.forEach(s => {
+      const entry = cellMap.get(s.tx_celula) || { nps: 0, count: 0, p: 0, d: 0 };
+      entry.count++;
+      entry.p += s.promotor;
+      entry.d += s.detractor;
+      cellMap.set(s.tx_celula, entry);
+    });
+
+    return Array.from(cellMap.entries()).map(([name, stats]) => ({
+      id: name,
+      mes: selectedMonth,
+      distrito: selectedDistrito,
+      celula: name,
+      nps: Math.round(((stats.p - stats.d) / (stats.count || 1)) * 100),
+      total_encuestas: stats.count
+    }));
+  }, [filteredAgregado, selectedMonth, detalles, selectedDistrito]);
+
   const currentMonthData = useMemo(() => {
     if (viewLevel === 'distrito') {
-      return filteredAgregado.find(d => d.mes === selectedMonth && d.celula === null);
+      const fromAgg = filteredAgregado.find(d => d.mes === selectedMonth && d.celula === null);
+      if (fromAgg) return fromAgg;
+      
+      // Fallback: calculate total district NPS from cellStats
+      const totalSurveys = cellStats.reduce((acc, c) => acc + c.total_encuestas, 0);
+      if (totalSurveys === 0) return undefined;
+      
+      // We can't perfectly calculate total NPS from cell NPS without knowing exact P/D per cell, 
+      // but cellStats has it if derived from fallback. 
+      // Let's just use a simple average or recalculate.
+      const monthDetalles = detalles.filter(d => {
+        const date = new Date(d.fecha);
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear();
+        return `${m}-${y}` === selectedMonth;
+      });
+      const p = monthDetalles.reduce((acc, d) => acc + d.promotor, 0);
+      const d = monthDetalles.reduce((acc, d) => acc + d.detractor, 0);
+      
+      return {
+        id: 'total',
+        mes: selectedMonth,
+        distrito: selectedDistrito,
+        celula: null,
+        nps: Math.round(((p - d) / (monthDetalles.length || 1)) * 100),
+        total_encuestas: monthDetalles.length
+      };
     } else {
-      return filteredAgregado.find(d => d.mes === selectedMonth && d.celula === activeCelula);
+      return cellStats.find(d => d.celula === activeCelula);
     }
-  }, [filteredAgregado, selectedMonth, viewLevel, activeCelula]);
-
-  const cellStats = useMemo(() => {
-    return filteredAgregado.filter(d => d.mes === selectedMonth && d.celula !== null);
-  }, [filteredAgregado, selectedMonth]);
+  }, [filteredAgregado, selectedMonth, viewLevel, activeCelula, cellStats, detalles, selectedDistrito]);
 
   const technicianStats = useMemo(() => {
     if (!activeCelula) return [];
