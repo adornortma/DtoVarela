@@ -697,15 +697,25 @@ export default function NPSDashboardPage() {
                                                 const ev = enc.evidencia || [];
                                                 
                                                 try {
-                                                  await supabase.from('nps_detalles').update({ 
+                                                  const { error } = await supabase.from('nps_detalles').update({ 
                                                     obs_resoluci: val,
                                                     evidencia: ev 
                                                   }).eq('access_id', enc.access_id);
                                                   
+                                                  if (error) {
+                                                    console.error("Supabase Error:", error);
+                                                    if (error.message.includes('column "evidencia" does not exist')) {
+                                                      alert("ERROR: La columna 'evidencia' no existe en la base de datos. Por favor, avisar al administrador para correr la migración SQL.");
+                                                    } else {
+                                                      alert("Error al guardar: " + error.message);
+                                                    }
+                                                    return;
+                                                  }
+                                                  
                                                   setDetalles(prev => prev.map(d => d.access_id === enc.access_id ? { ...d, obs_resoluci: val, evidencia: ev } : d));
                                                 } catch (err) {
-                                                  console.error("Error saving evidence:", err);
-                                                  alert("Error al guardar. Verifique la conexión.");
+                                                  console.error("Connection Error:", err);
+                                                  alert("Error de conexión al intentar guardar.");
                                                 } finally {
                                                   btn.disabled = false;
                                                   btn.innerHTML = originalText;

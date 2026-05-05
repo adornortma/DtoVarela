@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS nps_detalles (
     obs_recomendacion TEXT,
     obs_wapp TEXT,
     obs_resoluci TEXT,
+    evidencia TEXT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
