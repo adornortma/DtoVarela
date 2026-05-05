@@ -144,6 +144,7 @@ export default function NPSDashboardPage() {
   const [selectedDistrito] = useState('VARELA');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // MM-YYYY
   const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
+  const [selectedSentiment, setSelectedSentiment] = useState<'TODOS' | 'PROMOTORES' | 'NEUTROS' | 'DETRACTORES'>('TODOS');
   
   // Expansion State
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
@@ -365,76 +366,65 @@ export default function NPSDashboardPage() {
       </header>
 
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        {/* Cell Selector Navigation */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px', backgroundColor: 'white', padding: '12px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
-          <button
-            onClick={() => setSelectedCelula(null)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              border: selectedCelula === null ? '2px solid #019df4' : '1px solid #e2e8f0',
-              backgroundColor: selectedCelula === null ? '#019df4' : '#f8fafc',
-              color: selectedCelula === null ? 'white' : '#64748b',
-              fontSize: '11px',
-              fontWeight: '900',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            DISTRITO TOTAL
-          </button>
-          {availableCells.map(cell => (
+        {/* Trend Chart */}
+        <TrendChart data={trendData} />
+
+        {/* 1. Cell Selector */}
+        <div style={{ marginBottom: '20px' }}>
+          <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', paddingLeft: '4px' }}>
+            SELECCIONAR CÉLULA
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', backgroundColor: 'white', padding: '10px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
             <button
-              key={cell}
-              onClick={() => setSelectedCelula(cell)}
+              onClick={() => setSelectedCelula(null)}
               style={{
-                padding: '8px 16px',
-                borderRadius: '10px',
-                border: selectedCelula === cell ? '2px solid #019df4' : '1px solid #e2e8f0',
-                backgroundColor: selectedCelula === cell ? '#019df4' : 'white',
-                color: selectedCelula === cell ? 'white' : '#64748b',
-                fontSize: '11px',
+                padding: '10px 18px',
+                borderRadius: '12px',
+                border: selectedCelula === null ? '2px solid #019df4' : '1px solid #e2e8f0',
+                backgroundColor: selectedCelula === null ? '#019df4' : '#f8fafc',
+                color: selectedCelula === null ? 'white' : '#64748b',
+                fontSize: '12px',
                 fontWeight: '900',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
             >
-              {cell}
+              DISTRITO TOTAL
             </button>
-          ))}
+            {availableCells.map(cell => (
+              <button
+                key={cell}
+                onClick={() => setSelectedCelula(cell)}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  border: selectedCelula === cell ? '2px solid #019df4' : '1px solid #e2e8f0',
+                  backgroundColor: selectedCelula === cell ? '#019df4' : 'white',
+                  color: selectedCelula === cell ? 'white' : '#64748b',
+                  fontSize: '12px',
+                  fontWeight: '900',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {cell}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Compact Metric Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
-          <MetricCard 
-            title="NPS Actual" 
-            value={currentMonthData?.nps || 'N/A'} 
-            subValue={`Objetivo: 70+`}
-            type="nps"
-          />
-          <MetricCard 
-            title="Encuestas" 
-            value={currentMonthData?.total_encuestas || 0} 
-            subValue={`Mes: ${selectedMonth}`}
-            type="total"
-          />
-        </div>
-
-        {/* Trend Chart */}
-        <TrendChart data={trendData} />
-
-        {/* Month Selector */}
-        <div style={{ marginBottom: '32px' }}>
-          <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px', paddingLeft: '4px' }}>
+        {/* 2. Month Selector */}
+        <div style={{ marginBottom: '20px' }}>
+          <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', paddingLeft: '4px' }}>
             MES SELECCIONADO
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', backgroundColor: 'white', padding: '10px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
             {['01', '02', '03', '04', '05', '06', '07', '08'].map(m => {
               const monthVal = `${m}-2026`;
               const isActive = selectedMonth === monthVal;
               const monthNames: Record<string, string> = {
                 '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio',
-                '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+                '07': 'Julio', '08': 'Agosto'
               };
 
               return (
@@ -445,20 +435,62 @@ export default function NPSDashboardPage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    padding: '12px 20px',
-                    borderRadius: '14px',
-                    border: isActive ? '2px solid #019df4' : '1px solid #cbd5e1',
+                    padding: '10px 18px',
+                    borderRadius: '12px',
+                    border: isActive ? '2px solid #019df4' : '1px solid #e2e8f0',
                     backgroundColor: isActive ? '#019df4' : 'white',
                     color: isActive ? 'white' : '#475569',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     fontWeight: '800',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    boxShadow: isActive ? '0 4px 12px rgba(1, 157, 244, 0.3)' : '0 2px 4px rgba(0,0,0,0.02)',
                   }}
                 >
-                  <span style={{ fontSize: '16px' }}>📅</span>
+                  <span style={{ fontSize: '14px' }}>📅</span>
                   {monthNames[m]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3. Sentiment Filter */}
+        <div style={{ marginBottom: '32px' }}>
+          <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', paddingLeft: '4px' }}>
+            FILTRAR POR SENTIMIENTO
+          </p>
+          <div style={{ display: 'flex', gap: '8px', backgroundColor: 'white', padding: '10px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
+            {[
+              { id: 'TODOS', label: 'TODOS', color: '#019df4', emoji: '👥' },
+              { id: 'PROMOTORES', label: 'PROMOTORES', color: '#10b981', emoji: '✅' },
+              { id: 'NEUTROS', label: 'NEUTROS', color: '#f59e0b', emoji: '⚖️' },
+              { id: 'DETRACTORES', label: 'DETRACTORES', color: '#ef4444', emoji: '❌' }
+            ].map(f => {
+              const isActive = selectedSentiment === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setSelectedSentiment(f.id as any)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: isActive ? `2px solid ${f.color}` : '1px solid #e2e8f0',
+                    backgroundColor: isActive ? f.color : 'white',
+                    color: isActive ? 'white' : '#64748b',
+                    fontSize: '11px',
+                    fontWeight: '900',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: isActive ? `0 4px 12px ${f.color}40` : 'none'
+                  }}
+                >
+                  <span>{f.emoji}</span>
+                  {f.label}
                 </button>
               );
             })}
@@ -508,6 +540,11 @@ export default function NPSDashboardPage() {
                     {Object.entries(
                       detalles.filter(d => d.tx_celula === cell.celula && (`${String(new Date(d.fecha).getMonth() + 1).padStart(2, '0')}-${new Date(d.fecha).getFullYear()}` === selectedMonth))
                         .reduce((acc, d) => {
+                          // Apply sentiment filter
+                          if (selectedSentiment === 'PROMOTORES' && d.promotor !== 1) return acc;
+                          if (selectedSentiment === 'DETRACTORES' && d.detractor !== 1) return acc;
+                          if (selectedSentiment === 'NEUTROS' && (d.promotor === 1 || d.detractor === 1)) return acc;
+
                           if (!acc[d.nombre_tecnico]) acc[d.nombre_tecnico] = { count: 0, p: 0, d: 0, surveys: [] };
                           acc[d.nombre_tecnico].count++;
                           acc[d.nombre_tecnico].p += d.promotor;
@@ -517,7 +554,7 @@ export default function NPSDashboardPage() {
                         }, {} as Record<string, { count: number, p: number, d: number, surveys: NPSEncuesta[] }>)
                     ).map(([techName, stats]) => {
                       const techKey = `${cell.celula}-${techName}`;
-                      const techNps = Math.round(((stats.p - stats.d) / (stats.count || 1)) * 100);
+                      if (stats.surveys.length === 0) return null;
                       
                       return (
                         <div key={techKey} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', backgroundColor: 'white' }}>
@@ -530,9 +567,9 @@ export default function NPSDashboardPage() {
                               <span style={{ fontSize: '13px', fontWeight: '800', color: '#4b5563', minWidth: '160px' }}>{techName}</span>
                               
                               <div style={{ display: 'flex', gap: '6px' }}>
-                                {stats.p > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '6px', border: '1px solid #10b98120' }}>{stats.p} PROMOTOR</span>}
-                                {stats.count - stats.p - stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fff7ed', color: '#f59e0b', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f59e0b20' }}>{stats.count - stats.p - stats.d} NEUTRO</span>}
-                                {stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ef444420' }}>{stats.d} DETRACTOR</span>}
+                                {(selectedSentiment === 'TODOS' || selectedSentiment === 'PROMOTORES') && stats.p > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '6px', border: '1px solid #10b98120' }}>{stats.p} PROMOTOR</span>}
+                                {(selectedSentiment === 'TODOS' || selectedSentiment === 'NEUTROS') && (stats.count - stats.p - stats.d) > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fff7ed', color: '#f59e0b', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f59e0b20' }}>{stats.count - stats.p - stats.d} NEUTRO</span>}
+                                {(selectedSentiment === 'TODOS' || selectedSentiment === 'DETRACTORES') && stats.d > 0 && <span style={{ fontSize: '9px', fontWeight: '900', backgroundColor: '#fef2f2', color: '#ef4444', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ef444420' }}>{stats.d} DETRACTOR</span>}
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
