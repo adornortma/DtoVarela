@@ -54,6 +54,7 @@ interface NPSEncuesta {
   obs_recomendacion: string;
   obs_wapp: string;
   obs_resoluci: string;
+  evidencia?: string[];
 }
 
 // --- Components ---
