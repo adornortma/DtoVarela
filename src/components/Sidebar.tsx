@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info, LayoutDashboard, Target } from 'lucide-react';
+import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info, LayoutDashboard, Target, MessageSquare } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface SidebarProps {
