@@ -276,10 +276,10 @@ export default function NPSDashboardPage() {
                     </div>
                     <h4 style={{ fontSize: '15px', fontWeight: '900', color: '#1a1a1a' }}>{cell.celula}</h4>
                   </div>
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '13px', fontWeight: '950', color: getNPSColor(cell.nps), margin: 0 }}>{cell.nps} NPS</p>
-                      <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', margin: 0 }}>{cell.total_encuestas} enc.</p>
+                      <p style={{ fontSize: '18px', fontWeight: '950', color: getNPSColor(cell.nps), margin: 0, lineHeight: '1' }}>{cell.nps} NPS</p>
+                      <p style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', margin: 0, marginTop: '2px' }}>{cell.total_encuestas} encuestas</p>
                     </div>
                   </div>
                 </div>
@@ -312,7 +312,6 @@ export default function NPSDashboardPage() {
                               <span style={{ fontSize: '13px', fontWeight: '800', color: '#4b5563' }}>{techName}</span>
                             </div>
                             <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', fontWeight: '900', color: getNPSColor(techNps) }}>{techNps} NPS</span>
                               <div style={{ transform: expandedTechs.has(techKey) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                                 <ChevronDown size={14} color="#cbd5e1" />
                               </div>
@@ -331,9 +330,14 @@ export default function NPSDashboardPage() {
                                 return (
                                   <div key={enc.access_id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: statusBg, border: `1px solid ${statusColor}20` }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                      <span style={{ fontSize: '9px', fontWeight: '900', color: statusColor, textTransform: 'uppercase' }}>
-                                        {isPromotor ? 'Promotor' : isDetractor ? 'Detractor' : 'Neutro'}
-                                      </span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '9px', fontWeight: '900', color: statusColor, textTransform: 'uppercase' }}>
+                                          {isPromotor ? 'Promotor' : isDetractor ? 'Detractor' : 'Neutro'}
+                                        </span>
+                                        <span style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                                          ID: {enc.access_id}
+                                        </span>
+                                      </div>
                                       <span style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8' }}>{new Date(enc.fecha).toLocaleDateString()}</span>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
