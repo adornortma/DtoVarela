@@ -22,7 +22,10 @@ import {
   Activity,
   User,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  MessageSquare,
+  CheckCircle2,
+  Zap
 } from 'lucide-react';
 
 // --- Types ---
