@@ -29,18 +29,15 @@ import {
 } from 'lucide-react';
 
 // --- Types ---
-type Period = 'semanal' | 'mensual';
-type KpiCategory = 'productividad' | 'nps' | 'calidad' | 'reincidencias' | 'puntualidad';
+type KpiCategory = 'productividad' | 'resolucion' | 'reiteros';
 
 interface TechStats {
   id: string;
   nombre: string;
   celula: string;
   productividad: number;
-  nps: number;
-  calidad: number;
-  reincidencias: number;
-  puntualidad: number;
+  resolucion: number;
+  reiteros: number;
   total_servicios: number;
   trend: Record<string, number>;
   isCritical: boolean;
@@ -49,10 +46,8 @@ interface TechStats {
 
 interface Thresholds {
   productividad: { green: number; yellow: number };
-  nps: { green: number; yellow: number };
-  calidad: { green: number; yellow: number };
-  reincidencias: { green: number; yellow: number; reverse: boolean };
-  puntualidad: { green: number; yellow: number };
+  resolucion: { green: number; yellow: number };
+  reiteros: { green: number; yellow: number; reverse: boolean };
 }
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -150,14 +145,10 @@ export default function RankingTecnicosPage() {
   const [techs, setTechs] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [prevMetrics, setPrevMetrics] = useState<any[]>([]);
-  const [npsData, setNpsData] = useState<any[]>([]);
-  const [prevNpsData, setPrevNpsData] = useState<any[]>([]);
   const [thresholds, setThresholds] = useState<Thresholds>({
     productividad: { green: 6, yellow: 5 },
-    nps: { green: 70, yellow: 50 },
-    calidad: { green: 80, yellow: 70 },
-    reincidencias: { green: 4.5, yellow: 6, reverse: true },
-    puntualidad: { green: 80, yellow: 70 }
+    resolucion: { green: 80, yellow: 70 },
+    reiteros: { green: 4.5, yellow: 6, reverse: true }
   });
 
   const availableCells = useMemo(() => {
@@ -177,9 +168,15 @@ export default function RankingTecnicosPage() {
       if (dbThresholds) {
         const newThresholds = { ...thresholds };
         dbThresholds.forEach(t => {
-          if (newThresholds[t.kpi as keyof Thresholds]) {
-            (newThresholds[t.kpi as keyof Thresholds] as any).green = t.verde;
-            (newThresholds[t.kpi as keyof Thresholds] as any).amarillo = t.amarillo;
+          if (t.kpi === 'productividad') {
+            newThresholds.productividad.green = t.verde;
+            newThresholds.productividad.yellow = t.amarillo;
+          } else if (t.kpi === 'calidad') { // mapping calidad to resolucion
+            newThresholds.resolucion.green = t.verde;
+            newThresholds.resolucion.yellow = t.amarillo;
+          } else if (t.kpi === 'reincidencias') { // mapping reincidencias to reiteros
+            newThresholds.reiteros.green = t.verde;
+            newThresholds.reiteros.yellow = t.amarillo;
           }
         });
         setThresholds(newThresholds);
@@ -197,17 +194,13 @@ export default function RankingTecnicosPage() {
       const prevStart = new Date(prevYear, prevMonthIdx, 1).toISOString();
       const prevEnd = new Date(prevYear, prevMonthIdx + 1, 0, 23, 59, 59).toISOString();
 
-      const [currentMetricsRes, prevMetricsRes, currentNpsRes, prevNpsRes] = await Promise.all([
+      const [currentMetricsRes, prevMetricsRes] = await Promise.all([
         supabase.from('metricas').select('*').gte('fecha', start).lte('fecha', end),
-        supabase.from('metricas').select('*').gte('fecha', prevStart).lte('fecha', prevEnd),
-        supabase.from('nps_detalles').select('*').gte('fecha', start).lte('fecha', end),
-        supabase.from('nps_detalles').select('*').gte('fecha', prevStart).lte('fecha', prevEnd)
+        supabase.from('metricas').select('*').gte('fecha', prevStart).lte('fecha', prevEnd)
       ]);
 
       setMetrics(currentMetricsRes.data || []);
       setPrevMetrics(prevMetricsRes.data || []);
-      setNpsData(currentNpsRes.data || []);
-      setPrevNpsData(prevNpsRes.data || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -234,17 +227,13 @@ export default function RankingTecnicosPage() {
         nombre: fullName,
         celula: t.celula || 'DISTRITO',
         productividad: 0,
-        nps: 0,
-        calidad: 0,
-        reincidencias: 0,
-        puntualidad: 0,
+        resolucion: 0,
+        reiteros: 0,
         total_servicios: 0,
         trend: {
           productividad: 0,
-          nps: 0,
-          calidad: 0,
-          reincidencias: 0,
-          puntualidad: 0
+          resolucion: 0,
+          reiteros: 0
         },
         isCritical: false,
         status: 'seguimiento'
@@ -261,63 +250,35 @@ export default function RankingTecnicosPage() {
       const totalProd = techMetrics.reduce((acc, curr) => acc + (curr.productividad || 0), 0);
       const totalOk1 = techMetrics.reduce((acc, curr) => acc + (curr.ok1 || 0), 0);
       const totalReit = techMetrics.reduce((acc, curr) => acc + (curr.reitero || 0), 0);
-      const totalPunt = techMetrics.reduce((acc, curr) => acc + (curr.puntualidad || 0), 0);
       const count = techMetrics.length;
 
       const result = {
         productividad: Number((totalProd / count).toFixed(2)),
-        calidad: Number((totalOk1 / count).toFixed(1)),
-        reincidencias: Number((totalReit / count).toFixed(1)),
-        puntualidad: Number((totalPunt / count).toFixed(1)),
+        resolucion: Number((totalOk1 / count).toFixed(1)),
+        reiteros: Number((totalReit / count).toFixed(1)),
         count
       };
 
       if (isCurrent) {
         stats.productividad = result.productividad;
-        stats.calidad = result.calidad;
-        stats.reincidencias = result.reincidencias;
-        stats.puntualidad = result.puntualidad;
+        stats.resolucion = result.resolucion;
+        stats.reiteros = result.reiteros;
         stats.total_servicios = count;
       }
 
       return result;
     };
 
-    const calculateNps = (npsList: any[], techId: string, isCurrent: boolean) => {
-      const stats = techMap.get(techId);
-      const tech = techs.find(t => t.id === techId);
-      if (!stats || !tech) return null;
-
-      const techNps = npsList.filter(n => n.dni_tecnico === tech.dni || `${tech.apellido}, ${tech.nombre}`.toUpperCase() === n.nombre_tecnico.toUpperCase());
-      if (techNps.length === 0) return null;
-
-      const p = techNps.reduce((acc, curr) => acc + (curr.promotor || 0), 0);
-      const d = techNps.reduce((acc, curr) => acc + (curr.detractor || 0), 0);
-      const nps = Math.round(((p - d) / techNps.length) * 100);
-
-      if (isCurrent) {
-        stats.nps = nps;
-      }
-
-      return nps;
-    };
-
     // Process each tech
     techs.forEach(t => {
       const current = calculateKpis(metrics, t.id, true);
       const prev = calculateKpis(prevMetrics, t.id, false);
-      const currentNps = calculateNps(npsData, t.id, true);
-      const prevNps = calculateNps(prevNpsData, t.id, false);
 
       const stats = techMap.get(t.id);
       if (stats && current && prev) {
         stats.trend.productividad = prev.productividad ? Math.round(((current.productividad - prev.productividad) / prev.productividad) * 100) : 0;
-        stats.trend.calidad = prev.calidad ? Math.round(current.calidad - prev.calidad) : 0;
-        stats.trend.puntualidad = prev.puntualidad ? Math.round(current.puntualidad - prev.puntualidad) : 0;
-        stats.trend.reincidencias = prev.reincidencias ? Math.round(current.reincidencias - prev.reincidencias) : 0;
-      }
-      if (stats && currentNps !== null && prevNps !== null) {
-        stats.trend.nps = currentNps - prevNps;
+        stats.trend.resolucion = prev.resolucion ? Math.round(current.resolucion - prev.resolucion) : 0;
+        stats.trend.reiteros = prev.reiteros ? Math.round(current.reiteros - prev.reiteros) : 0;
       }
     });
 
@@ -328,7 +289,7 @@ export default function RankingTecnicosPage() {
     }
 
     // Filter out techs with no data for this month
-    finalData = finalData.filter(t => t.total_servicios > 0 || t.nps !== 0);
+    finalData = finalData.filter(t => t.total_servicios > 0);
 
     // Apply Search
     if (searchTerm) {
@@ -338,47 +299,45 @@ export default function RankingTecnicosPage() {
     // Determine Status
     finalData.forEach(t => {
       const prodCrit = t.productividad < thresholds.productividad.yellow;
-      const npsCrit = t.nps < thresholds.nps.yellow;
-      const reitCrit = t.reincidencias > thresholds.reincidencias.yellow;
+      const resCrit = t.resolucion < thresholds.resolucion.yellow;
+      const reitCrit = t.reiteros > thresholds.reiteros.yellow;
       
-      const criticalCount = [prodCrit, npsCrit, reitCrit].filter(Boolean).length;
+      const criticalCount = [prodCrit, resCrit, reitCrit].filter(Boolean).length;
       
       if (criticalCount >= 2 || (t.productividad > 0 && prodCrit)) {
         t.status = 'critico';
         t.isCritical = true;
       } else if (criticalCount === 1) {
         t.status = 'seguimiento';
-      } else if (t.productividad >= thresholds.productividad.green && t.nps >= thresholds.nps.green) {
+      } else if (t.productividad >= thresholds.productividad.green && t.resolucion >= thresholds.resolucion.green) {
         t.status = 'destacado';
       }
     });
 
     return finalData;
-  }, [techs, metrics, prevMetrics, npsData, prevNpsData, viewLevel, selectedCelula, searchTerm, thresholds, loading, selectedMonth]);
+  }, [techs, metrics, prevMetrics, viewLevel, selectedCelula, searchTerm, thresholds, loading, selectedMonth]);
 
   // Derived Rankings
   const topProductividad = useMemo(() => [...rankingData].sort((a, b) => b.productividad - a.productividad).slice(0, 1)[0], [rankingData]);
-  const topNPS = useMemo(() => [...rankingData].sort((a, b) => b.nps - a.nps).slice(0, 1)[0], [rankingData]);
-  const topCalidad = useMemo(() => [...rankingData].sort((a, b) => b.calidad - a.calidad).slice(0, 1)[0], [rankingData]);
+  const topResolucion = useMemo(() => [...rankingData].sort((a, b) => b.resolucion - a.resolucion).slice(0, 1)[0], [rankingData]);
+  const bestReiteros = useMemo(() => [...rankingData].sort((a, b) => a.reiteros - b.reiteros).slice(0, 1)[0], [rankingData]);
   
   const criticalTechs = useMemo(() => rankingData.filter(t => t.status === 'critico').sort((a, b) => a.productividad - b.productividad), [rankingData]);
 
   const currentRanking = useMemo(() => {
     return [...rankingData].sort((a, b) => {
       if (activeTab === 'productividad') return b.productividad - a.productividad;
-      if (activeTab === 'nps') return b.nps - a.nps;
-      if (activeTab === 'calidad') return b.calidad - a.calidad;
-      if (activeTab === 'reincidencias') return a.reincidencias - b.reincidencias;
-      if (activeTab === 'puntualidad') return b.puntualidad - a.puntualidad;
+      if (activeTab === 'resolucion') return b.resolucion - a.resolucion;
+      if (activeTab === 'reiteros') return a.reiteros - b.reiteros;
       return 0;
     });
   }, [rankingData, activeTab]);
 
   const getKpiColor = (val: number, cat: KpiCategory) => {
-    const config = thresholds[cat === 'calidad' ? 'calidad' : cat];
+    const config = thresholds[cat];
     if (!config) return '#1e293b';
     
-    if (cat === 'reincidencias') {
+    if (cat === 'reiteros') {
       if (val <= config.green) return '#10b981';
       if (val <= config.yellow) return '#f59e0b';
       return '#ef4444';
@@ -411,7 +370,7 @@ export default function RankingTecnicosPage() {
               </div>
               <h2 style={{ fontSize: '28px', fontWeight: '950', letterSpacing: '-1px' }}>Ranking de Técnicos</h2>
             </div>
-            <p style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Análisis comparativo de performance y gestión operativa</p>
+            <p style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Productividad, Resolución y Control de Reiteros</p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -420,7 +379,7 @@ export default function RankingTecnicosPage() {
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 style={{ padding: '10px 16px', borderRadius: '14px', border: '1px solid #e2e8f0', backgroundColor: 'white', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
              >
-               {MONTHS.map(m => <option key={m} value={m}>{m} 2026</option>)}
+                {MONTHS.map(m => <option key={m} value={m}>{m} 2026</option>)}
              </select>
           </div>
         </div>
@@ -476,7 +435,7 @@ export default function RankingTecnicosPage() {
 
       {/* Summary Stat Cards */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
-        <StatCard title="Técnicos Destacados" value={rankingData.filter(t => t.status === 'destacado').length} icon={<Medal size={24} />} color="#10b981" subValue="Cumplen todos los objetivos" />
+        <StatCard title="Técnicos Destacados" value={rankingData.filter(t => t.status === 'destacado').length} icon={<Medal size={24} />} color="#10b981" subValue="Cumplen objetivos operativos" />
         <StatCard title="En Seguimiento" value={rankingData.filter(t => t.status === 'seguimiento').length} icon={<Activity size={24} />} color="#f59e0b" subValue="KPIs cerca del límite" />
         <StatCard title="Estado Crítico" value={rankingData.filter(t => t.status === 'critico').length} icon={<ShieldAlert size={24} />} color="#ef4444" subValue="Atención inmediata requerida" />
       </div>
@@ -488,8 +447,8 @@ export default function RankingTecnicosPage() {
         </h3>
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           {topProductividad && <HighlightCard title="Mejor Productividad" tech={topProductividad} kpiName="Productividad" value={topProductividad.productividad} unit="v/d" position={1} trend={topProductividad.trend.productividad} color="#019df4" icon={<Zap size={24} />} />}
-          {topNPS && <HighlightCard title="Mejor NPS" tech={topNPS} kpiName="NPS" value={topNPS.nps} unit="pts" position={1} trend={topNPS.trend.nps} color="#10b981" icon={<MessageSquare size={24} />} />}
-          {topCalidad && <HighlightCard title="Calidad Técnica" tech={topCalidad} kpiName="Calidad" value={topCalidad.calidad} unit="%" position={1} trend={topCalidad.trend.calidad} color="#8b5cf6" icon={<Wrench size={24} />} />}
+          {topResolucion && <HighlightCard title="Mejor Resolución" tech={topResolucion} kpiName="Resolución" value={topResolucion.resolucion} unit="%" position={1} trend={topResolucion.trend.resolucion} color="#10b981" icon={<CheckCircle2 size={24} />} />}
+          {bestReiteros && <HighlightCard title="Menores Reiteros" tech={bestReiteros} kpiName="Reiteros" value={bestReiteros.reiteros} unit="%" position={1} trend={bestReiteros.trend.reiteros} color="#8b5cf6" icon={<Activity size={24} />} />}
         </div>
       </section>
 
@@ -497,7 +456,7 @@ export default function RankingTecnicosPage() {
       <section style={{ marginBottom: '48px', backgroundColor: 'white', borderRadius: '28px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '14px' }}>
-            {(['productividad', 'nps', 'calidad', 'reincidencias', 'puntualidad'] as KpiCategory[]).map(cat => (
+            {(['productividad', 'resolucion', 'reiteros'] as KpiCategory[]).map(cat => (
               <button 
                 key={cat}
                 onClick={() => setActiveTab(cat)}
@@ -630,10 +589,10 @@ export default function RankingTecnicosPage() {
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>NPS</p>
+                  <p style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Reiteros</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '16px', fontWeight: '950', color: t.nps < thresholds.nps.yellow ? '#ef4444' : '#f59e0b' }}>{t.nps}</span>
-                    {t.nps < thresholds.nps.yellow && <ArrowDown size={14} color="#ef4444" />}
+                    <span style={{ fontSize: '16px', fontWeight: '950', color: t.reiteros > thresholds.reiteros.yellow ? '#ef4444' : '#f59e0b' }}>{t.reiteros}%</span>
+                    {t.reiteros > thresholds.reiteros.yellow && <ArrowUp size={14} color="#ef4444" />}
                   </div>
                 </div>
               </div>
