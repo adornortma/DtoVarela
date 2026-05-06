@@ -560,7 +560,7 @@ export default function RankingTecnicosPage() {
                         fontSize: '16px', fontWeight: '950', 
                         color: getKpiColor(t[activeTab as keyof TechStats] as number, activeTab) 
                       }}>
-                        {t[activeTab as keyof TechStats]}
+                        {t[activeTab as keyof TechStats] as number}
                         <span style={{ fontSize: '10px', marginLeft: '2px', opacity: 0.6 }}>
                           {activeTab === 'productividad' ? '' : '%'}
                         </span>
