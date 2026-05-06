@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info, LayoutDashboard, Target, MessageSquare } from 'lucide-react';
+import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info, LayoutDashboard, Target, MessageSquare, Trophy } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
 
   const navItems = [
     { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: '/' },
+    { name: 'Ranking Técnicos', icon: <Trophy size={20} />, path: '/ranking-tecnicos' },
     { name: 'Detalle Diario', icon: <LayoutDashboard size={20} />, path: '/detalle-diario' },
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
