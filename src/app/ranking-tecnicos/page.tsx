@@ -394,7 +394,7 @@ export default function RankingTecnicosPage() {
   const normalTechs = sortedRanking.filter(t => !isRed(t[activeTab], activeTab));
   const criticalTechs = rankingData.filter(t => t.status === 'critico');
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontWeight: '900', color: '#64748b' }}>CARGANDO INTELIGENCIA OPERATIVA...</div>;
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontWeight: '900', color: '#64748b' }}>CARGANDO RANKING...</div>;
 
   return (
     <div style={{ padding: '24px 0', minHeight: '100vh', color: '#1e293b' }}>
