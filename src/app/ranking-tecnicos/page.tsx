@@ -66,8 +66,6 @@ export default function RankingTecnicosPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const prevMonth = MONTHS[MONTHS.indexOf(selectedMonth) - 1] || selectedMonth;
-
       const monthIdx = MONTHS.indexOf(selectedMonth);
       const prevMonth = MONTHS[monthIdx - 1] || selectedMonth;
 
