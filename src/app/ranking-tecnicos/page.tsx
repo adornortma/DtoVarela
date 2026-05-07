@@ -86,14 +86,22 @@ const AnalysisDrawer = ({ isOpen, onClose, tech, data, loading, month }: { isOpe
         }}
       />
       <div style={{
-        position: 'fixed', top: '5vh', right: '24px',
-        width: 'calc(100% - 48px)', maxWidth: '450px', maxHeight: '90vh',
-        backgroundColor: 'white', borderRadius: '32px',
-        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
-        zIndex: 6001, transform: `translateY(${isOpen ? '0' : '110%'})`,
+        position: 'fixed', 
+        top: '5vh', 
+        left: '50%',
+        transform: `translateX(-50%) translateY(${isOpen ? '0' : '110%'})`,
+        width: 'calc(100% - 48px)', 
+        maxWidth: '500px', 
+        maxHeight: '90vh',
+        backgroundColor: 'white', 
+        borderRadius: '32px',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+        zIndex: 6001,
         visibility: isOpen ? 'visible' : 'hidden',
         transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden'
+        display: 'grid', 
+        gridTemplateRows: 'auto 1fr', 
+        overflow: 'hidden'
       }}>
         {/* Header */}
         <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', position: 'relative', backgroundColor: 'white', zIndex: 10 }}>
