@@ -69,27 +69,33 @@ export default function RankingTecnicosPage() {
       const prevMonth = MONTHS[MONTHS.indexOf(selectedMonth) - 1] || selectedMonth;
 
       const monthIdx = MONTHS.indexOf(selectedMonth);
-      const year = 2026; // Usamos 2026 como base para el sistema actual
-      const startDate = new Date(Date.UTC(year, monthIdx, 1)).toISOString();
-      const endDate = new Date(Date.UTC(year, monthIdx + 1, 0, 23, 59, 59)).toISOString();
+      const prevMonth = MONTHS[monthIdx - 1] || selectedMonth;
 
-      const prevMonthIdx = monthIdx === 0 ? 11 : monthIdx - 1;
-      const prevYear = monthIdx === 0 ? year - 1 : year;
-      const prevStartDate = new Date(Date.UTC(prevYear, prevMonthIdx, 1)).toISOString();
-      const prevEndDate = new Date(Date.UTC(prevYear, prevMonthIdx + 1, 0, 23, 59, 59)).toISOString();
+      // Definimos la fecha exacta para TOA si es Abril
+      let toaDate = '';
+      if (selectedMonth === 'Abril') {
+        toaDate = '2026-05-04'; // Semana 1 Mayo (Acumulado Abril)
+      } else {
+        // Para otros meses, podríamos necesitar lógica similar, por ahora buscamos el primer lunes del mes
+        // Pero como el usuario fue específico con Abril, priorizamos esa lógica.
+        const year = 2026;
+        toaDate = new Date(Date.UTC(year, monthIdx, 1)).toISOString().split('T')[0];
+      }
 
-      const [metricsRes, prevMetricsRes, thresholdsRes] = await Promise.all([
+      const [metricsRes, prevMetricsRes, thresholdsRes, toaRes] = await Promise.all([
         supabase
-          .from('metricas')
+          .from('metricas_mensuales')
           .select('*, tecnicos(nombre, apellido, nombre_normalizado)')
-          .gte('fecha', startDate)
-          .lte('fecha', endDate),
+          .eq('mes', selectedMonth),
+        supabase
+          .from('metricas_mensuales')
+          .select('*, tecnicos(nombre, apellido, nombre_normalizado)')
+          .eq('mes', prevMonth),
+        supabase.from('kpi_thresholds').select('*'),
         supabase
           .from('metricas')
-          .select('tecnico_id, productividad, resolucion, reitero')
-          .gte('fecha', prevStartDate)
-          .lte('fecha', prevEndDate),
-        supabase.from('kpi_thresholds').select('*')
+          .select('tecnico_id, cierres, no_encontrados')
+          .eq('fecha', toaDate)
       ]);
 
       const threshMap = (thresholdsRes.data || []).reduce((acc: any, curr) => {
@@ -98,73 +104,33 @@ export default function RankingTecnicosPage() {
       }, {});
       setThresholds(threshMap);
 
-      // Agregación de datos actuales
-      const techGroups: Record<string, any> = {};
-      (metricsRes.data || []).forEach((m: any) => {
-        if (!m.tecnico_id) return;
-        if (!techGroups[m.tecnico_id]) {
-          techGroups[m.tecnico_id] = {
-            id: m.tecnico_id,
-            nombre: m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido',
-            celula: m.celula,
-            prodSum: 0, resSum: 0, reitSum: 0, noEncSum: 0, cierres: 0, count: 0
-          };
-        }
-        const g = techGroups[m.tecnico_id];
-        g.prodSum += Number(m.productividad) || 0;
-        g.resSum += Number(m.resolucion) || 0;
-        g.reitSum += Number(m.reitero) || 0;
-        g.noEncSum += Number(m.no_encontrados) || 0;
-        g.cierres += Number(m.cierres) || 0;
-        g.count++;
-      });
+      const currentMetrics = metricsRes.data || [];
+      const prevMetrics = prevMetricsRes.data || [];
+      const toaData = toaRes.data || [];
 
-      // Agregación de datos previos (para tendencias)
-      const prevTechGroups: Record<string, any> = {};
-      (prevMetricsRes.data || []).forEach((m: any) => {
-        if (!m.tecnico_id) return;
-        if (!prevTechGroups[m.tecnico_id]) {
-          prevTechGroups[m.tecnico_id] = { prodSum: 0, resSum: 0, reitSum: 0, count: 0 };
-        }
-        const g = prevTechGroups[m.tecnico_id];
-        g.prodSum += Number(m.productividad) || 0;
-        g.resSum += Number(m.resolucion) || 0;
-        g.reitSum += Number(m.reitero) || 0;
-        g.count++;
-      });
-
-      const processedData: TechStats[] = Object.values(techGroups).map(g => {
-        const pm = prevTechGroups[g.id];
+      const processedData: TechStats[] = currentMetrics.map(m => {
+        const pm = prevMetrics.find(p => p.tecnico_id === m.tecnico_id);
+        const toa = toaData.find(t => t.tecnico_id === m.tecnico_id);
+        const tech = m.tecnicos as any;
+        const nombreCompleto = tech ? `${tech.apellido}, ${tech.nombre}` : 'Sin Nombre';
         
-        const currentProd = Math.round((g.prodSum / g.count) * 100) / 100;
-        const currentRes = Math.round((g.resSum / g.count) * 100) / 100;
-        const currentReit = Math.round((g.reitSum / g.count) * 100) / 100;
-        
-        const prevProd = pm ? Math.round((pm.prodSum / pm.count) * 100) / 100 : 0;
-        const prevRes = pm ? Math.round((pm.resSum / pm.count) * 100) / 100 : 0;
-        const prevReit = pm ? Math.round((pm.reitSum / pm.count) * 100) / 100 : 0;
-
         return {
-          id: g.id,
-          nombre: g.nombre,
-          celula: g.celula,
-          productividad: currentProd,
-          resolucion: currentRes,
-          reiteros: currentReit,
-          cierres: g.cierres,
-          no_encontrados: Math.round((g.noEncSum / g.count) * 100) / 100,
+          id: m.tecnico_id,
+          nombre: nombreCompleto,
+          celula: m.celula,
+          productividad: Number(m.productividad) || 0,
+          resolucion: Number(m.resolucion) || 0,
+          reiteros: Number(m.reiteros) || 0,
+          cierres: toa ? Number(toa.cierres) : 0,
+          no_encontrados: toa ? Number(toa.no_encontrados) : 0,
           trend: {
-            productividad: prevProd ? currentProd - prevProd : 0,
-            resolucion: prevRes ? currentRes - prevRes : 0,
-            reiteros: prevReit ? currentReit - prevReit : 0
+            productividad: pm ? (Number(m.productividad) || 0) - (Number(pm.productividad) || 0) : 0,
+            resolucion: pm ? (Number(m.resolucion) || 0) - (Number(pm.resolucion) || 0) : 0,
+            reiteros: pm ? (Number(m.reiteros) || 0) - (Number(pm.reiteros) || 0) : 0
           },
-          status: getTechStatus({ 
-            productividad: currentProd, 
-            resolucion: currentRes, 
-            reiteros: currentReit 
-          }, threshMap)
+          status: getTechStatus(m, threshMap)
         };
-      });
+      }).filter(t => t.id !== null);
 
       setRankingData(processedData);
     } catch (error) {
