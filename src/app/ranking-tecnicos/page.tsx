@@ -15,7 +15,7 @@ import {
   Filter
 } from 'lucide-react';
 
-const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril'];
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 type KpiCategory = 'productividad' | 'resolucion' | 'reiteros';
 
@@ -65,8 +65,14 @@ export default function RankingTecnicosPage() {
       const prevMonth = MONTHS[MONTHS.indexOf(selectedMonth) - 1] || selectedMonth;
 
       const [metricsRes, prevMetricsRes, thresholdsRes] = await Promise.all([
-        supabase.from('metricas').select('*').eq('mes', selectedMonth),
-        supabase.from('metricas').select('*').eq('mes', prevMonth),
+        supabase
+          .from('metricas_mensuales')
+          .select('*, tecnicos(nombre, apellido, nombre_normalizado)')
+          .eq('mes', selectedMonth),
+        supabase
+          .from('metricas_mensuales')
+          .select('*, tecnicos(nombre, apellido, nombre_normalizado)')
+          .eq('mes', prevMonth),
         supabase.from('kpi_thresholds').select('*')
       ]);
 
@@ -81,23 +87,25 @@ export default function RankingTecnicosPage() {
 
       const processedData: TechStats[] = currentMetrics.map(m => {
         const pm = prevMetrics.find(p => p.tecnico_id === m.tecnico_id);
+        const tech = m.tecnicos as any;
+        const nombreCompleto = tech ? `${tech.apellido}, ${tech.nombre}` : 'Sin Nombre';
         
         const stats: TechStats = {
           id: m.tecnico_id,
-          nombre: m.tecnico_nombre,
+          nombre: nombreCompleto,
           celula: m.celula,
           productividad: Number(m.productividad) || 0,
-          resolucion: Number(m.calidad) || 0,
-          reiteros: Number(m.reincidencias) || 0,
+          resolucion: Number(m.resolucion) || 0,
+          reiteros: Number(m.reiteros) || 0,
           trend: {
             productividad: calculateTrend(m.productividad, pm?.productividad),
-            resolucion: calculateTrend(m.calidad, pm?.calidad),
-            reiteros: calculateTrend(m.reincidencias, pm?.reincidencias)
+            resolucion: calculateTrend(m.resolucion, pm?.resolucion),
+            reiteros: calculateTrend(m.reiteros, pm?.reiteros)
           },
           status: getTechStatus(m, threshMap)
         };
         return stats;
-      });
+      }).filter(t => t.id !== null); // Filter out cell totals if any
 
       setRankingData(processedData);
     } catch (error) {
@@ -116,10 +124,10 @@ export default function RankingTecnicosPage() {
     if (!thresholds) return 'seguimiento';
     
     const prod = Number(m.productividad);
-    const reit = Number(m.reincidencias);
+    const reit = Number(m.reiteros);
 
-    if (prod < thresholds.productividad?.yellow || reit > thresholds.reincidencias?.yellow) return 'critico';
-    if (prod >= thresholds.productividad?.green && reit <= thresholds.reincidencias?.green) return 'destacado';
+    if (prod < thresholds.productividad?.yellow || reit > thresholds.reiteros?.yellow) return 'critico';
+    if (prod >= thresholds.productividad?.green && reit <= thresholds.reiteros?.green) return 'destacado';
     
     return 'seguimiento';
   };
