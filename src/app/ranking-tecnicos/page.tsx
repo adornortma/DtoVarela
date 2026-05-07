@@ -26,6 +26,8 @@ interface TechStats {
   productividad: number;
   resolucion: number;
   reiteros: number;
+  cierres: number;
+  no_encontrados: number;
   trend: {
     productividad: number;
     resolucion: number;
@@ -99,15 +101,17 @@ export default function RankingTecnicosPage() {
           productividad: Number(m.productividad) || 0,
           resolucion: Number(m.resolucion) || 0,
           reiteros: Number(m.reiteros) || 0,
+          cierres: Number(m.cierres) || 0,
+          no_encontrados: Number(m.no_encontrados) || 0,
           trend: {
-            productividad: calculateTrend(m.productividad, pm?.productividad),
-            resolucion: calculateTrend(m.resolucion, pm?.resolucion),
-            reiteros: calculateTrend(m.reiteros, pm?.reiteros)
+            productividad: prevM ? (Number(m.productividad) || 0) - (Number(prevM.productividad) || 0) : 0,
+            resolucion: prevM ? (Number(m.resolucion) || 0) - (Number(prevM.resolucion) || 0) : 0,
+            reiteros: prevM ? (Number(m.reiteros) || 0) - (Number(prevM.reiteros) || 0) : 0
           },
           status: getTechStatus(m, threshMap)
         };
         return stats;
-      }).filter(t => t.id !== null); // Filter out cell totals if any
+      }).filter(t => t.id !== null);
 
       setRankingData(processedData);
     } catch (error) {
@@ -117,20 +121,12 @@ export default function RankingTecnicosPage() {
     }
   };
 
-  const calculateTrend = (curr: any, prev: any) => {
-    if (!prev || prev === 0) return 0;
-    return Math.round(((Number(curr) - Number(prev)) / Number(prev)) * 100);
-  };
-
   const getTechStatus = (m: any, thresholds: any): 'destacado' | 'seguimiento' | 'critico' => {
     if (!thresholds) return 'seguimiento';
-    
     const prod = Number(m.productividad);
     const reit = Number(m.reiteros);
-
     if (prod < thresholds.productividad?.yellow || reit > thresholds.reiteros?.yellow) return 'critico';
     if (prod >= thresholds.productividad?.green && reit <= thresholds.reiteros?.green) return 'destacado';
-    
     return 'seguimiento';
   };
 
@@ -142,20 +138,14 @@ export default function RankingTecnicosPage() {
     return matchesSearch && matchesLevel;
   });
 
-  const currentRanking = [...filteredRanking].sort((a, b) => {
+  const sortedRanking = [...filteredRanking].sort((a, b) => {
     const valA = a[activeTab] as number;
     const valB = b[activeTab] as number;
     return activeTab === 'reiteros' ? valA - valB : valB - valA;
   });
 
-  const criticalByIndicator = filteredRanking
-    .filter(t => isRed(t[activeTab], activeTab))
-    .sort((a, b) => {
-      const valA = a[activeTab] as number;
-      const valB = b[activeTab] as number;
-      return activeTab === 'reiteros' ? valB - valA : valA - valB;
-    });
-
+  const criticalByIndicator = sortedRanking.filter(t => isRed(t[activeTab], activeTab));
+  const normalTechs = sortedRanking.filter(t => !isRed(t[activeTab], activeTab));
   const criticalTechs = rankingData.filter(t => t.status === 'critico');
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontWeight: '900', color: '#64748b' }}>CARGANDO INTELIGENCIA OPERATIVA...</div>;
@@ -163,7 +153,6 @@ export default function RankingTecnicosPage() {
   return (
     <div style={{ padding: '24px 0', minHeight: '100vh', color: '#1e293b' }}>
       
-      {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
@@ -187,10 +176,7 @@ export default function RankingTecnicosPage() {
           </div>
         </div>
 
-        {/* Filters Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #e2e8f0', marginBottom: '32px' }}>
-          
-          {/* Row 1: Search & Level Selection */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '14px' }}>
               <button 
@@ -219,7 +205,6 @@ export default function RankingTecnicosPage() {
             </div>
           </div>
 
-          {/* Row 2: Cell Buttons (Conditional) */}
           {viewLevel === 'celula' && (
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
               {availableCells.map(cell => (
@@ -239,7 +224,6 @@ export default function RankingTecnicosPage() {
             </div>
           )}
 
-          {/* Row 3: Indicator Selector */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
             <p style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>Seleccionar Indicador de Ranking:</p>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -265,91 +249,56 @@ export default function RankingTecnicosPage() {
         </div>
       </div>
 
-      {/* Main Ranking Table */}
       <section style={{ backgroundColor: 'white', borderRadius: '28px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '10px' }}>
             RANKING OPERATIVO: {activeTab.toUpperCase()}
           </h3>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>
-              Mostrando {currentRanking.length} técnicos
-            </div>
-            <button style={{ padding: '8px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', fontSize: '11px', fontWeight: '800', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Filter size={14} /> EXPORTAR
-            </button>
-          </div>
+          <button style={{ padding: '8px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', fontSize: '11px', fontWeight: '800', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Filter size={14} /> EXPORTAR
+          </button>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f8fafc' }}>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Pos.</th>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', width: '80px' }}>Pos.</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Técnico</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Cierres</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>No Enc.</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Valor</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Tendencia</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Estado</th>
               </tr>
             </thead>
-            <tbody>
-              {/* Render Top 20 or All */}
-              {currentRanking.slice(0, showAll ? currentRanking.length : 20).map((t, idx) => (
-                <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx < 3 ? '#f0f9ff' : 'transparent' }}>
+            <tbody style={{ fontSize: '14px' }}>
+              {(showAll ? sortedRanking : normalTechs.slice(0, 20)).map((t, idx) => (
+                <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx < 3 && !searchTerm && !selectedCelula ? 'rgba(241, 245, 249, 0.3)' : 'transparent' }}>
                   <td style={{ padding: '14px 24px' }}>
                     <span style={{ 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      width: '28px', height: '28px', borderRadius: '8px', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px',
                       backgroundColor: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : '#f1f5f9',
-                      color: idx < 3 ? 'white' : '#64748b',
-                      fontSize: '12px', fontWeight: '950'
+                      color: idx < 3 ? 'white' : '#64748b', fontSize: '12px', fontWeight: '950'
                     }}>
                       {idx + 1}
                     </span>
                   </td>
                   <td style={{ padding: '14px 24px' }}>
-                    <div style={{ fontWeight: '800', fontSize: '14px' }}>{t.nombre}</div>
+                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#1e293b' }}>{t.nombre}</div>
                   </td>
                   <td style={{ padding: '14px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b' }}>{t.celula}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
                   <td style={{ padding: '14px 24px' }}>
-                    <span style={{ fontSize: '16px', fontWeight: '950', color: getKpiColor(t[activeTab], activeTab) }}>
-                      {t[activeTab]}{activeTab !== 'productividad' && '%'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: t.trend[activeTab] >= 0 ? '#10b981' : '#ef4444' }}>
-                      {t.trend[activeTab] >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                      {Math.abs(t.trend[activeTab])}%
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '16px', fontWeight: '950', color: getKpiColor(t[activeTab], activeTab) }}>
+                        {t[activeTab]}{activeTab !== 'productividad' && '%'}
+                      </span>
                     </div>
-                  </td>
-                  <td style={{ padding: '14px 24px' }}>
-                    <span style={{ 
-                      padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase',
-                      backgroundColor: t.status === 'destacado' ? '#10b98115' : (t.status === 'critico' ? '#ef444415' : '#f59e0b15'),
-                      color: t.status === 'destacado' ? '#10b981' : (t.status === 'critico' ? '#ef4444' : '#f59e0b'),
-                    }}>
-                      {t.status}
-                    </span>
                   </td>
                 </tr>
               ))}
 
-              {/* Show All Toggle */}
-              {!showAll && currentRanking.length > 40 && (
-                <tr>
-                  <td colSpan={6} style={{ padding: '32px', textAlign: 'center', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-                    <button 
-                      onClick={() => setShowAll(true)}
-                      style={{ padding: '12px 40px', borderRadius: '16px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#1e293b', fontSize: '13px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}
-                    >
-                      VER TODO EL RANKING ({currentRanking.length} TÉCNICOS)
-                    </button>
-                  </td>
-                </tr>
-              )}
-
-              {/* Render Critical Zone if not showing all */}
               {!showAll && criticalByIndicator.length > 0 && (
                 <>
                   <tr style={{ backgroundColor: '#fff1f2' }}>
@@ -358,7 +307,7 @@ export default function RankingTecnicosPage() {
                     </td>
                   </tr>
                   {criticalByIndicator.map((t) => {
-                    const originalIdx = currentRanking.findIndex(r => r.id === t.id);
+                    const originalIdx = sortedRanking.findIndex(r => r.id === t.id);
                     return (
                       <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '14px 24px' }}>
@@ -370,23 +319,11 @@ export default function RankingTecnicosPage() {
                           <div style={{ fontWeight: '800', fontSize: '14px' }}>{t.nombre}</div>
                         </td>
                         <td style={{ padding: '14px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b' }}>{t.celula}</td>
+                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
+                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
                         <td style={{ padding: '14px 24px' }}>
                           <span style={{ fontSize: '16px', fontWeight: '950', color: getKpiColor(t[activeTab], activeTab) }}>
                             {t[activeTab]}{activeTab !== 'productividad' && '%'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 24px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: t.trend[activeTab] >= 0 ? '#10b981' : '#ef4444' }}>
-                            {t.trend[activeTab] >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                            {Math.abs(t.trend[activeTab])}%
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 24px' }}>
-                          <span style={{ 
-                            padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase',
-                            backgroundColor: '#ef444415', color: '#ef4444',
-                          }}>
-                            CRÍTICO
                           </span>
                         </td>
                       </tr>
@@ -399,7 +336,6 @@ export default function RankingTecnicosPage() {
         </div>
       </section>
 
-      {/* Intervention Panel (Critical View) */}
       <section style={{ marginTop: '48px', backgroundColor: '#0f172a', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', border: '2px solid #ef4444' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
