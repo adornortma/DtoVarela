@@ -12,7 +12,14 @@ import {
   CheckCircle2, 
   User, 
   ShieldAlert,
-  Filter
+  Filter,
+  X,
+  MapPin,
+  ChevronRight,
+  ChevronDown,
+  ArrowUpRight,
+  Clock,
+  XCircle
 } from 'lucide-react';
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -34,6 +41,22 @@ interface TechStats {
     reiteros: number;
   };
   status: 'destacado' | 'seguimiento' | 'critico';
+  dni?: string;
+}
+
+interface AnalysisData {
+  resueltas: {
+    total: number;
+    max: number;
+    sorted: { text: string; count: number }[];
+    insight?: string;
+  };
+  noResueltas: {
+    total: number;
+    max: number;
+    sorted: { text: string; count: number }[];
+    insight?: string;
+  };
 }
 
 const getKpiColor = (val: number, cat: KpiCategory) => {
@@ -48,6 +71,124 @@ const getKpiColor = (val: number, cat: KpiCategory) => {
 
 const isRed = (val: number, cat: KpiCategory) => getKpiColor(val, cat) === '#ef4444';
 
+const AnalysisDrawer = ({ isOpen, onClose, tech, data, loading, month }: { isOpen: boolean, onClose: () => void, tech: TechStats | null, data: AnalysisData | null, loading: boolean, month: string }) => {
+  if (!tech) return null;
+
+  return (
+    <>
+      <div 
+        onClick={onClose}
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
+          zIndex: 6000, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease'
+        }}
+      />
+      <div style={{
+        position: 'fixed', top: '5vh', right: '24px',
+        width: 'calc(100% - 48px)', maxWidth: '450px', maxHeight: '90vh',
+        backgroundColor: 'white', borderRadius: '32px',
+        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+        zIndex: 6001, transform: `translateY(${isOpen ? '0' : '110%'})`,
+        visibility: isOpen ? 'visible' : 'hidden',
+        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden'
+      }}>
+        {/* Header */}
+        <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', position: 'relative', backgroundColor: 'white', zIndex: 10 }}>
+          <button onClick={onClose} style={{ position: 'absolute', top: '24px', right: '24px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b', border: 'none', cursor: 'pointer' }}>
+            <X size={20} />
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ backgroundColor: '#0ea5e9', padding: '10px', borderRadius: '14px', color: 'white' }}>
+              <User size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', letterSpacing: '-0.5px' }}>{tech.nombre}</h2>
+              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '700' }}>
+                Resumen de gestión • {month} 2026
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+             <div style={{ flex: 1, backgroundColor: '#f0fdf4', padding: '10px', borderRadius: '14px', textAlign: 'center' }}>
+                <span style={{ display: 'block', fontSize: '9px', fontWeight: '900', color: '#166534', textTransform: 'uppercase' }}>Resueltas</span>
+                <span style={{ fontSize: '18px', fontWeight: '950', color: '#14532d' }}>{data?.resueltas.total || 0}</span>
+             </div>
+             <div style={{ flex: 1, backgroundColor: '#fff1f2', padding: '10px', borderRadius: '14px', textAlign: 'center' }}>
+                <span style={{ display: 'block', fontSize: '9px', fontWeight: '900', color: '#991b1b', textTransform: 'uppercase' }}>Fallidas</span>
+                <span style={{ fontSize: '18px', fontWeight: '950', color: '#991b1b' }}>{data?.noResueltas.total || 0}</span>
+             </div>
+             <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '14px', textAlign: 'center' }}>
+                <span style={{ display: 'block', fontSize: '9px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Resolución</span>
+                <span style={{ fontSize: '18px', fontWeight: '950', color: '#1e293b' }}>{tech.resolucion}%</span>
+             </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ overflowY: 'auto', padding: '24px' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Activity size={32} className="animate-spin" style={{ color: '#0ea5e9', margin: '0 auto 16px' }} />
+              <p style={{ fontWeight: '800', color: '#64748b' }}>Analizando gestiones...</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+              {/* Resueltas */}
+              <section>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
+                  <h3 style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>Motivos de resolución (OK)</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {data?.resueltas.sorted.map((item, i) => (
+                    <div key={i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px', fontWeight: '700' }}>
+                        <span style={{ color: '#334155' }}>{item.text}</span>
+                        <span style={{ color: '#64748b' }}>{item.count}</span>
+                      </div>
+                      <div style={{ height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', backgroundColor: '#10b981', width: `${(item.count / data.resueltas.max) * 100}%`, opacity: 0.7 }}></div>
+                      </div>
+                    </div>
+                  ))}
+                  {data?.resueltas.total === 0 && <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos</p>}
+                </div>
+              </section>
+
+              {/* No Resueltas */}
+              <section>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></div>
+                  <h3 style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>Motivos de No Resolución</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {data?.noResueltas.sorted.map((item, i) => (
+                    <div key={i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px', fontWeight: '700' }}>
+                        <span style={{ color: '#334155' }}>{item.text}</span>
+                        <span style={{ color: '#64748b' }}>{item.count}</span>
+                      </div>
+                      <div style={{ height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', backgroundColor: '#f43f5e', width: `${(item.count / data.noResueltas.max) * 100}%`, opacity: 0.7 }}></div>
+                      </div>
+                    </div>
+                  ))}
+                  {data?.noResueltas.total === 0 && <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Sin datos</p>}
+                </div>
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+
 export default function RankingTecnicosPage() {
   const [loading, setLoading] = useState(true);
   const [rankingData, setRankingData] = useState<TechStats[]>([]);
@@ -58,6 +199,12 @@ export default function RankingTecnicosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [thresholds, setThresholds] = useState<any>(null);
+  
+  // States for Technician Analysis Bottom Sheet
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [selectedTech, setSelectedTech] = useState<TechStats | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -83,11 +230,11 @@ export default function RankingTecnicosPage() {
       const [metricsRes, prevMetricsRes, thresholdsRes, toaRes] = await Promise.all([
         supabase
           .from('metricas_mensuales')
-          .select('*, tecnicos(nombre, apellido, nombre_normalizado)')
+          .select('*, tecnicos(nombre, apellido, nombre_normalizado, dni)')
           .eq('mes', selectedMonth),
         supabase
           .from('metricas_mensuales')
-          .select('*, tecnicos(nombre, apellido, nombre_normalizado)')
+          .select('*, tecnicos(nombre, apellido, nombre_normalizado, dni)')
           .eq('mes', prevMonth),
         supabase.from('kpi_thresholds').select('*'),
         supabase
@@ -121,6 +268,7 @@ export default function RankingTecnicosPage() {
           reiteros: Number(m.reiteros) || 0,
           cierres: toa ? Number(toa.cierres) : 0,
           no_encontrados: toa ? Number(toa.no_encontrados) : 0,
+          dni: tech?.dni,
           trend: {
             productividad: pm ? (Number(m.productividad) || 0) - (Number(pm.productividad) || 0) : 0,
             resolucion: pm ? (Number(m.resolucion) || 0) - (Number(pm.resolucion) || 0) : 0,
@@ -135,6 +283,76 @@ export default function RankingTecnicosPage() {
       console.error('Error fetching ranking data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTechAnalysis = async (tech: TechStats) => {
+    try {
+      setIsAnalysisLoading(true);
+      setSelectedTech(tech);
+      setIsAnalysisOpen(true);
+      setAnalysisData(null);
+      
+      const monthIdx = MONTHS.indexOf(selectedMonth);
+      const year = 2026;
+      const startDate = new Date(Date.UTC(year, monthIdx, 1)).toISOString().split('T')[0];
+      const endDate = new Date(Date.UTC(year, monthIdx + 1, 0)).toISOString().split('T')[0];
+
+      const { data: acts, error } = await supabase
+        .from('actuaciones')
+        .select('*')
+        .gte('fecha_cita', startDate)
+        .lte('fecha_cita', endDate);
+      
+      if (error) throw error;
+
+      // Filter by tech DNI
+      const techActs = (acts || []).filter(a => {
+        if (!tech.dni) return false;
+        return a.recurso?.includes(tech.dni);
+      });
+
+      const resueltas: Record<string, number> = {};
+      const noResueltas: Record<string, number> = {};
+      let totalRes = 0;
+      let totalNoRes = 0;
+
+      techActs.forEach(a => {
+        const estado = a.estado?.toUpperCase();
+        const reason = (a.resolucion || 'Sin detalle').trim();
+        if (estado === 'CUMPLIDA') {
+          resueltas[reason] = (resueltas[reason] || 0) + 1;
+          totalRes++;
+        } else {
+          noResueltas[reason] = (noResueltas[reason] || 0) + 1;
+          totalNoRes++;
+        }
+      });
+
+      const sortMap = (map: Record<string, number>) => 
+        Object.entries(map)
+          .map(([text, count]) => ({ text, count }))
+          .sort((a, b) => b.count - a.count);
+
+      const sortedRes = sortMap(resueltas);
+      const sortedNoRes = sortMap(noResueltas);
+
+      setAnalysisData({
+        resueltas: {
+          total: totalRes,
+          max: sortedRes[0]?.count || 1,
+          sorted: sortedRes
+        },
+        noResueltas: {
+          total: totalNoRes,
+          max: sortedNoRes[0]?.count || 1,
+          sorted: sortedNoRes
+        }
+      });
+    } catch (e) {
+      console.error('Error fetching tech analysis:', e);
+    } finally {
+      setIsAnalysisLoading(false);
     }
   };
 
@@ -296,7 +514,18 @@ export default function RankingTecnicosPage() {
             </thead>
             <tbody style={{ fontSize: '14px' }}>
               {(showAll ? sortedRanking : normalTechs.slice(0, 20)).map((t, idx) => (
-                <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx < 3 && !searchTerm && !selectedCelula ? 'rgba(241, 245, 249, 0.3)' : 'transparent' }}>
+                <tr 
+                  key={t.id} 
+                  onClick={() => fetchTechAnalysis(t)}
+                  style={{ 
+                    borderBottom: '1px solid #f1f5f9', 
+                    backgroundColor: idx < 3 && !searchTerm && !selectedCelula ? 'rgba(241, 245, 249, 0.3)' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = idx < 3 && !searchTerm && !selectedCelula ? 'rgba(241, 245, 249, 0.3)' : 'transparent'}
+                >
                   <td style={{ padding: '14px 24px' }}>
                     <span style={{ 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px',
@@ -330,7 +559,17 @@ export default function RankingTecnicosPage() {
                   {criticalByIndicator.map((t) => {
                     const originalIdx = sortedRanking.findIndex(r => r.id === t.id);
                     return (
-                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <tr 
+                        key={t.id} 
+                        onClick={() => fetchTechAnalysis(t)}
+                        style={{ 
+                          borderBottom: '1px solid #f1f5f9',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
                         <td style={{ padding: '14px 24px' }}>
                           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fee2e2', color: '#ef4444', fontSize: '12px', fontWeight: '950' }}>
                             {originalIdx + 1}
@@ -357,6 +596,14 @@ export default function RankingTecnicosPage() {
         </div>
       </section>
 
+      <AnalysisDrawer 
+        isOpen={isAnalysisOpen} 
+        onClose={() => setIsAnalysisOpen(false)} 
+        tech={selectedTech}
+        data={analysisData}
+        loading={isAnalysisLoading}
+        month={selectedMonth}
+      />
     </div>
   );
 }
