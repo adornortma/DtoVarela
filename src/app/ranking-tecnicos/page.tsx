@@ -266,9 +266,9 @@ export default function RankingTecnicosPage() {
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', width: '80px' }}>Pos.</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Técnico</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Cierres</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>No Enc.</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Valor</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>{activeTab === 'resolucion' ? 'Resolución' : activeTab === 'reiteros' ? 'Reiteros' : 'Productividad'}</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Cant. Cierres</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>No Encontradas</th>
               </tr>
             </thead>
             <tbody style={{ fontSize: '14px' }}>
@@ -287,15 +287,13 @@ export default function RankingTecnicosPage() {
                     <div style={{ fontWeight: '900', fontSize: '15px', color: '#1e293b' }}>{t.nombre}</div>
                   </td>
                   <td style={{ padding: '14px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b' }}>{t.celula}</td>
+                  <td style={{ padding: '14px 24px' }}>
+                    <span style={{ fontSize: '16px', fontWeight: '950', color: getKpiColor(t[activeTab], activeTab) }}>
+                      {t[activeTab]}{activeTab !== 'productividad' && '%'}
+                    </span>
+                  </td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
-                  <td style={{ padding: '14px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '16px', fontWeight: '950', color: getKpiColor(t[activeTab], activeTab) }}>
-                        {t[activeTab]}{activeTab !== 'productividad' && '%'}
-                      </span>
-                    </div>
-                  </td>
                 </tr>
               ))}
 
@@ -319,13 +317,13 @@ export default function RankingTecnicosPage() {
                           <div style={{ fontWeight: '800', fontSize: '14px' }}>{t.nombre}</div>
                         </td>
                         <td style={{ padding: '14px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b' }}>{t.celula}</td>
-                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
-                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
                         <td style={{ padding: '14px 24px' }}>
                           <span style={{ fontSize: '16px', fontWeight: '950', color: getKpiColor(t[activeTab], activeTab) }}>
                             {t[activeTab]}{activeTab !== 'productividad' && '%'}
                           </span>
                         </td>
+                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
+                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
                       </tr>
                     );
                   })}
@@ -336,55 +334,6 @@ export default function RankingTecnicosPage() {
         </div>
       </section>
 
-      <section style={{ marginTop: '48px', backgroundColor: '#0f172a', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', border: '2px solid #ef4444' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ backgroundColor: '#ef4444', padding: '10px', borderRadius: '14px', color: 'white' }}>
-              <ShieldAlert size={20} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '20px', fontWeight: '950', color: 'white', margin: 0 }}>PANEL DE INTERVENCIÓN</h3>
-              <p style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', margin: 0 }}>Técnicos que requieren seguimiento inmediato</p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {criticalTechs.length > 0 ? criticalTechs.slice(0, 10).map(t => (
-            <div key={t.id} style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '16px 24px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#ef444420', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
-                  <User size={20} />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '15px', fontWeight: '900', color: 'white', margin: 0 }}>{t.nombre}</h4>
-                  <p style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', margin: 0 }}>{t.celula}</p>
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '32px' }}>
-                <div>
-                  <p style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Prod.</p>
-                  <span style={{ fontSize: '16px', fontWeight: '950', color: t.productividad < (thresholds?.productividad?.yellow || 0) ? '#ef4444' : '#f59e0b' }}>{t.productividad}</span>
-                </div>
-                <div>
-                  <p style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Reit.</p>
-                  <span style={{ fontSize: '16px', fontWeight: '950', color: t.reiteros > (thresholds?.reincidencias?.yellow || 0) ? '#ef4444' : '#f59e0b' }}>{t.reiteros}%</span>
-                </div>
-              </div>
-
-              <button style={{ backgroundColor: '#ef4444', color: 'white', padding: '8px 20px', borderRadius: '12px', fontSize: '11px', fontWeight: '950', border: 'none', cursor: 'pointer' }}>
-                VER DETALLE
-              </button>
-            </div>
-          )) : (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-              <CheckCircle2 size={48} color="#10b981" style={{ marginBottom: '12px', opacity: 0.5 }} />
-              <p style={{ fontSize: '14px', fontWeight: '800', color: '#94a3b8' }}>Operación estable. No se detectan desvíos críticos.</p>
-            </div>
-          )}
-        </div>
-      </section>
     </div>
   );
 }
