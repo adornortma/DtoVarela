@@ -38,12 +38,12 @@ interface TechStats {
 
 const getKpiColor = (val: number, cat: KpiCategory) => {
   if (cat === 'reiteros') {
-    return val <= 5 ? '#10b981' : val <= 10 ? '#f59e0b' : '#ef4444';
+    return val <= 4.5 ? '#10b981' : val <= 5.0 ? '#f59e0b' : '#ef4444';
   }
   if (cat === 'productividad') {
-    return val >= 4.5 ? '#10b981' : val >= 3.5 ? '#f59e0b' : '#ef4444';
+    return val >= 6.0 ? '#10b981' : val >= 5.0 ? '#f59e0b' : '#ef4444';
   }
-  return val >= 90 ? '#10b981' : val >= 80 ? '#f59e0b' : '#ef4444';
+  return val >= 75 ? '#10b981' : val >= 70 ? '#f59e0b' : '#ef4444';
 };
 
 const isRed = (val: number, cat: KpiCategory) => getKpiColor(val, cat) === '#ef4444';
@@ -122,11 +122,17 @@ export default function RankingTecnicosPage() {
   };
 
   const getTechStatus = (m: any, thresholds: any): 'destacado' | 'seguimiento' | 'critico' => {
-    if (!thresholds) return 'seguimiento';
+    // If we don't have database thresholds, we use the hardcoded ones in getKpiColor
     const prod = Number(m.productividad);
     const reit = Number(m.reiteros);
-    if (prod < thresholds.productividad?.yellow || reit > thresholds.reiteros?.yellow) return 'critico';
-    if (prod >= thresholds.productividad?.green && reit <= thresholds.reiteros?.green) return 'destacado';
+    const res = Number(m.resolucion);
+
+    const prodColor = getKpiColor(prod, 'productividad');
+    const reitColor = getKpiColor(reit, 'reiteros');
+    const resColor = getKpiColor(res, 'resolucion');
+
+    if (prodColor === '#ef4444' || reitColor === '#ef4444' || resColor === '#ef4444') return 'critico';
+    if (prodColor === '#10b981' && reitColor === '#10b981' && resColor === '#10b981') return 'destacado';
     return 'seguimiento';
   };
 
