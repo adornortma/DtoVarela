@@ -104,9 +104,9 @@ export default function RankingTecnicosPage() {
           cierres: Number(m.cierres) || 0,
           no_encontrados: Number(m.no_encontrados) || 0,
           trend: {
-            productividad: prevM ? (Number(m.productividad) || 0) - (Number(prevM.productividad) || 0) : 0,
-            resolucion: prevM ? (Number(m.resolucion) || 0) - (Number(prevM.resolucion) || 0) : 0,
-            reiteros: prevM ? (Number(m.reiteros) || 0) - (Number(prevM.reiteros) || 0) : 0
+            productividad: pm ? (Number(m.productividad) || 0) - (Number(pm.productividad) || 0) : 0,
+            resolucion: pm ? (Number(m.resolucion) || 0) - (Number(pm.resolucion) || 0) : 0,
+            reiteros: pm ? (Number(m.reiteros) || 0) - (Number(pm.reiteros) || 0) : 0
           },
           status: getTechStatus(m, threshMap)
         };
