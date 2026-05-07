@@ -310,15 +310,12 @@ export default function RankingTecnicosPage() {
         .from('actuaciones')
         .select('*')
         .gte('fecha_cita', startDate)
-        .lte('fecha_cita', endDate);
+        .lte('fecha_cita', endDate)
+        .ilike('recurso', `%${tech.dni}%`);
       
       if (error) throw error;
 
-      // Filter by tech DNI
-      const techActs = (acts || []).filter(a => {
-        if (!tech.dni) return false;
-        return a.recurso?.includes(tech.dni);
-      });
+      const techActs = acts || [];
 
       const resueltas: Record<string, number> = {};
       const noResueltas: Record<string, number> = {};
