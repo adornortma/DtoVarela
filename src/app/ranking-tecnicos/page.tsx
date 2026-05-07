@@ -203,7 +203,7 @@ export default function RankingTecnicosPage() {
   const [activeTab, setActiveTab] = useState<KpiCategory>('productividad');
   const [viewLevel, setViewLevel] = useState<'distrito' | 'celula'>('distrito');
   const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState(MONTHS[MONTHS.length - 1]);
+  const [selectedMonth, setSelectedMonth] = useState(MONTHS[3]); // Abril as default
   const [searchTerm, setSearchTerm] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [thresholds, setThresholds] = useState<any>(null);
