@@ -44,6 +44,8 @@ const getKpiColor = (val: number, cat: KpiCategory) => {
   return val >= 90 ? '#10b981' : val >= 80 ? '#f59e0b' : '#ef4444';
 };
 
+const isRed = (val: number, cat: KpiCategory) => getKpiColor(val, cat) === '#ef4444';
+
 export default function RankingTecnicosPage() {
   const [loading, setLoading] = useState(true);
   const [rankingData, setRankingData] = useState<TechStats[]>([]);
@@ -145,6 +147,14 @@ export default function RankingTecnicosPage() {
     const valB = b[activeTab] as number;
     return activeTab === 'reiteros' ? valA - valB : valB - valA;
   });
+
+  const criticalByIndicator = filteredRanking
+    .filter(t => isRed(t[activeTab], activeTab))
+    .sort((a, b) => {
+      const valA = a[activeTab] as number;
+      const valB = b[activeTab] as number;
+      return activeTab === 'reiteros' ? valB - valA : valA - valB;
+    });
 
   const criticalTechs = rankingData.filter(t => t.status === 'critico');
 
@@ -339,21 +349,21 @@ export default function RankingTecnicosPage() {
                 </tr>
               )}
 
-              {/* Render Bottom 20 if not showing all */}
-              {!showAll && currentRanking.length > 20 && (
+              {/* Render Critical Zone if not showing all */}
+              {!showAll && criticalByIndicator.length > 0 && (
                 <>
                   <tr style={{ backgroundColor: '#fff1f2' }}>
                     <td colSpan={6} style={{ padding: '12px 24px', fontSize: '11px', fontWeight: '900', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      ZONA CRÍTICA (ÚLTIMOS 20)
+                      ZONA CRÍTICA: TÉCNICOS CON DESVÍOS EN {activeTab.toUpperCase()} ({criticalByIndicator.length})
                     </td>
                   </tr>
-                  {currentRanking.slice(-20).map((t, idx) => {
-                    const realIdx = currentRanking.length - 20 + idx;
+                  {criticalByIndicator.map((t) => {
+                    const originalIdx = currentRanking.findIndex(r => r.id === t.id);
                     return (
                       <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '14px 24px' }}>
                           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fee2e2', color: '#ef4444', fontSize: '12px', fontWeight: '950' }}>
-                            {realIdx + 1}
+                            {originalIdx + 1}
                           </span>
                         </td>
                         <td style={{ padding: '14px 24px' }}>
