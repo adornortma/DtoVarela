@@ -220,9 +220,7 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
     { kpi: 'resolucion' as KpiType, value: calendarMode === 'operativo' ? (districtData?.resolucion ?? 0) : (monthlyDistrictData?.resolucion ?? 0) },
     { kpi: 'reiteros' as KpiType, value: calendarMode === 'operativo' ? (districtData?.reiteros ?? 0) : (monthlyDistrictData?.reiteros ?? 0) },
     { kpi: 'puntualidad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.puntualidad ?? 0) : (monthlyDistrictData?.puntualidad ?? 0) },
-    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) },
-    { kpi: 'cierres' as KpiType, value: calendarMode === 'operativo' ? (districtData?.cierres ?? 0) : (monthlyDistrictData?.cierres ?? 0) },
-    { kpi: 'no_encontrados' as KpiType, value: calendarMode === 'operativo' ? (districtData?.no_encontrados ?? 0) : (monthlyDistrictData?.no_encontrados ?? 0) }
+    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) }
   ];
 
   return (
@@ -810,6 +808,14 @@ export default function Home() {
 
   const fetchData = async () => {
     setLoading(true);
+    // Reset data states to avoid showing old data when switching months
+    setTechnicians([]);
+    setDistrictData(null);
+    setDistrictMonthlyKPIs(null);
+    setMetricsByTech({});
+    setMonthlyMetricsByTech({});
+    setCellMetrics({});
+    setCalendarWeeks([]);
     
     const monthIndex = MONTHS.indexOf(selectedMonth);
     const year = new Date().getFullYear();
