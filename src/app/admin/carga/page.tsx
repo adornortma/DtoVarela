@@ -43,7 +43,7 @@ interface KpiMappingConfig {
 
 const KPI_CONFIG: KpiMappingConfig[] = [
   { key: 'resolucion', label: 'Resolución', names: ['resolucion', 'resoluciones', 'res', 'res%', '% resolucion'], type: 'percentage' },
-  { key: 'reiteros', label: 'Reiteros', names: ['reitero', 'reiteros', 'rtr', 'ret', 'rtr%', '% reitero'], type: 'percentage' },
+  { key: 'reitero', label: 'Reiteros', names: ['reitero', 'reiteros', 'rtr', 'ret', 'rtr%', '% reitero'], type: 'percentage' },
   { key: 'puntualidad', label: 'Puntualidad', names: ['puntualidad', 'punt', 'pnt', 'pnt%', '% puntualidad'], type: 'percentage' },
   { key: 'productividad', label: 'Productividad', names: ['productividad', 'prod', 'prd', 'prd%'], type: 'number' },
   { key: 'inicio', label: 'Inicio', names: ['inicio', 'ini', 'start', '% cump', '%cump', 'cump'], type: 'number' },
@@ -291,7 +291,6 @@ export default function CargaAdminPage() {
         .map(line => line.trim())
         .filter(line => line.length > 0);
       
-      // Encontrar fila de encabezado
       const headerIndex = initialRows.findIndex(row => {
            const v = row.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
            return v.includes('tecnico') || v.includes('agente') || v.includes('nombre');
@@ -304,7 +303,6 @@ export default function CargaAdminPage() {
         return;
       }
 
-      // Detectar el mejor separador de la cabecera
       const headerText = initialRows[headerIndex];
       let separator = '\t';
       const separators = ['\t', ';', ',', '  ']; 
@@ -371,11 +369,18 @@ export default function CargaAdminPage() {
           
           const kpiValues: Record<string, number> = {};
           Object.entries(kpiIndices).forEach(([key, { idx, type }]) => {
-            if (row[idx]) kpiValues[key] = parseNum(row[idx], type);
+            if (row[idx] !== undefined && row[idx] !== null && row[idx] !== "") {
+              kpiValues[key] = parseNum(row[idx], type);
+            }
           });
 
           const updatePayload: any = { ...kpiValues };
           if (rawCelula) updatePayload.celula = rawCelula;
+
+          if (activeTab === 'mensual' && updatePayload.hasOwnProperty('reitero')) {
+             updatePayload.reiteros = updatePayload.reitero;
+             delete updatePayload.reitero;
+          }
 
           if (rawTecnico.toUpperCase().includes('TOTAL')) {
             const celulaName = rawCelula || rawTecnico.replace(/TOTAL\s+/i, '').trim();
