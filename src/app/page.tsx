@@ -38,7 +38,7 @@ const WEATHER_DATA: Record<string, Record<string, string[]>> = {
 };
 
 // --- Types ---
-type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad' | 'cierres' | 'no_encontrados';
+type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
 type ViewMode = 'semanal' | 'indicador';
 type WeekKey = 's1' | 's2' | 's3' | 's4' | 's5' | 's6';
 type CalendarMode = 'operativo' | 'mensual';
@@ -92,8 +92,6 @@ const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
   reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4.5, yellow: 5, reverse: true } },
   puntualidad: { label: 'Puntualidad', unit: '%', targets: { green: 80, yellow: 70 } },
   productividad: { label: 'Productividad', unit: '', targets: { green: 6, yellow: 5 } },
-  cierres: { label: 'Cant. Cierres', unit: '', targets: { green: 0, yellow: 0 } },
-  no_encontrados: { label: 'No encontrados', unit: '%', targets: { green: 4.9, yellow: 6.9, reverse: true } },
 };
 
 // --- Helper Functions ---
@@ -669,8 +667,8 @@ export default function Home() {
   const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[]) => {
       if (!monthlyMetrics || monthlyMetrics.length === 0) return null;
 
-      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad', 'cierres', 'no_encontrados'];
-      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0, cierres: 0, no_encontrados: 0 };
+      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad'];
+      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
       
       // Intentar encontrar el registro manual "DISTRITO" (sin tecnico)
       const distritoRecord = monthlyMetrics.find(m => m.celula === 'DISTRITO' && m.tecnico_id === null);
