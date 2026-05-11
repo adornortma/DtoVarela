@@ -33,6 +33,8 @@ interface TechStats {
   productividad: number;
   resolucion: number;
   reiteros: number;
+  cierres: number;
+  no_encontrados: number;
   trend: {
     productividad: number;
     resolucion: number;
@@ -522,6 +524,8 @@ export default function RankingTecnicosPage() {
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Técnico</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>{activeTab === 'resolucion' ? 'Resolución' : activeTab === 'reiteros' ? 'Reiteros' : 'Productividad'}</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Cant. Cierres</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>No Encontradas</th>
               </tr>
             </thead>
             <tbody style={{ fontSize: '14px' }}>
@@ -556,6 +560,8 @@ export default function RankingTecnicosPage() {
                       {t[activeTab]}{activeTab !== 'productividad' && '%'}
                     </span>
                   </td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
                 </tr>
               ))}
 
@@ -594,6 +600,8 @@ export default function RankingTecnicosPage() {
                             {t[activeTab]}{activeTab !== 'productividad' && '%'}
                           </span>
                         </td>
+                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>{t.cierres}</td>
+                        <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '800', color: t.no_encontrados > 6.9 ? '#ef4444' : '#1e293b' }}>{t.no_encontrados}%</td>
                       </tr>
                     );
                   })}
