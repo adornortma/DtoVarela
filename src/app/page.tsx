@@ -38,7 +38,7 @@ const WEATHER_DATA: Record<string, Record<string, string[]>> = {
 };
 
 // --- Types ---
-type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
+type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad' | 'cierres' | 'no_encontrados';
 type ViewMode = 'semanal' | 'indicador';
 type WeekKey = 's1' | 's2' | 's3' | 's4' | 's5' | 's6';
 type CalendarMode = 'operativo' | 'mensual';
@@ -92,6 +92,8 @@ const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
   reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4.5, yellow: 5, reverse: true } },
   puntualidad: { label: 'Puntualidad', unit: '%', targets: { green: 80, yellow: 70 } },
   productividad: { label: 'Productividad', unit: '', targets: { green: 6, yellow: 5 } },
+  cierres: { label: 'Cant. Cierres', unit: '', targets: { green: 0, yellow: 0 } },
+  no_encontrados: { label: 'No encontrados', unit: '%', targets: { green: 4.9, yellow: 6.9, reverse: true } },
 };
 
 // --- Helper Functions ---
@@ -218,7 +220,9 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
     { kpi: 'resolucion' as KpiType, value: calendarMode === 'operativo' ? (districtData?.resolucion ?? 0) : (monthlyDistrictData?.resolucion ?? 0) },
     { kpi: 'reiteros' as KpiType, value: calendarMode === 'operativo' ? (districtData?.reiteros ?? 0) : (monthlyDistrictData?.reiteros ?? 0) },
     { kpi: 'puntualidad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.puntualidad ?? 0) : (monthlyDistrictData?.puntualidad ?? 0) },
-    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) }
+    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) },
+    { kpi: 'cierres' as KpiType, value: calendarMode === 'operativo' ? (districtData?.cierres ?? 0) : (monthlyDistrictData?.cierres ?? 0) },
+    { kpi: 'no_encontrados' as KpiType, value: calendarMode === 'operativo' ? (districtData?.no_encontrados ?? 0) : (monthlyDistrictData?.no_encontrados ?? 0) }
   ];
 
   return (
@@ -667,8 +671,8 @@ export default function Home() {
   const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[]) => {
       if (!monthlyMetrics || monthlyMetrics.length === 0) return null;
 
-      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad'];
-      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
+      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad', 'cierres', 'no_encontrados'];
+      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0, cierres: 0, no_encontrados: 0 };
       
       // Intentar encontrar el registro manual "DISTRITO" (sin tecnico)
       const distritoRecord = monthlyMetrics.find(m => m.celula === 'DISTRITO' && m.tecnico_id === null);
@@ -756,7 +760,6 @@ export default function Home() {
         const { data: lastMetric } = await supabase
           .from('metricas')
           .select('fecha')
-          .not('resolucion', 'is', null) // Only consider records with actual KPI data
           .order('fecha', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -1413,7 +1416,6 @@ export default function Home() {
                     .select('id')
                     .gte('fecha', start)
                     .lte('fecha', end)
-                    .not('resolucion', 'is', null) // Must have data
                     .limit(1)
                     .maybeSingle();
 

@@ -224,15 +224,26 @@ export default function RankingTecnicosPage() {
       const monthIdx = MONTHS.indexOf(selectedMonth);
       const prevMonth = MONTHS[monthIdx - 1] || selectedMonth;
 
-      // Definimos la fecha exacta para TOA si es Abril
+      // Definimos la fecha exacta para TOA
       let toaDate = '';
       if (selectedMonth === 'Abril') {
         toaDate = '2026-05-04'; // Semana 1 Mayo (Acumulado Abril)
       } else {
-        // Para otros meses, podríamos necesitar lógica similar, por ahora buscamos el primer lunes del mes
-        // Pero como el usuario fue específico con Abril, priorizamos esa lógica.
-        const year = 2026;
-        toaDate = new Date(Date.UTC(year, monthIdx, 1)).toISOString().split('T')[0];
+        // Buscamos el lunes más reciente con datos para el mes seleccionado
+        const { data: latestDay } = await supabase
+          .from('metricas')
+          .select('fecha')
+          .filter('fecha', 'ilike', `2026-${(monthIdx + 1).toString().padStart(2, '0')}-%`)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (latestDay) {
+          toaDate = latestDay.fecha;
+        } else {
+          // Fallback: primer día del mes
+          toaDate = new Date(Date.UTC(2026, monthIdx, 1)).toISOString().split('T')[0];
+        }
       }
 
       const [metricsRes, prevMetricsRes, thresholdsRes, toaRes] = await Promise.all([
