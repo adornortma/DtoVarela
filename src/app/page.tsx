@@ -809,13 +809,12 @@ export default function Home() {
   const fetchData = async () => {
     setLoading(true);
     // Reset data states to avoid showing old data when switching months
-    setTechnicians([]);
-    setDistrictData(null);
-    setDistrictMonthlyKPIs(null);
-    setMetricsByTech({});
-    setMonthlyMetricsByTech({});
-    setCellMetrics({});
-    setCalendarWeeks([]);
+    setData([]);
+    setMetricsRaw([]);
+    setCellTotalsRaw([]);
+    setMonthlyMetricsRaw([]);
+    setDistrictKPIs(null);
+    setMonthlyDistrictKPIs(null);
     
     const monthIndex = MONTHS.indexOf(selectedMonth);
     const year = new Date().getFullYear();
