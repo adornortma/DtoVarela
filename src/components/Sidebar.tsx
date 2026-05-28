@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
-  ];
+  ].filter(item => !isLanus || ['KPIs Resolución', 'Ranking Técnicos'].includes(item.name));
 
   const sidebarContent = (
     <div style={{

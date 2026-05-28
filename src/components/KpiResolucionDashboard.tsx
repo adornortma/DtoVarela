@@ -1148,25 +1148,27 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
             </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link 
-            href="/detalle-diario"
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              padding: '10px 20px', 
-              backgroundColor: '#1e293b', 
-              color: 'white', 
-              borderRadius: '16px', 
-              fontSize: '13px', 
-              fontWeight: '800',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Activity size={16} />
-            Ver Detalle Diario
-          </Link>
+          {isVarela && (
+            <Link 
+              href="/detalle-diario"
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: '10px 20px', 
+                backgroundColor: '#1e293b', 
+                color: 'white', 
+                borderRadius: '16px', 
+                fontSize: '13px', 
+                fontWeight: '800',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Activity size={16} />
+              Ver Detalle Diario
+            </Link>
+          )}
           {user?.usuario?.trim().toUpperCase() === 'ADORNO' && (
             <Link 
               href="/auditoria"
