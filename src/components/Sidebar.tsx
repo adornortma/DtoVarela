@@ -43,7 +43,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
-  ].filter(item => !isAlternativeDistrict || ['KPIs Resolución', 'Ranking Técnicos'].includes(item.name));
+    { name: 'CARGA OCR', icon: <Database size={20} />, path: '/admin/carga-ocr' },
+  ].filter(item => {
+    if (isAlternativeDistrict) {
+      return ['KPIs Resolución', 'Ranking Técnicos', 'CARGA OCR'].includes(item.name);
+    }
+    return item.name !== 'CARGA OCR';
+  });
 
   const sidebarContent = (
     <div style={{
@@ -273,6 +279,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                     { label: 'Reiteros', green: '≤ 4.5%', yellow: '4.6% - 5%' },
                     { label: 'Puntualidad', green: '≥ 80%', yellow: '70% - 79%' },
                     { label: 'Productividad', green: '≥ 6.0', yellow: '5.0 - 5.9' },
+                    { label: 'Tiempo Operativo', green: '≥ 70%', yellow: '60% - 69%' },
                   ].map(row => (
                     <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '12px', fontSize: '14px', alignItems: 'center' }}>
                       <span style={{ fontWeight: '800', color: '#1e293b' }}>{row.label}</span>

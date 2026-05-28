@@ -24,7 +24,7 @@ import {
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-type KpiCategory = 'productividad' | 'resolucion' | 'reiteros';
+type KpiCategory = 'productividad' | 'resolucion' | 'reiteros' | 'tiempo_operativo';
 
 interface TechStats {
   id: string;
@@ -33,12 +33,14 @@ interface TechStats {
   productividad: number;
   resolucion: number;
   reiteros: number;
+  tiempo_operativo: number;
   cierres: number;
   no_encontrados: number;
   trend: {
     productividad: number;
     resolucion: number;
     reiteros: number;
+    tiempo_operativo: number;
   };
   status: 'destacado' | 'seguimiento' | 'critico';
   dni?: string;
@@ -65,6 +67,9 @@ const getKpiColor = (val: number, cat: KpiCategory) => {
   }
   if (cat === 'productividad') {
     return val >= 6.0 ? '#10b981' : val >= 5.0 ? '#f59e0b' : '#ef4444';
+  }
+  if (cat === 'tiempo_operativo') {
+    return val >= 70 ? '#10b981' : val >= 60 ? '#f59e0b' : '#ef4444';
   }
   return val >= 75 ? '#10b981' : val >= 70 ? '#f59e0b' : '#ef4444';
 };
@@ -228,13 +233,15 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
     const prod = Number(m.productividad);
     const reit = Number(m.reiteros);
     const res = Number(m.resolucion);
+    const to = Number(m.tiempo_operativo);
 
     const prodColor = getKpiColor(prod, 'productividad');
     const reitColor = getKpiColor(reit, 'reiteros');
     const resColor = getKpiColor(res, 'resolucion');
+    const toColor = getKpiColor(to, 'tiempo_operativo');
 
-    if (prodColor === '#ef4444' || reitColor === '#ef4444' || resColor === '#ef4444') return 'critico';
-    if (prodColor === '#10b981' && reitColor === '#10b981' && resColor === '#10b981') return 'destacado';
+    if (prodColor === '#ef4444' || reitColor === '#ef4444' || resColor === '#ef4444' || toColor === '#ef4444') return 'critico';
+    if (prodColor === '#10b981' && reitColor === '#10b981' && resColor === '#10b981' && toColor === '#10b981') return 'destacado';
     return 'seguimiento';
   };
 
@@ -266,7 +273,7 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
         }
       }
 
-      const [metricsRes, prevMetricsRes, thresholdsRes, toaRes] = await Promise.all([
+      const [metricsRes, prevMetricsRes, thresholdsRes, toaRes, celulasRes] = await Promise.all([
         supabase
           .from('metricas_mensuales')
           .select('*, tecnicos(nombre, apellido, nombre_normalizado, dni)')
@@ -282,6 +289,10 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
           .from('metricas')
           .select('tecnico_id, cierres, no_encontrados')
           .eq('fecha', toaDate)
+          .eq('distrito_id', districtId),
+        supabase
+          .from('celulas')
+          .select('nombre, operativa')
           .eq('distrito_id', districtId)
       ]);
 
@@ -294,6 +305,11 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
       const currentMetrics = metricsRes.data || [];
       const prevMetrics = prevMetricsRes.data || [];
       const toaData = toaRes.data || [];
+      const nonOperativeCells = new Set(
+        (celulasRes.data || [])
+          .filter(c => c.operativa === false)
+          .map(c => c.nombre)
+      );
 
       const processedData: TechStats[] = currentMetrics.map(m => {
         const pm = prevMetrics.find(p => p.tecnico_id === m.tecnico_id);
@@ -308,17 +324,19 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
           productividad: Number(m.productividad) || 0,
           resolucion: Number(m.resolucion) || 0,
           reiteros: Number(m.reiteros) || 0,
+          tiempo_operativo: Number(m.tiempo_operativo) || 0,
           cierres: toa ? Number(toa.cierres) : 0,
           no_encontrados: toa ? Number(toa.no_encontrados) : 0,
           dni: tech?.dni,
           trend: {
             productividad: pm ? (Number(m.productividad) || 0) - (Number(pm.productividad) || 0) : 0,
             resolucion: pm ? (Number(m.resolucion) || 0) - (Number(pm.resolucion) || 0) : 0,
-            reiteros: pm ? (Number(m.reiteros) || 0) - (Number(pm.reiteros) || 0) : 0
+            reiteros: pm ? (Number(m.reiteros) || 0) - (Number(pm.reiteros) || 0) : 0,
+            tiempo_operativo: pm ? (Number(m.tiempo_operativo) || 0) - (Number(pm.tiempo_operativo) || 0) : 0
           },
           status: getTechStatus(m, threshMap)
         };
-      }).filter(t => t.id !== null);
+      }).filter(t => t.id !== null && !nonOperativeCells.has(t.celula));
 
       setRankingData(processedData);
     } catch (error) {
@@ -494,7 +512,7 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
             <p style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>Seleccionar Indicador de Ranking:</p>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {(['productividad', 'resolucion', 'reiteros'] as KpiCategory[]).map(cat => (
+              {(['productividad', 'resolucion', 'reiteros', 'tiempo_operativo'] as KpiCategory[]).map(cat => (
                 <button 
                   key={cat}
                   onClick={() => setActiveTab(cat)}
@@ -508,7 +526,8 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
                   {cat === 'productividad' && <Zap size={14} />}
                   {cat === 'resolucion' && <CheckCircle2 size={14} />}
                   {cat === 'reiteros' && <Activity size={14} />}
-                  {cat}
+                  {cat === 'tiempo_operativo' && <Clock size={14} />}
+                  {cat === 'tiempo_operativo' ? 'Tiempo Op.' : cat}
                 </button>
               ))}
             </div>
@@ -541,7 +560,9 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Pos.</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Técnico</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Célula</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>{activeTab === 'resolucion' ? 'Resolución' : activeTab === 'reiteros' ? 'Reiteros' : 'Productividad'}</th>
+                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>
+                  {activeTab === 'resolucion' ? 'Resolución' : activeTab === 'reiteros' ? 'Reiteros' : activeTab === 'tiempo_operativo' ? 'Tiempo Operativo' : 'Productividad'}
+                </th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Cant. Cierres</th>
                 <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>No Encontradas</th>
               </tr>

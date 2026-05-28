@@ -37,7 +37,7 @@ const WEATHER_DATA: Record<string, Record<string, string[]>> = {
 };
 
 // --- Types ---
-type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad';
+type KpiType = 'resolucion' | 'reiteros' | 'puntualidad' | 'productividad' | 'tiempo_operativo';
 type ViewMode = 'semanal' | 'indicador';
 type WeekKey = 's1' | 's2' | 's3' | 's4' | 's5' | 's6';
 type CalendarMode = 'operativo' | 'mensual';
@@ -90,6 +90,7 @@ const DEFAULT_KPI_CONFIG: Record<KpiType, KpiConfigItem> = {
   reiteros: { label: 'Reiteros', unit: '%', targets: { green: 4.5, yellow: 5, reverse: true } },
   puntualidad: { label: 'Puntualidad', unit: '%', targets: { green: 80, yellow: 70 } },
   productividad: { label: 'Productividad', unit: '', targets: { green: 6, yellow: 5 } },
+  tiempo_operativo: { label: 'Tiempo Operativo', unit: '%', targets: { green: 70, yellow: 60 } },
 };
 
 const getWeekOfDate = (date: Date): WeekKey => {
@@ -198,7 +199,8 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
     { kpi: 'resolucion' as KpiType, value: calendarMode === 'operativo' ? (districtData?.resolucion ?? 0) : (monthlyDistrictData?.resolucion ?? 0) },
     { kpi: 'reiteros' as KpiType, value: calendarMode === 'operativo' ? (districtData?.reiteros ?? 0) : (monthlyDistrictData?.reiteros ?? 0) },
     { kpi: 'puntualidad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.puntualidad ?? 0) : (monthlyDistrictData?.puntualidad ?? 0) },
-    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) }
+    { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) },
+    { kpi: 'tiempo_operativo' as KpiType, value: calendarMode === 'operativo' ? (districtData?.tiempo_operativo ?? 0) : (monthlyDistrictData?.tiempo_operativo ?? 0) }
   ];
 
   return (
@@ -476,10 +478,10 @@ const CellGroup = ({
         `}</style>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', textAlign: 'left', tableLayout: 'fixed' }}>
             <colgroup>
-                <col style={{ width: '33.333%' }} />
+                <col style={{ width: '30%' }} />
                 {viewMode === 'semanal' && calendarMode === 'operativo'
-                    ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '13.333%' }} />)
-                    : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '16.666%' }} />)
+                    ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                    : [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
                 }
             </colgroup>
             <tbody>
@@ -551,6 +553,7 @@ const CellGroup = ({
                         <MetricCard entry={row.metrics.reiteros[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="reiteros" unit={config.reiteros.unit} config={config} />
                         <MetricCard entry={row.metrics.puntualidad[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="puntualidad" unit={config.puntualidad.unit} config={config} />
                         <MetricCard entry={row.metrics.productividad[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="productividad" unit={config.productividad.unit} config={config} />
+                        <MetricCard entry={row.metrics.tiempo_operativo[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="tiempo_operativo" unit={config.tiempo_operativo.unit} config={config} />
                       </>
                     )}
                 </tr>
@@ -593,7 +596,7 @@ const CellGroup = ({
                              );
                           })
                         ) : (
-                          (['resolucion', 'reiteros', 'puntualidad', 'productividad'] as const).map((k) => {
+                          (['resolucion', 'reiteros', 'puntualidad', 'productividad', 'tiempo_operativo'] as const).map((k) => {
                              const weekKey = calendarMode === 'mensual' ? 's1' : selectedWeek;
                              return (
                                <MetricCard 
@@ -641,6 +644,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
   const [monthlyDistrictKPIs, setMonthlyDistrictKPIs] = useState<Record<KpiType, number> | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [nonOperativeCells, setNonOperativeCells] = useState<Set<string>>(new Set());
   
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [calendarModalCelula, setCalendarModalCelula] = useState<string | null>(null);
@@ -656,11 +660,11 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
     }
   }, [districtSlug, isVarela]);
 
-  const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[]) => {
+  const calculateMonthlyDistrictKPIs = (monthlyMetrics: any[], nonOpSet: Set<string> = new Set()) => {
       if (!monthlyMetrics || monthlyMetrics.length === 0) return null;
 
-      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad'];
-      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0 };
+      const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad', 'tiempo_operativo'];
+      const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0, tiempo_operativo: 0 };
       
       const distritoRecord = monthlyMetrics.find(m => m.celula === 'DISTRITO' && m.tecnico_id === null);
 
@@ -671,8 +675,8 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
           return result;
       }
       
-      const cellTotals = monthlyMetrics.filter(m => m.tecnico_id === null && m.celula !== 'DISTRITO');
-      const dataToAverage = cellTotals.length > 0 ? cellTotals : monthlyMetrics;
+      const cellTotals = monthlyMetrics.filter(m => m.tecnico_id === null && m.celula !== 'DISTRITO' && !nonOpSet.has((m.celula || '').toUpperCase().trim()));
+      const dataToAverage = cellTotals.length > 0 ? cellTotals : monthlyMetrics.filter(m => !nonOpSet.has((m.celula || '').toUpperCase().trim()));
 
       kpis.forEach(kpi => {
           const vals = dataToAverage.map(m => m[kpi]).filter(v => v !== null && v !== undefined);
@@ -743,6 +747,20 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
           }
 
           setKpiConfig(newConfig);
+        }
+
+        // Fetch non-operative cells for this specific district
+        const { data: cellRecords } = await supabase
+            .from('celulas')
+            .select('nombre, operativa')
+            .eq('distrito_id', currentDistrictId);
+        if (cellRecords) {
+            const nonOp = new Set(
+                cellRecords
+                    .filter((c: any) => c.operativa === false)
+                    .map((c: any) => c.nombre.trim().toUpperCase())
+            );
+            setNonOperativeCells(nonOp);
         }
 
         // Fetch District KPIs (most recent row) for this specific district
@@ -875,12 +893,24 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
       return;
     }
     
+    // Fetch non-operative cells for calculation filtering
+    const { data: cellRecords } = await supabase
+        .from('celulas')
+        .select('nombre, operativa')
+        .eq('distrito_id', districtId);
+    const nonOp = new Set(
+        (cellRecords || [])
+            .filter((c: any) => c.operativa === false)
+            .map((c: any) => c.nombre.trim().toUpperCase())
+    );
+    setNonOperativeCells(nonOp);
+
     setMetricsRaw(metrics);
     setCellTotalsRaw(cellTotals);
     setMonthlyMetricsRaw(monthlyMetrics);
     
-    setMonthlyDistrictKPIs(calculateMonthlyDistrictKPIs(monthlyMetrics));
-    setData(processData(metrics, cellTotals, monthlyMetrics, monthIndex, year, calendarMode));
+    setMonthlyDistrictKPIs(calculateMonthlyDistrictKPIs(monthlyMetrics, nonOp));
+    setData(processData(metrics, cellTotals, monthlyMetrics, monthIndex, year, calendarMode, nonOp));
 
     const allDates = [...metrics.map(m => m.fecha), ...cellTotals.map(ct => ct.fecha)];
     if (allDates.length > 0) {
@@ -896,11 +926,11 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
 
   useEffect(() => {
     if (metricsRaw.length > 0 || monthlyMetricsRaw.length > 0) {
-      setData(processData(metricsRaw, cellTotalsRaw, monthlyMetricsRaw, MONTHS.indexOf(selectedMonth), new Date().getFullYear(), calendarMode));
+      setData(processData(metricsRaw, cellTotalsRaw, monthlyMetricsRaw, MONTHS.indexOf(selectedMonth), new Date().getFullYear(), calendarMode, nonOperativeCells));
     }
   }, [calendarMode]);
 
-  const processData = (metrics: any[], cellTotals: any[], monthlyMetrics: any[], month: number, year: number, mode: CalendarMode) => {
+  const processData = (metrics: any[], cellTotals: any[], monthlyMetrics: any[], month: number, year: number, mode: CalendarMode, nonOpSet: Set<string> = new Set()) => {
     const cellMap: Record<string, ItemRow> = {};
 
     const createEmptyMetricData = (m: number, y: number): MetricData => {
@@ -926,6 +956,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                  reiteros: createEmptyMetricData(month, year),
                  puntualidad: createEmptyMetricData(month, year),
                  productividad: createEmptyMetricData(month, year),
+                 tiempo_operativo: createEmptyMetricData(month, year),
                  inicio: createEmptyMetricData(month, year),
                  ok1: createEmptyMetricData(month, year),
                  completadas: createEmptyMetricData(month, year),
@@ -943,6 +974,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
             cell.metrics.reiteros['s1'].value = mm.reiteros;
             cell.metrics.puntualidad['s1'].value = mm.puntualidad;
             cell.metrics.productividad['s1'].value = mm.productividad;
+            cell.metrics.tiempo_operativo['s1'].value = mm.tiempo_operativo;
           } else {
             const techId = mm.tecnico_id;
             const techName = mm.tecnicos ? `${mm.tecnicos.apellido}, ${mm.tecnicos.nombre}` : 'Desconocido';
@@ -958,6 +990,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                   reiteros: createEmptyMetricData(month, year),
                   puntualidad: createEmptyMetricData(month, year),
                   productividad: createEmptyMetricData(month, year),
+                  tiempo_operativo: createEmptyMetricData(month, year),
                   inicio: createEmptyMetricData(month, year),
                   ok1: createEmptyMetricData(month, year),
                   completadas: createEmptyMetricData(month, year),
@@ -972,10 +1005,11 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
             tech.metrics.reiteros['s1'] = { value: mm.reiteros ?? null, id: mm.id, date: mm.mes };
             tech.metrics.puntualidad['s1'] = { value: mm.puntualidad ?? null, id: mm.id, date: mm.mes };
             tech.metrics.productividad['s1'] = { value: mm.productividad ?? null, id: mm.id, date: mm.mes };
+            tech.metrics.tiempo_operativo['s1'] = { value: mm.tiempo_operativo ?? null, id: mm.id, date: mm.mes };
           }
        });
        
-       return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
+       return Object.values(cellMap).filter(cell => !nonOpSet.has(cell.name)).sort((a, b) => a.name.localeCompare(b.name));
     }
 
     metrics.forEach(m => {
@@ -993,6 +1027,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
             reiteros: createEmptyMetricData(month, year),
             puntualidad: createEmptyMetricData(month, year),
             productividad: createEmptyMetricData(month, year),
+            tiempo_operativo: createEmptyMetricData(month, year),
             inicio: createEmptyMetricData(month, year),
             ok1: createEmptyMetricData(month, year),
             completadas: createEmptyMetricData(month, year),
@@ -1018,6 +1053,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
             reiteros: createEmptyMetricData(month, year),
             puntualidad: createEmptyMetricData(month, year),
             productividad: createEmptyMetricData(month, year),
+            tiempo_operativo: createEmptyMetricData(month, year),
             inicio: createEmptyMetricData(month, year),
             ok1: createEmptyMetricData(month, year),
             completadas: createEmptyMetricData(month, year),
@@ -1033,6 +1069,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
       tech.metrics.resolucion[week] = { value: m.resolucion ?? null, id: m.id, date: m.fecha };
       tech.metrics.puntualidad[week] = { value: m.puntualidad ?? null, id: m.id, date: m.fecha };
       tech.metrics.productividad[week] = { value: m.productividad ?? null, id: m.id, date: m.fecha };
+      tech.metrics.tiempo_operativo[week] = { value: m.tiempo_operativo ?? null, id: m.id, date: m.fecha };
       tech.metrics.inicio[week] = { value: m.inicio ?? null, id: m.id, date: m.fecha };
       tech.metrics.ok1[week] = { value: m.ok1 ?? null, id: m.id, date: m.fecha };
       tech.metrics.completadas[week] = { value: m.completadas ?? null, id: m.id, date: m.fecha };
@@ -1054,6 +1091,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
             reiteros: createEmptyMetricData(month, year),
             puntualidad: createEmptyMetricData(month, year),
             productividad: createEmptyMetricData(month, year),
+            tiempo_operativo: createEmptyMetricData(month, year),
             inicio: createEmptyMetricData(month, year),
             ok1: createEmptyMetricData(month, year),
             completadas: createEmptyMetricData(month, year),
@@ -1070,10 +1108,11 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
       cell.metrics.resolucion[week] = { value: ct.resolucion, id: ct.id, date: ct.fecha };
       cell.metrics.puntualidad[week] = { value: ct.puntualidad, id: ct.id, date: ct.fecha };
       cell.metrics.productividad[week] = { value: ct.productividad, id: ct.id, date: ct.fecha };
+      cell.metrics.tiempo_operativo[week] = { value: ct.tiempo_operativo, id: ct.id, date: ct.fecha };
     });
 
     Object.values(cellMap).forEach(cell => {
-        const kpisToAverage = ['reiteros', 'resolucion', 'puntualidad', 'productividad', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'];
+        const kpisToAverage = ['reiteros', 'resolucion', 'puntualidad', 'productividad', 'tiempo_operativo', 'inicio', 'ok1', 'completadas', 'no_encontrados', 'deriva_bajadas', 'cierres'];
         
         kpisToAverage.forEach(kpi => {
             (['s1', 's2', 's3', 's4', 's5', 's6'] as const).forEach(week => {
@@ -1087,7 +1126,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
         });
     });
 
-    return Object.values(cellMap).sort((a, b) => a.name.localeCompare(b.name));
+    return Object.values(cellMap).filter(cell => !nonOpSet.has(cell.name)).sort((a, b) => a.name.localeCompare(b.name));
   };
 
   const updatePuntualidad = async (techId: string, date: string, value: number, celula: string) => {
@@ -1566,10 +1605,10 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                 <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white', borderBottom: '2px solid rgba(0,0,0,0.1)', margin: '0 -20px 12px -20px', padding: '20px 20px 12px 20px' }}>
                   <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <colgroup>
-                        <col style={{ width: '33.333%' }} />
+                        <col style={{ width: '30%' }} />
                         {viewMode === 'semanal' && calendarMode === 'operativo'
-                            ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '13.333%' }} />)
-                            : [0, 1, 2, 3].map(i => <col key={i} style={{ width: '16.666%' }} />)
+                            ? [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
+                            : [0, 1, 2, 3, 4].map(i => <col key={i} style={{ width: '14%' }} />)
                         }
                     </colgroup>
                     <thead>
