@@ -15,13 +15,32 @@ export default function RootLayout({
   const pathname = usePathname();
   const isBPPage = pathname?.startsWith('/seguimiento-bp');
   const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
-  const currentDistrictName = isLanus ? 'LANÚS' : 'F. VARELA';
+  const isLomas = pathname === '/lomas' || pathname?.startsWith('/lomas/');
+  const isMontegrande = pathname === '/montegrande' || pathname?.startsWith('/montegrande/');
+
+  let currentDistrictName = 'F. VARELA';
+  let districtDisplayTitle = 'Varela';
+  let districtDescription = 'Florencio Varela';
+
+  if (isLanus) {
+    currentDistrictName = 'LANÚS';
+    districtDisplayTitle = 'Lanús';
+    districtDescription = 'Lanús';
+  } else if (isLomas) {
+    currentDistrictName = 'LOMAS';
+    districtDisplayTitle = 'Lomas';
+    districtDescription = 'Lomas';
+  } else if (isMontegrande) {
+    currentDistrictName = 'MONTEGRANDE';
+    districtDisplayTitle = 'Montegrande';
+    districtDescription = 'Montegrande';
+  }
 
   return (
     <html lang="es">
       <head>
-        <title>{`KPI Distrito ${isLanus ? 'Lanús' : 'Varela'} - Dashboard Operativo`}</title>
-        <meta name="description" content={`Dashboard de indicadores de gestión para el distrito ${isLanus ? 'Lanús' : 'Florencio Varela'}`} />
+        <title>{`KPI Distrito ${districtDisplayTitle} - Dashboard Operativo`}</title>
+        <meta name="description" content={`Dashboard de indicadores de gestión para el distrito ${districtDescription}`} />
       </head>
       <body>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>

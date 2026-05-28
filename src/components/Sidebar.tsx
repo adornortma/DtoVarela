@@ -14,9 +14,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
   const [showInfo, setShowInfo] = useState(false);
   const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
-  const currentDistrictName = isLanus ? 'LANÚS' : 'F. VARELA';
-  const homePath = isLanus ? '/lanus' : '/';
-  const rankingPath = isLanus ? '/lanus/ranking-tecnicos' : '/ranking-tecnicos';
+  const isLomas = pathname === '/lomas' || pathname?.startsWith('/lomas/');
+  const isMontegrande = pathname === '/montegrande' || pathname?.startsWith('/montegrande/');
+  const isAlternativeDistrict = isLanus || isLomas || isMontegrande;
+
+  let currentDistrictName = 'F. VARELA';
+  let homePath = '/';
+  let rankingPath = '/ranking-tecnicos';
+
+  if (isLanus) {
+    currentDistrictName = 'LANÚS';
+    homePath = '/lanus';
+    rankingPath = '/lanus/ranking-tecnicos';
+  } else if (isLomas) {
+    currentDistrictName = 'LOMAS';
+    homePath = '/lomas';
+    rankingPath = '/lomas/ranking-tecnicos';
+  } else if (isMontegrande) {
+    currentDistrictName = 'MONTEGRANDE';
+    homePath = '/montegrande';
+    rankingPath = '/montegrande/ranking-tecnicos';
+  }
 
   const navItems = [
     { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: homePath },
@@ -25,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
-  ].filter(item => !isLanus || ['KPIs Resolución', 'Ranking Técnicos'].includes(item.name));
+  ].filter(item => !isAlternativeDistrict || ['KPIs Resolución', 'Ranking Técnicos'].includes(item.name));
 
   const sidebarContent = (
     <div style={{
