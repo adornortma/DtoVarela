@@ -1,6 +1,6 @@
 /**
  * Dashboard de Carga de Datos Admin
- * Actualizado con Sincronización de Técnicos y Smart Matching.
+ * Actualizado con Sincronización de Técnicos, Smart Matching y Separación por Distrito.
  */
 'use client';
 
@@ -67,6 +67,13 @@ export default function CargaAdminPage() {
   const [unidentified, setUnidentified] = useState<string[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearStatus, setClearStatus] = useState<string | null>(null);
+  
+  // District State
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [selectedDistrictSlug, setSelectedDistrictSlug] = useState<string>('varela');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
+  const [availableCells, setAvailableCells] = useState<string[]>([]);
+
   const [distritoKPIs, setDistritoKPIs] = useState({
     resolucion: '',
     reiteros: '',
@@ -81,7 +88,7 @@ export default function CargaAdminPage() {
   const [lluvia, setLluvia] = useState(false);
   const [mensualData, setMensualData] = useState({
     mes: 'Marzo',
-    distrito: 'Berazategui',
+    distrito: 'DISTRITO',
     resolucion: '',
     reiteros: '',
     puntualidad: '',
@@ -90,10 +97,12 @@ export default function CargaAdminPage() {
   const [mensualLoading, setMensualLoading] = useState(false);
   const [mensualStatus, setMensualStatus] = useState<string | null>(null);
 
+  // Initialize selectedDate
   useEffect(() => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
   }, []);
 
+  // Fetch rain status
   useEffect(() => {
     const fetchRain = async () => {
       const { data } = await supabase.from('dias_operativos').select('lluvia').eq('fecha', selectedDate).maybeSingle();
@@ -102,7 +111,54 @@ export default function CargaAdminPage() {
     if (selectedDate) fetchRain();
   }, [selectedDate]);
 
-  // 2. Event Handlers
+  // Fetch Districts on mount
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      const { data } = await supabase.from('distritos').select('*').order('nombre');
+      if (data && data.length > 0) {
+        setDistricts(data);
+        const def = data.find(d => d.slug === 'varela') || data[0];
+        if (def) {
+          setSelectedDistrictSlug(def.slug);
+          setSelectedDistrictId(def.id);
+        }
+      }
+    };
+    fetchDistricts();
+  }, []);
+
+  // Sync selectedDistrictId
+  useEffect(() => {
+    const dist = districts.find(d => d.slug === selectedDistrictSlug);
+    if (dist) {
+      setSelectedDistrictId(dist.id);
+    }
+  }, [selectedDistrictSlug, districts]);
+
+  // Fetch available cells when district changes
+  useEffect(() => {
+    const fetchCells = async () => {
+      if (!selectedDistrictId) return;
+      const { data } = await supabase
+        .from('celulas')
+        .select('nombre')
+        .eq('distrito_id', selectedDistrictId)
+        .order('nombre');
+      
+      if (data && data.length > 0) {
+        const cellNames = data.map(c => c.nombre);
+        setAvailableCells(cellNames);
+        setMensualData(m => ({ ...m, distrito: 'DISTRITO' }));
+      } else if (selectedDistrictSlug === 'varela') {
+        setAvailableCells(['BERAZATEGUI', 'BERNAL', 'QUILMES', 'RANELAGH', 'VARELA 1', 'VARELA 2']);
+      } else {
+        setAvailableCells([]);
+      }
+    };
+    fetchCells();
+  }, [selectedDistrictId, selectedDistrictSlug]);
+
+  // Handle Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (user === 'adornor' && pass === 'Bera4545') {
@@ -113,8 +169,25 @@ export default function CargaAdminPage() {
     }
   };
 
+  // Ensure Cell exists in DB
+  const checkAndInsertCell = async (cell: string, distId: string) => {
+    const cleanCell = cell.toUpperCase().trim();
+    if (!cleanCell || cleanCell === 'DISTRITO') return;
+    const { data } = await supabase.from('celulas').select('id').eq('nombre', cleanCell).eq('distrito_id', distId).maybeSingle();
+    if (!data) {
+      await supabase.from('celulas').insert({ nombre: cleanCell, distrito_id: distId });
+      // Refresh available cells list
+      const { data: updatedCells } = await supabase.from('celulas').select('nombre').eq('distrito_id', distId).order('nombre');
+      if (updatedCells) {
+        setAvailableCells(updatedCells.map(c => c.nombre));
+      }
+    }
+  };
+
+  // Process Carga Mensual Manual
   const handleProcessMensual = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDistrictId) return;
     setMensualLoading(true);
     setMensualStatus(null);
     try {
@@ -135,14 +208,21 @@ export default function CargaAdminPage() {
         resolucion: resVal,
         reiteros: reiVal,
         puntualidad: punVal,
-        productividad: proVal
+        productividad: proVal,
+        distrito_id: selectedDistrictId
       };
+
+      // Auto-insert cell if it doesn't exist
+      if (distrito !== 'DISTRITO') {
+        await checkAndInsertCell(distrito, selectedDistrictId);
+      }
 
       const { data: existingCell } = await supabase
         .from('metricas_mensuales')
         .select('id')
         .eq('celula', distrito)
         .eq('mes', mes)
+        .eq('distrito_id', selectedDistrictId)
         .is('tecnico_id', null)
         .maybeSingle();
 
@@ -166,7 +246,6 @@ export default function CargaAdminPage() {
     }
   };
 
-
   const parseNum = (val: string, type: 'percentage' | 'number'): number => {
     if (!val || val === "") return 0;
     const clean = val.replace('%', '').replace(',', '.').trim();
@@ -174,17 +253,9 @@ export default function CargaAdminPage() {
     return isNaN(num) ? 0 : num;
   };
 
-  const findHeaderIdx = (headers: string[], names: string[]) => {
-    return headers.findIndex(h => {
-      const normalizedH = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      return names.some(name => normalizedH === name.toLowerCase());
-    });
-  };
-
-  const [previewData, setPreviewData] = useState<any[]>([]);
-
+  // Process pasted daily details (actuaciones)
   const handleProcessActuaciones = async () => {
-    if (!pastedData.trim()) return;
+    if (!pastedData.trim() || !selectedDistrictId) return;
     setLoading(true);
     setSummary(null);
     const errors: string[] = [];
@@ -196,7 +267,6 @@ export default function CargaAdminPage() {
         .filter(line => line.length > 0);
       
       const headerText = initialRows[0];
-      // Robust separator detection
       let separator = '\t';
       if (headerText.includes('\t')) separator = '\t';
       else if (headerText.includes(';')) separator = ';';
@@ -219,7 +289,6 @@ export default function CargaAdminPage() {
       
       const toInsert = rows.map(row => {
         let rawDate = row[idxFecha] || selectedDate;
-        // Normalización básica de fecha si viene en un formato extraño
         if (rawDate.includes('/')) {
           const parts = rawDate.split('/');
           if (parts[2]?.length === 4) rawDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -230,7 +299,8 @@ export default function CargaAdminPage() {
           fecha_cita: rawDate,
           estado: row[idxEstado]?.toUpperCase() || 'DESCONOCIDO',
           recurso: row[idxRecurso] || 'SIN NOMBRE',
-          resolucion: row[idxResolucion] || ''
+          resolucion: row[idxResolucion] || '',
+          distrito_id: selectedDistrictId
         };
       }).filter(r => {
         const isCancelled = ['CANCELADO', 'CANCELADA', 'DESESTIMADO', 'RECHAZADO'].includes(r.estado);
@@ -239,12 +309,16 @@ export default function CargaAdminPage() {
       });
 
       if (toInsert.length > 0) {
+        // Ensure cells are registered
+        const uniqueCells = Array.from(new Set(toInsert.map(r => r.tx_celula)));
+        for (const cell of uniqueCells) {
+          await checkAndInsertCell(cell, selectedDistrictId);
+        }
+
         const { error } = await supabase.from('actuaciones').insert(toInsert);
         if (error) throw error;
         
-        // Upsert daily meta
         await supabase.from('dias_operativos').upsert({ fecha: selectedDate, lluvia: lluvia });
-        
         processedCount = toInsert.length;
       }
 
@@ -257,7 +331,6 @@ export default function CargaAdminPage() {
         kpisDetected: ['Identificador', 'Célula', 'Fecha', 'Estado', 'Resolución'] 
       });
       setPastedData('');
-      setPreviewData([]);
 
     } catch (err: any) {
       console.error(err);
@@ -268,12 +341,13 @@ export default function CargaAdminPage() {
     }
   };
 
+  // Process pasted Excel metrics (resumen/mensual tabs)
   const handleProcessData = async (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === 'detalle') {
       return handleProcessActuaciones();
     }
-    if (!pastedData.trim()) return;
+    if (!pastedData.trim() || !selectedDistrictId) return;
     if (activeTab !== 'mensual' && !selectedDate) return;
     
     setLoading(true);
@@ -374,7 +448,7 @@ export default function CargaAdminPage() {
             }
           });
 
-          const updatePayload: any = { ...kpiValues };
+          const updatePayload: any = { ...kpiValues, distrito_id: selectedDistrictId };
           if (rawCelula) updatePayload.celula = rawCelula;
 
           if (activeTab === 'mensual' && updatePayload.hasOwnProperty('reitero')) {
@@ -382,17 +456,23 @@ export default function CargaAdminPage() {
              delete updatePayload.reitero;
           }
 
+          if (rawCelula) {
+             await checkAndInsertCell(rawCelula, selectedDistrictId);
+          }
+
           if (rawTecnico.toUpperCase().includes('TOTAL')) {
             const celulaName = rawCelula || rawTecnico.replace(/TOTAL\s+/i, '').trim();
+            await checkAndInsertCell(celulaName, selectedDistrictId);
+
             if (activeTab === 'mensual') {
-              const { data: existingCell } = await supabase.from('metricas_mensuales').select('id').eq('celula', celulaName).eq('mes', mensualData.mes).is('tecnico_id', null).maybeSingle();
+              const { data: existingCell } = await supabase.from('metricas_mensuales').select('id').eq('celula', celulaName).eq('mes', mensualData.mes).eq('distrito_id', selectedDistrictId).is('tecnico_id', null).maybeSingle();
               if (existingCell) {
                 await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
               } else {
                 await supabase.from('metricas_mensuales').insert({ celula: celulaName, mes: mensualData.mes, ...updatePayload });
               }
             } else {
-              const { data: existingCell } = await supabase.from('metricas_celula').select('id').eq('celula', celulaName).eq('fecha', selectedDate).maybeSingle();
+              const { data: existingCell } = await supabase.from('metricas_celula').select('id').eq('celula', celulaName).eq('fecha', selectedDate).eq('distrito_id', selectedDistrictId).maybeSingle();
               if (existingCell) {
                 await supabase.from('metricas_celula').update(updatePayload).eq('id', existingCell.id);
               } else {
@@ -407,18 +487,24 @@ export default function CargaAdminPage() {
           const techInput = parseTechnicianInput(rawTecnico);
           let tecnicoId = null;
 
+          // Lookup technicians strictly within the selected district
           if (techInput.dni) {
-            const { data: t } = await supabase.from('tecnicos').select('id').eq('dni', techInput.dni).maybeSingle();
+            const { data: t } = await supabase.from('tecnicos').select('id').eq('dni', techInput.dni).eq('distrito_id', selectedDistrictId).maybeSingle();
             if (t) tecnicoId = t.id;
           }
 
           if (!tecnicoId) {
-            const { data: t } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).maybeSingle();
+            const { data: t } = await supabase.from('tecnicos').select('id').eq('nombre_normalizado', techInput.normalized).eq('distrito_id', selectedDistrictId).maybeSingle();
             if (t) tecnicoId = t.id;
           }
 
           if (!tecnicoId) {
-            const { data: a } = await supabase.from('tecnico_alias').select('tecnico_id').eq('valor_original', rawTecnico).maybeSingle();
+            const { data: a } = await supabase
+              .from('tecnico_alias')
+              .select('tecnico_id, tecnicos!inner(distrito_id)')
+              .eq('valor_original', rawTecnico)
+              .eq('tecnicos.distrito_id', selectedDistrictId)
+              .maybeSingle();
             if (a) tecnicoId = a.tecnico_id;
           }
 
@@ -430,34 +516,36 @@ export default function CargaAdminPage() {
             
             let cellToSave = rawCelula;
             if (!cellToSave) {
-              const { data: lastMetric } = await supabase.from('metricas').select('celula').eq('tecnico_id', tecnicoId).not('celula', 'eq', 'DISTRITO').order('fecha', { ascending: false }).limit(1).maybeSingle();
+              const { data: lastMetric } = await supabase.from('metricas').select('celula').eq('tecnico_id', tecnicoId).eq('distrito_id', selectedDistrictId).not('celula', 'eq', 'DISTRITO').order('fecha', { ascending: false }).limit(1).maybeSingle();
               cellToSave = lastMetric?.celula || "DISTRITO";
             }
 
             const { data: existingMetric } = activeTab === 'mensual' 
-              ? await supabase.from('metricas_mensuales').select('id').eq('tecnico_id', tecnicoId).eq('mes', mensualData.mes).maybeSingle()
-              : await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).maybeSingle();
+              ? await supabase.from('metricas_mensuales').select('id').eq('tecnico_id', tecnicoId).eq('mes', mensualData.mes).eq('distrito_id', selectedDistrictId).maybeSingle()
+              : await supabase.from('metricas').select('id').eq('tecnico_id', tecnicoId).eq('fecha', selectedDate).eq('distrito_id', selectedDistrictId).maybeSingle();
 
             if (existingMetric) {
-               if (activeTab === 'mensual') {
-                 await supabase.from('metricas_mensuales').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
-               } else {
-                 await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
-               }
+                if (activeTab === 'mensual') {
+                  await supabase.from('metricas_mensuales').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
+                } else {
+                  await supabase.from('metricas').update({ celula: cellToSave, ...updatePayload }).eq('id', existingMetric.id);
+                }
             } else {
-               if (activeTab === 'mensual') {
-                 await supabase.from('metricas_mensuales').insert({ tecnico_id: tecnicoId, mes: mensualData.mes, celula: cellToSave, ...updatePayload });
-               } else {
-                 await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
-               }
+                if (activeTab === 'mensual') {
+                  await supabase.from('metricas_mensuales').insert({ tecnico_id: tecnicoId, mes: mensualData.mes, celula: cellToSave, ...updatePayload });
+                } else {
+                  await supabase.from('metricas').insert({ tecnico_id: tecnicoId, fecha: selectedDate, celula: cellToSave, ...updatePayload });
+                }
             }
             processedCount++;
           } else if (techInput.dni) {
-            const { data: n, error: iErr } = await supabase.from('tecnicos').insert({
+            // Auto create technician linked to correct district
+            const { data: n } = await supabase.from('tecnicos').insert({
               dni: techInput.dni,
               nombre_normalizado: techInput.normalized,
               apellido: techInput.name.split(',')[0].trim(),
-              nombre: techInput.name.split(',')[1]?.trim() || ""
+              nombre: techInput.name.split(',')[1]?.trim() || "",
+              distrito_id: selectedDistrictId
             }).select('id').single();
 
             if (n) {
@@ -497,7 +585,6 @@ export default function CargaAdminPage() {
       });
       setUnidentified(missingTechs);
       if (errors.length === 0 && processedCount > 0) {
-        // Upsert daily meta
         await supabase.from('dias_operativos').upsert({ fecha: selectedDate, lluvia: lluvia });
         setPastedData('');
       }
@@ -511,15 +598,17 @@ export default function CargaAdminPage() {
     }
   };
 
+  // Clear data safely for the active district
   const handleClearData = async () => {
+    if (!selectedDistrictId) return;
     setLoading(true);
     setClearStatus("Borrando...");
     try {
       if (activeTab === 'resumen') {
-        await supabase.from('metricas').delete().eq('fecha', selectedDate);
-        await supabase.from('metricas_celula').delete().eq('fecha', selectedDate);
+        await supabase.from('metricas').delete().eq('fecha', selectedDate).eq('distrito_id', selectedDistrictId);
+        await supabase.from('metricas_celula').delete().eq('fecha', selectedDate).eq('distrito_id', selectedDistrictId);
       } else {
-        await supabase.from('actuaciones').delete().eq('fecha_cita', selectedDate);
+        await supabase.from('actuaciones').delete().eq('fecha_cita', selectedDate).eq('distrito_id', selectedDistrictId);
       }
       setClearStatus(`Datos de ${selectedDate} borrados exitosamente.`);
       setSummary(null);
@@ -531,15 +620,18 @@ export default function CargaAdminPage() {
     }
   };
 
+  // Update District default targets/KPIs
   const handleUpdateDistrito = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDistrictId) return;
     setDistritoLoading(true);
     await supabase.from('indicadores_distrito').insert({
         resolucion: parseNum(distritoKPIs.resolucion, 'percentage'),
         reiteros: parseNum(distritoKPIs.reiteros, 'percentage'),
         puntualidad: parseNum(distritoKPIs.puntualidad, 'percentage'),
         productividad: parseNum(distritoKPIs.productividad, 'number'),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        distrito_id: selectedDistrictId
     });
     setDistritoStatus("Actualizado.");
     setTimeout(() => setDistritoStatus(null), 3000);
@@ -547,30 +639,30 @@ export default function CargaAdminPage() {
   };
 
   if (!isLoggedIn) {
-     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '20px' }}>
-            <div style={{ backgroundColor: 'white', padding: '48px', borderRadius: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', border: '1px solid #eef2f6', width: '100%', maxWidth: '420px' }}>
-                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <div style={{ width: '72px', height: '72px', backgroundColor: '#019df4', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto 20px', boxShadow: '0 12px 20px -5px rgba(1, 157, 244, 0.4)' }}>
-                        <Info size={36} />
-                    </div>
-                    <h2 style={{ fontSize: '28px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>Portal Admin</h2>
-                    <p style={{ color: '#64748b', fontWeight: '700', marginTop: '4px' }}>Gestión de Datos Districtuales</p>
-                </div>
-                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <input type="text" value={user} onChange={(e) => setUser(e.target.value)} placeholder="Usuario" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
-                    <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Contraseña" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
-                    {authError && <p style={{ color: '#ef4444', fontSize: '14px', fontWeight: '800', textAlign: 'center' }}>Credenciales incorrectas</p>}
-                    <button type="submit" style={{ backgroundColor: '#1a171e', color: 'white', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '950', cursor: 'pointer', fontSize: '16px', marginTop: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>Iniciar Sesión</button>
-                </form>
-            </div>
-        </div>
-     );
+      return (
+         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '20px' }}>
+             <div style={{ backgroundColor: 'white', padding: '48px', borderRadius: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', border: '1px solid #eef2f6', width: '100%', maxWidth: '420px' }}>
+                 <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                     <div style={{ width: '72px', height: '72px', backgroundColor: '#019df4', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto 20px', boxShadow: '0 12px 20px -5px rgba(1, 157, 244, 0.4)' }}>
+                         <Info size={36} />
+                     </div>
+                     <h2 style={{ fontSize: '28px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-1px' }}>Portal Admin</h2>
+                     <p style={{ color: '#64748b', fontWeight: '700', marginTop: '4px' }}>Gestión de Datos Districtuales</p>
+                 </div>
+                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                     <input type="text" value={user} onChange={(e) => setUser(e.target.value)} placeholder="Usuario" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
+                     <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Contraseña" style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #eef2f6', fontWeight: '700', fontSize: '15px', outline: 'none' }} />
+                     {authError && <p style={{ color: '#ef4444', fontSize: '14px', fontWeight: '800', textAlign: 'center' }}>Credenciales incorrectas</p>}
+                     <button type="submit" style={{ backgroundColor: '#1a171e', color: 'white', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '950', cursor: 'pointer', fontSize: '16px', marginTop: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>Iniciar Sesión</button>
+                 </form>
+             </div>
+         </div>
+      );
   }
 
   return (
     <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto' }}>
-      <header style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <div style={{ padding: '8px', backgroundColor: '#019df4', borderRadius: '10px', color: 'white' }}>
@@ -580,6 +672,20 @@ export default function CargaAdminPage() {
           </div>
           <h1 style={{ fontSize: '42px', fontWeight: '950', color: '#1a1a1a', letterSpacing: '-2px', lineHeight: '1' }}>Sincronización Cloud</h1>
         </div>
+
+        {/* Dynamic District Selector */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seleccionar Distrito Activo</label>
+          <select 
+            value={selectedDistrictSlug} 
+            onChange={(e) => setSelectedDistrictSlug(e.target.value)}
+            style={{ padding: '10px 20px', borderRadius: '12px', border: '2px solid #eef2f6', fontWeight: '900', fontSize: '14px', backgroundColor: '#fff', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
+          >
+            {districts.map(d => (
+              <option key={d.id} value={d.slug}>{d.nombre}</option>
+            ))}
+          </select>
+        </div>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '32px' }}>
@@ -587,7 +693,7 @@ export default function CargaAdminPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '28px', border: '1px solid #eef2f6' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '950', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px', color: '#1a1a1a' }}>
-                <ClipboardCopy size={22} color="#019df4" /> KPIs Districtuales
+                <ClipboardCopy size={22} color="#019df4" /> KPIs Districtuales ({selectedDistrictSlug === 'varela' ? 'Varela' : 'Lanús'})
             </h2>
             <form onSubmit={handleUpdateDistrito} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {[
@@ -606,7 +712,12 @@ export default function CargaAdminPage() {
                       />
                   </div>
                 ))}
-                <button type="submit" style={{ width: '100%', backgroundColor: '#1a171e', color: 'white', padding: '16px', borderRadius: '16px', fontWeight: '950' }}>
+                {distritoStatus && (
+                  <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#ecfdf5', color: '#065f46', fontSize: '12px', fontWeight: '800', textAlign: 'center' }}>
+                    {distritoStatus}
+                  </div>
+                )}
+                <button type="submit" style={{ width: '100%', backgroundColor: '#1a171e', color: 'white', padding: '16px', borderRadius: '16px', fontWeight: '950', cursor: 'pointer' }}>
                     {distritoLoading ? "..." : "Actualizar Distrito"}
                 </button>
             </form>
@@ -614,15 +725,15 @@ export default function CargaAdminPage() {
           
           <div style={{ backgroundColor: '#fff1f2', padding: '24px', borderRadius: '24px', border: '1px solid #fecdd3' }}>
              <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#be123c', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertCircle size={18} /> Zona de Peligro
+                <AlertCircle size={18} /> Zona de Peligro ({selectedDistrictSlug === 'varela' ? 'Varela' : 'Lanús'})
              </h3>
              <p style={{ fontSize: '12px', color: '#b91c1c', marginBottom: '16px', fontWeight: '700' }}>Borrar datos existentes para la fecha seleccionada ({selectedDate}).</p>
              {!showClearConfirm ? (
-               <button onClick={() => setShowClearConfirm(true)} style={{ width: '100%', padding: '12px', backgroundColor: '#be123c', color: 'white', borderRadius: '12px', border: 'none', fontWeight: '900', fontSize: '13px' }}>Borrar Datos del Día</button>
+               <button onClick={() => setShowClearConfirm(true)} style={{ width: '100%', padding: '12px', backgroundColor: '#be123c', color: 'white', borderRadius: '12px', border: 'none', fontWeight: '900', fontSize: '13px', cursor: 'pointer' }}>Borrar Datos del Día</button>
              ) : (
                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={handleClearData} style={{ flex: 1, padding: '12px', backgroundColor: '#e11d48', color: 'white', borderRadius: '12px', border: 'none', fontWeight: '900' }}>Confirmar</button>
-                  <button onClick={() => setShowClearConfirm(false)} style={{ flex: 1, padding: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontWeight: '900' }}>Canelar</button>
+                  <button onClick={handleClearData} style={{ flex: 1, padding: '12px', backgroundColor: '#e11d48', color: 'white', borderRadius: '12px', border: 'none', fontWeight: '900', cursor: 'pointer' }}>Confirmar</button>
+                  <button onClick={() => setShowClearConfirm(false)} style={{ flex: 1, padding: '12px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' }}>Cancelar</button>
                </div>
              )}
              {clearStatus && <p style={{ marginTop: '12px', fontSize: '11px', fontWeight: '900', color: '#be123c', textAlign: 'center' }}>{clearStatus}</p>}
@@ -645,7 +756,7 @@ export default function CargaAdminPage() {
                   cursor: 'pointer'
                 }}
              >
-               Resumen KPI
+                Resumen KPI
              </button>
              <button 
                 onClick={() => setActiveTab('detalle')}
@@ -661,7 +772,7 @@ export default function CargaAdminPage() {
                   cursor: 'pointer'
                 }}
              >
-               Detalle Actuaciones
+                Detalle Actuaciones
              </button>
              <button 
                 onClick={() => setActiveTab('mensual')}
@@ -677,7 +788,7 @@ export default function CargaAdminPage() {
                   cursor: 'pointer'
                 }}
              >
-               Carga Mensual
+                Carga Mensual
              </button>
              <Link 
                 href="/admin/nps"
@@ -721,7 +832,7 @@ export default function CargaAdminPage() {
                 TX_CELULA [TAB] fecha_Cita [TAB] ESTADO [TAB] RECURSO [TAB] RESOLUCION
               </p>
               <p style={{ fontSize: '10px', color: '#0369a1', fontWeight: '800' }}>
-                * El sistema filtrará automáticamente estados: CANCELADO, DESESTIMADO o RECHAZADO.
+                * El sistema filtrará automáticamente estados: CANCELADO, DESESTIMADO o RECHAZADO y asociará los datos al distrito activo.
               </p>
             </div>
           )}
@@ -746,21 +857,21 @@ export default function CargaAdminPage() {
                      <option value="Junio">Junio</option>
                      <option value="Julio">Julio</option>
                    </select>
-                </div>
+                 </div>
 
-                <div style={{ marginBottom: '24px' }}>
-                   <label style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '8px', display: 'block' }}>1. Carga Masiva de Técnicos (Pegar desde Excel)</label>
-                    <textarea 
-                      value={pastedData} 
-                      onChange={(e) => setPastedData(e.target.value)} 
-                      placeholder="Pega aquí (Técnico, Productividad, Resolución, Reiteros, Puntualidad...)" 
-                      style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
-                    />
-                </div>
+                 <div style={{ marginBottom: '24px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '8px', display: 'block' }}>1. Carga Masiva de Técnicos (Pegar desde Excel)</label>
+                     <textarea 
+                       value={pastedData} 
+                       onChange={(e) => setPastedData(e.target.value)} 
+                       placeholder="Pega aquí (Técnico, Productividad, Resolución, Reiteros, Puntualidad...)" 
+                       style={{ width: '100%', height: '240px', padding: '20px', borderRadius: '20px', border: '2px solid #f1f5f9', fontFamily: 'monospace', fontSize: '12px' }} 
+                     />
+                 </div>
 
-                <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)', marginBottom: '40px' }}>
-                    {loading ? "Procesando..." : "Sincronizar Cloud (KPIs Mensuales)"}
-                </button>
+                 <button type="submit" disabled={loading} style={{ width: '100%', backgroundColor: '#019df4', color: 'white', padding: '20px', borderRadius: '20px', fontWeight: '950', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(1, 157, 244, 0.3)', marginBottom: '40px' }}>
+                     {loading ? "Procesando..." : "Sincronizar Cloud (KPIs Mensuales)"}
+                 </button>
               </form>
 
               <div style={{ height: '1px', backgroundColor: '#e2e8f0', marginBottom: '40px' }} />
@@ -771,19 +882,16 @@ export default function CargaAdminPage() {
                    <p style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '16px' }}>Usa este formulario para cargar las tarjetas globales que aparecen en la parte superior del Dashboard.</p>
                    
                    <div style={{ marginBottom: '16px' }}>
-                      <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Entidad Operativa</label>
+                      <label style={{ fontSize: '12px', fontWeight: '900', color: '#64748b', marginBottom: '8px', display: 'block' }}>Entidad Operativa ({selectedDistrictSlug === 'varela' ? 'Varela' : 'Lanús'})</label>
                       <select 
                         value={mensualData.distrito}
                         onChange={(e) => setMensualData({...mensualData, distrito: e.target.value})}
                         style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #e2e8f0', fontWeight: '900', fontSize: '14px', backgroundColor: '#f8fafc' }}
                       >
-                        <option value="DISTRITO">Total Distrito Varela (Tarjetas Globales)</option>
-                        <option value="Berazategui">Berazategui</option>
-                        <option value="Bernal">Bernal</option>
-                        <option value="Quilmes">Quilmes</option>
-                        <option value="Ranelagh">Ranelagh</option>
-                        <option value="Varela 1">Varela 1</option>
-                        <option value="Varela 2">Varela 2</option>
+                        <option value="DISTRITO">{`Total Distrito ${selectedDistrictSlug === 'varela' ? 'Varela' : 'Lanús'} (Tarjetas Globales)`}</option>
+                        {availableCells.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
                       </select>
                    </div>
                 </div>
@@ -878,7 +986,7 @@ export default function CargaAdminPage() {
               <div style={{ marginTop: '32px' }}>
                 <div style={{ padding: '28px', backgroundColor: '#f0fdf4', borderRadius: '28px', border: '1px solid #dcfce7' }}>
                    <h3 style={{ fontWeight: '950', color: '#065f46', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CheckCircle2 size={18} /> Carga Finalizada
+                      <CheckCircle2 size={18} /> Carga Finalizada ({selectedDistrictSlug === 'varela' ? 'Varela' : 'Lanús'})
                    </h3>
                    
                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
@@ -895,7 +1003,7 @@ export default function CargaAdminPage() {
                    {summary.errors.length > 0 && (
                      <div style={{ maxHeight: '150px', overflowY: 'auto', backgroundColor: '#fef2f2', padding: '12px', borderRadius: '12px', marginBottom: '16px' }}>
                         {summary.errors.map((err, i) => (
-                          <p key={i} style={{ fontSize: '11px', color: '#ef4444', marginBottom: '4px', fontWeight: '700' }}>• {err}</p>
+                           <p key={i} style={{ fontSize: '11px', color: '#ef4444', marginBottom: '4px', fontWeight: '700' }}>• {err}</p>
                         ))}
                      </div>
                    )}

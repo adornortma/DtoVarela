@@ -14,12 +14,14 @@ export default function RootLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
   const isBPPage = pathname?.startsWith('/seguimiento-bp');
+  const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
+  const currentDistrictName = isLanus ? 'LANÚS' : 'F. VARELA';
 
   return (
     <html lang="es">
       <head>
-        <title>KPI Distrito Varela - Dashboard Operativo</title>
-        <meta name="description" content="Dashboard de indicadores de gestión para el distrito Florencio Varela" />
+        <title>{`KPI Distrito ${isLanus ? 'Lanús' : 'Varela'} - Dashboard Operativo`}</title>
+        <meta name="description" content={`Dashboard de indicadores de gestión para el distrito ${isLanus ? 'Lanús' : 'Florencio Varela'}`} />
       </head>
       <body>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
@@ -44,7 +46,7 @@ export default function RootLayout({
                     <Briefcase size={20} color="white" />
                   </div>
                   <span style={{ fontWeight: '900', fontSize: '16px', letterSpacing: '0.5px', color: '#1e293b' }}>
-                    DISTRITO F. VARELA
+                    DISTRITO {currentDistrictName}
                   </span>
                 </div>
                 <button 

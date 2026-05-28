@@ -13,9 +13,12 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
   const [showInfo, setShowInfo] = useState(false);
+  const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
+  const currentDistrictName = isLanus ? 'LANÚS' : 'F. VARELA';
+  const homePath = isLanus ? '/lanus' : '/';
 
   const navItems = [
-    { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: '/' },
+    { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: homePath },
     { name: 'Ranking Técnicos', icon: <Trophy size={20} />, path: '/ranking-tecnicos' },
     { name: 'Detalle Diario', icon: <LayoutDashboard size={20} />, path: '/detalle-diario' },
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
@@ -65,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontWeight: '900', fontSize: '19px', letterSpacing: '0.5px', lineHeight: '1.1', color: '#F9FAFB' }}>DISTRITO</span>
-          <span style={{ fontSize: '11px', fontWeight: '800', opacity: '0.8', letterSpacing: '2px', color: '#BFDBFE' }}>F. VARELA</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', opacity: '0.8', letterSpacing: '2px', color: '#BFDBFE' }}>{currentDistrictName}</span>
         </div>
       </div>
 
