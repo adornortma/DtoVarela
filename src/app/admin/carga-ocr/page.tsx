@@ -88,6 +88,8 @@ export default function CargaOcrPage() {
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | 'warning' | null, msg: string }>({ type: null, msg: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [willReplace, setWillReplace] = useState(false);
   const [existingCargaId, setExistingCargaId] = useState<string | null>(null);
   const [duplicateMessage, setDuplicateMessage] = useState<string>('');
 
@@ -254,16 +256,22 @@ export default function CargaOcrPage() {
       const parts = cleanLine.split(/\s+/).filter(p => p.length > 0);
 
       if (parts.length >= 4) {
-        // Find numbers in parts (usually the last 3 or 4 elements)
+        // Find numbers or NA values in parts (usually the last 3 or 4 elements)
         const numericValues: number[] = [];
         const nameParts: string[] = [];
 
         parts.forEach(part => {
-          const num = parseFloat(part);
-          if (!isNaN(num) && /^\d+(\.\d+)?$/.test(part)) {
-            numericValues.push(num);
+          const cleanPart = part.trim();
+          const isNaValue = /^(n\/a|na|n\.a\.?)$/i.test(cleanPart);
+          if (isNaValue) {
+            numericValues.push(0);
           } else {
-            nameParts.push(part);
+            const num = parseFloat(cleanPart);
+            if (!isNaN(num) && /^\d+(\.\d+)?$/.test(cleanPart)) {
+              numericValues.push(num);
+            } else {
+              nameParts.push(part);
+            }
           }
         });
 
@@ -408,18 +416,14 @@ export default function CargaOcrPage() {
       if (error) throw error;
 
       if (data) {
-        // Duplicate found! Prompt overlay modal
         setExistingCargaId(data.id);
-        const cellInfo = cargaType === 'detalle_celula' ? `de la célula ${selectedCelula}` : 'del resumen de distrito';
-        setDuplicateMessage(
-          `Ya existe un screenshot OCR guardado ${cellInfo} para el periodo ${getMonthName(selectedMonth)} ${selectedYear} (subido el ${new Date(data.uploaded_at).toLocaleString()}). ¿Desea reemplazar y actualizar los datos existentes?`
-        );
-        setShowDuplicateModal(true);
-        setIsSaving(false);
+        setWillReplace(true);
       } else {
-        // No duplicate, proceed directly
-        await executeSave(false);
+        setExistingCargaId(null);
+        setWillReplace(false);
       }
+      setShowConfirmModal(true);
+      setIsSaving(false);
     } catch (err: any) {
       console.error(err);
       setSaveStatus({ type: 'error', msg: `Error de duplicidad: ${err.message}` });
@@ -430,7 +434,7 @@ export default function CargaOcrPage() {
   // Upload image to Supabase Storage and Insert/Update stats
   const executeSave = async (isReplace: boolean) => {
     setIsSaving(true);
-    setShowDuplicateModal(false);
+    setShowConfirmModal(false);
     try {
       let uploadedPath = '';
 
@@ -1020,8 +1024,8 @@ export default function CargaOcrPage() {
         </div>
       </div>
 
-      {/* Duplicate Warning Overlay Modal */}
-      {showDuplicateModal && (
+      {/* Detailed Confirmation Modal */}
+      {showConfirmModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
@@ -1029,31 +1033,70 @@ export default function CargaOcrPage() {
         }}>
           <div style={{
             backgroundColor: 'white', borderRadius: '32px', padding: '40px',
-            width: '100%', maxWidth: '500px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-            display: 'flex', flexDirection: 'column', gap: '20px'
+            width: '100%', maxWidth: '550px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            display: 'flex', flexDirection: 'column', gap: '24px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#d97706' }}>
-              <AlertTriangle size={32} />
-              <h2 style={{ fontSize: '24px', fontWeight: '950', letterSpacing: '-0.5px', margin: 0 }}>Registro Duplicado</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--movistar-blue)' }}>
+              <ShieldCheck size={32} />
+              <h2 style={{ fontSize: '24px', fontWeight: '950', letterSpacing: '-0.5px', margin: 0 }}>Confirmar Guardado</h2>
             </div>
             
-            <p style={{ fontSize: '14px', fontWeight: '700', color: '#475569', lineHeight: '1.6' }}>
-              {duplicateMessage}
+            <p style={{ fontSize: '15px', fontWeight: '700', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+              Está guardando los KPIs {cargaType === 'detalle_celula' ? `de la célula ${selectedCelula}` : 'del resumen de distrito'} para el mes de {getMonthName(selectedMonth).toUpperCase()} {selectedYear}. ¿Desea continuar?
             </p>
+
+            <div style={{ 
+              backgroundColor: '#f8fafc', 
+              borderRadius: '20px', 
+              padding: '20px', 
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
+                <span style={{ color: '#64748b' }}>Distrito:</span>
+                <span style={{ color: '#1e293b' }}>{districts.find(d => d.id === selectedDistrictId)?.nombre || 'Lanús'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
+                <span style={{ color: '#64748b' }}>Célula:</span>
+                <span style={{ color: '#1e293b' }}>{cargaType === 'detalle_celula' ? selectedCelula : 'Resumen Distrito'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
+                <span style={{ color: '#64748b' }}>Mes:</span>
+                <span style={{ color: '#1e293b' }}>{getMonthName(selectedMonth)} {selectedYear}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
+                <span style={{ color: '#64748b' }}>Técnicos detectados:</span>
+                <span style={{ color: '#1e293b' }}>{cargaType === 'detalle_celula' ? parsedData.length : 0}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
+                <span style={{ color: '#64748b' }}>Errores OCR:</span>
+                <span style={{ color: parsedData.filter(row => row.confidence < 75).length > 0 ? '#ef4444' : '#10b981' }}>
+                  {parsedData.filter(row => row.confidence < 75).length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
+                <span style={{ color: '#64748b' }}>Reemplazará datos existentes:</span>
+                <span style={{ color: willReplace ? '#f59e0b' : '#10b981' }}>
+                  {willReplace ? 'SÍ' : 'NO'}
+                </span>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-end', marginTop: '10px' }}>
               <button
-                onClick={() => setShowDuplicateModal(false)}
+                onClick={() => setShowConfirmModal(false)}
                 style={{ padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
               >
                 Cancelar
               </button>
               
               <button
-                onClick={() => executeSave(true)}
-                style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#d97706', color: 'white', fontSize: '13px', fontWeight: '900', cursor: 'pointer' }}
+                onClick={() => executeSave(willReplace)}
+                style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--movistar-blue)', color: 'white', fontSize: '13px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(30, 64, 175, 0.2)' }}
               >
-                Sí, Reemplazar Datos
+                Confirmar guardado
               </button>
             </div>
           </div>
