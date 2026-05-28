@@ -16,10 +16,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
   const currentDistrictName = isLanus ? 'LANÚS' : 'F. VARELA';
   const homePath = isLanus ? '/lanus' : '/';
+  const rankingPath = isLanus ? '/lanus/ranking-tecnicos' : '/ranking-tecnicos';
 
   const navItems = [
     { name: 'KPIs Resolución', icon: <TrendingUp size={20} />, path: homePath },
-    { name: 'Ranking Técnicos', icon: <Trophy size={20} />, path: '/ranking-tecnicos' },
+    { name: 'Ranking Técnicos', icon: <Trophy size={20} />, path: rankingPath },
     { name: 'Detalle Diario', icon: <LayoutDashboard size={20} />, path: '/detalle-diario' },
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
