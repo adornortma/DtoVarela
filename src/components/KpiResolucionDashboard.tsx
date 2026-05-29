@@ -665,8 +665,8 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
 
       const kpis: KpiType[] = ['resolucion', 'reiteros', 'puntualidad', 'productividad', 'tiempo_operativo'];
       const result: Record<KpiType, number> = { resolucion: 0, reiteros: 0, puntualidad: 0, productividad: 0, tiempo_operativo: 0 };
-      
-      const distritoRecord = monthlyMetrics.find(m => m.celula === 'DISTRITO' && m.tecnico_id === null);
+      const expectedDistrictCelulaName = districtSlug === 'varela' ? 'DISTRITO' : `DISTRITO_${districtSlug.toUpperCase()}`;
+      const distritoRecord = monthlyMetrics.find(m => m.celula === expectedDistrictCelulaName && m.tecnico_id === null);
 
       if (distritoRecord) {
           kpis.forEach(kpi => {
@@ -675,7 +675,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
           return result;
       }
       
-      const cellTotals = monthlyMetrics.filter(m => m.tecnico_id === null && m.celula !== 'DISTRITO' && !nonOpSet.has((m.celula || '').toUpperCase().trim()));
+      const cellTotals = monthlyMetrics.filter(m => m.tecnico_id === null && m.celula !== expectedDistrictCelulaName && !nonOpSet.has((m.celula || '').toUpperCase().trim()));
       const dataToAverage = cellTotals.length > 0 ? cellTotals : monthlyMetrics.filter(m => !nonOpSet.has((m.celula || '').toUpperCase().trim()));
 
       kpis.forEach(kpi => {
@@ -1658,7 +1658,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                 <div style={{ 
                   animation: 'fadeIn 0.4s ease-out'
                 }}>
-                  {data.filter(row => row.name !== 'DISTRITO').map((row) => (
+                  {data.filter(row => !row.name.startsWith('DISTRITO')).map((row) => (
                     <CellGroup 
                       key={row.name} 
                       row={row} 

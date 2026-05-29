@@ -456,7 +456,9 @@ export default function CargaTextoPage() {
       if (cargaType === 'resumen_distrito') {
         for (const row of parsedData) {
           const isDistSummary = row.name.toUpperCase() === 'DISTRITO';
-          const cellName = isDistSummary ? 'DISTRITO' : row.name.toUpperCase();
+          const cellName = isDistSummary 
+            ? (selectedDistrictSlug === 'varela' ? 'DISTRITO' : `DISTRITO_${selectedDistrictSlug.toUpperCase()}`) 
+            : row.name.toUpperCase();
 
           if (!isDistSummary) {
             await checkAndInsertCell(cellName);
@@ -611,10 +613,14 @@ export default function CargaTextoPage() {
         distrito_id: selectedDistrictId
       };
 
+      const dbCelula = distrito === 'DISTRITO'
+        ? (selectedDistrictSlug === 'varela' ? 'DISTRITO' : `DISTRITO_${selectedDistrictSlug.toUpperCase()}`)
+        : distrito;
+
       const { data: existingCell } = await supabase
         .from('metricas_mensuales')
         .select('id')
-        .eq('celula', distrito)
+        .eq('celula', dbCelula)
         .eq('mes', mes)
         .eq('distrito_id', selectedDistrictId)
         .is('tecnico_id', null)
@@ -625,7 +631,7 @@ export default function CargaTextoPage() {
          const { error } = await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
          dbError = error;
       } else {
-         const { error } = await supabase.from('metricas_mensuales').insert({ celula: distrito, mes, ...updatePayload });
+         const { error } = await supabase.from('metricas_mensuales').insert({ celula: dbCelula, mes, ...updatePayload });
          dbError = error;
       }
 
