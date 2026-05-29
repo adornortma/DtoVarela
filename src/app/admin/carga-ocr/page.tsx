@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Clipboard, 
@@ -11,10 +11,6 @@ import {
   Save, 
   Plus, 
   HelpCircle,
-  Database,
-  Clock,
-  Zap,
-  Activity,
   ShieldCheck
 } from 'lucide-react';
 
@@ -37,7 +33,6 @@ interface ParsedRow {
   resolucion: number;
   reiteros: number;
   tiempo_operativo: number;
-  utilizacion: number;
   confidence: number;
   edited?: boolean; // track manual adjustments
 }
@@ -150,8 +145,7 @@ export default function CargaTextoPage() {
         productividad: -1,
         resolucion: -1,
         reiteros: -1,
-        tiempo_operativo: -1,
-        utilizacion: -1
+        tiempo_operativo: -1
       };
 
       let headerFound = false;
@@ -166,7 +160,7 @@ export default function CargaTextoPage() {
         }
 
         const hasHeaderKeywords = cols.some(col => 
-          /nombre|prod|resol|reit|tiemp|oper|util|celu/i.test(col)
+          /nombre|prod|resol|reit|tiemp|oper|celu/i.test(col)
         );
 
         if (hasHeaderKeywords) {
@@ -182,8 +176,6 @@ export default function CargaTextoPage() {
               headerIdxs.reiteros = idx;
             } else if (cleanCol.includes('tiemp') || cleanCol.includes('oper') || cleanCol.includes('tiempo operativo')) {
               headerIdxs.tiempo_operativo = idx;
-            } else if (cleanCol.includes('util') || cleanCol.includes('utilizacion') || cleanCol.includes('utilización')) {
-              headerIdxs.utilizacion = idx;
             }
           });
           headerFound = true;
@@ -199,8 +191,7 @@ export default function CargaTextoPage() {
           productividad: 1,
           resolucion: 2,
           reiteros: 3,
-          tiempo_operativo: 4,
-          utilizacion: 5
+          tiempo_operativo: 4
         };
         dataStartLine = 0;
       }
@@ -239,8 +230,7 @@ export default function CargaTextoPage() {
                 productividad: 1,
                 resolucion: 2,
                 reiteros: 3,
-                tiempo_operativo: 4,
-                utilizacion: 5
+                tiempo_operativo: 4
               };
             }
           }
@@ -253,7 +243,6 @@ export default function CargaTextoPage() {
             const resol = headerIdxs.resolucion !== -1 ? parseValue(cols[headerIdxs.resolucion]) : 0;
             const reit = headerIdxs.reiteros !== -1 ? parseValue(cols[headerIdxs.reiteros]) : 0;
             const to = headerIdxs.tiempo_operativo !== -1 ? parseValue(cols[headerIdxs.tiempo_operativo]) : 0;
-            const util = headerIdxs.utilizacion !== -1 ? parseValue(cols[headerIdxs.utilizacion]) : 0;
 
             rows.push({
               key: `row-${i}-${Date.now()}`,
@@ -262,7 +251,6 @@ export default function CargaTextoPage() {
               resolucion: resol,
               reiteros: reit,
               tiempo_operativo: to,
-              utilizacion: util,
               confidence: 100
             });
           }
@@ -316,7 +304,6 @@ export default function CargaTextoPage() {
         resolucion: 0,
         reiteros: 0,
         tiempo_operativo: 0,
-        utilizacion: 0,
         confidence: 100,
         edited: true
       }
@@ -358,7 +345,6 @@ export default function CargaTextoPage() {
       return;
     }
 
-    // Basic Validations
     if (!selectedDistrictId) {
       setSaveStatus({ type: 'error', msg: 'Distrito no seleccionado.' });
       return;
@@ -409,8 +395,7 @@ export default function CargaTextoPage() {
   const executeSave = async (isReplace: boolean) => {
     setIsSaving(true);
     setShowConfirmModal(false);
-    
-    const attemptSave = async (includeUtilizacion: boolean): Promise<boolean> => {
+    try {
       // 1. Log load raw details in ocr_cargas
       const payloadOcr = {
         distrito_id: selectedDistrictId,
@@ -419,19 +404,13 @@ export default function CargaTextoPage() {
         anio: selectedYear,
         imagen_url: null,
         ocr_raw: pastedText,
-        datos_interpretados: parsedData.map(r => {
-          const base: any = {
-            name: r.name,
-            productividad: r.productividad,
-            resolucion: r.resolucion,
-            reiteros: r.reiteros,
-            tiempo_operativo: r.tiempo_operativo
-          };
-          if (includeUtilizacion) {
-            base.utilizacion = r.utilizacion;
-          }
-          return base;
-        }),
+        datos_interpretados: parsedData.map(r => ({
+          name: r.name,
+          productividad: r.productividad,
+          resolucion: r.resolucion,
+          reiteros: r.reiteros,
+          tiempo_operativo: r.tiempo_operativo
+        })),
         ocr_confidence: 100,
         replaced_previous: isReplace,
         processing_status: 'confirmed'
@@ -462,16 +441,13 @@ export default function CargaTextoPage() {
             await checkAndInsertCell(cellName);
           }
 
-          const updatePayload: any = {
+          const updatePayload = {
             resolucion: row.resolucion,
             reiteros: row.reiteros,
             productividad: row.productividad,
             tiempo_operativo: row.tiempo_operativo,
             distrito_id: selectedDistrictId
           };
-          if (includeUtilizacion) {
-            updatePayload.utilizacion = row.utilizacion;
-          }
 
           const { data: existingMetric } = await supabase
             .from('metricas_mensuales')
@@ -536,7 +512,7 @@ export default function CargaTextoPage() {
           }
 
           if (tecnicoId) {
-            const updatePayload: any = {
+            const updatePayload = {
               resolucion: row.resolucion,
               reiteros: row.reiteros,
               productividad: row.productividad,
@@ -544,9 +520,6 @@ export default function CargaTextoPage() {
               distrito_id: selectedDistrictId,
               celula: selectedCelula
             };
-            if (includeUtilizacion) {
-              updatePayload.utilizacion = row.utilizacion;
-            }
 
             const { data: existingMetric } = await supabase
               .from('metricas_mensuales')
@@ -575,27 +548,8 @@ export default function CargaTextoPage() {
           }
         }
       }
-      return true;
-    };
 
-    try {
-      try {
-        await attemptSave(true);
-        setSaveStatus({ type: 'success', msg: `¡Carga guardada con éxito! Se grabaron ${parsedData.length} registros (incluyendo Utilización).` });
-      } catch (innerErr: any) {
-        const errStr = JSON.stringify(innerErr) || '';
-        const isUtilizacionError = errStr.includes('utilizacion') || (innerErr?.message && innerErr.message.includes('utilizacion'));
-        if (isUtilizacionError) {
-          console.warn('Utilizacion column not found in DB schema cache. Retrying save without it...');
-          await attemptSave(false);
-          setSaveStatus({ 
-            type: 'warning', 
-            msg: `Carga guardada con éxito (${parsedData.length} registros), pero no se guardó la 'utilización' porque aún no se ejecuta la migración SQL en Supabase (ejecutar add_utilizacion_column.sql).` 
-          });
-        } else {
-          throw innerErr;
-        }
-      }
+      setSaveStatus({ type: 'success', msg: `¡Carga guardada con éxito! Se grabaron ${parsedData.length} registros.` });
       setPastedText('');
       setParsedData([]);
     } catch (err: any) {
@@ -795,12 +749,11 @@ export default function CargaTextoPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
                   <colgroup>
-                    <col style={{ width: '30%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
-                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '35%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '16%' }} />
                     <col style={{ width: '50px' }} />
                   </colgroup>
                   <thead>
@@ -810,13 +763,12 @@ export default function CargaTextoPage() {
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>Resol. %</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>Reit. %</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>T. Oper. %</th>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>Util.</th>
                       <th style={{ padding: '12px 16px' }} />
                     </tr>
                   </thead>
                   <tbody>
                     {parsedData.map((row) => {
-                      const hasWarning = row.name === 'NUEVO REGISTRO' || !row.name || row.productividad < 0 || row.resolucion < 0 || row.reiteros < 0 || row.tiempo_operativo < 0 || row.utilizacion < 0;
+                      const hasWarning = row.name === 'NUEVO REGISTRO' || !row.name || row.productividad < 0 || row.resolucion < 0 || row.reiteros < 0 || row.tiempo_operativo < 0;
                       return (
                         <tr 
                           key={row.key} 
@@ -874,15 +826,6 @@ export default function CargaTextoPage() {
                               step="0.01"
                               value={row.tiempo_operativo} 
                               onChange={(e) => handleEditRow(row.key, 'tiempo_operativo', parseFloat(e.target.value) || 0)}
-                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
-                            />
-                          </td>
-                          <td style={{ padding: '8px 16px' }}>
-                            <input 
-                              type="number" 
-                              step="0.01"
-                              value={row.utilizacion} 
-                              onChange={(e) => handleEditRow(row.key, 'utilizacion', parseFloat(e.target.value) || 0)}
                               style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
                             />
                           </td>
