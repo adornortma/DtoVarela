@@ -74,6 +74,18 @@ export default function CargaTextoPage() {
   const [willReplace, setWillReplace] = useState(false);
   const [existingCargaId, setExistingCargaId] = useState<string | null>(null);
 
+  const [mensualData, setMensualData] = useState({
+    mes: 'Mayo',
+    distrito: 'DISTRITO',
+    resolucion: '',
+    reiteros: '',
+    puntualidad: '',
+    productividad: '',
+    tiempo_operativo: ''
+  });
+  const [mensualLoading, setMensualLoading] = useState(false);
+  const [mensualStatus, setMensualStatus] = useState<{ type: 'success' | 'error' | null, msg: string }>({ type: null, msg: '' });
+
   // Fetch Districts on mount
   useEffect(() => {
     const fetchDistricts = async () => {
@@ -569,6 +581,77 @@ export default function CargaTextoPage() {
     }
   };
 
+  const handleProcessMensual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDistrictId) return;
+    setMensualLoading(true);
+    setMensualStatus({ type: null, msg: '' });
+    try {
+      const { mes, distrito, resolucion, reiteros, puntualidad, productividad, tiempo_operativo } = mensualData;
+      if (!mes || !distrito) throw new Error("Mes y Célula/Distrito son requeridos");
+      
+      const resVal = resolucion ? parseFloat(resolucion.replace(',', '.')) : null;
+      const reiVal = reiteros ? parseFloat(reiteros.replace(',', '.')) : null;
+      const punVal = puntualidad ? parseFloat(puntualidad.replace(',', '.')) : null;
+      const proVal = productividad ? parseFloat(productividad.replace(',', '.')) : null;
+      const toVal = tiempo_operativo ? parseFloat(tiempo_operativo.replace(',', '.')) : null;
+
+      if (resVal !== null && (resVal < 0 || resVal > 100)) throw new Error("La Resolución debe estar entre 0 y 100");
+      if (reiVal !== null && (reiVal < 0 || reiVal > 100)) throw new Error("Los Reiteros deben estar entre 0 y 100");
+      if (punVal !== null && (punVal < 0 || punVal > 100)) throw new Error("La Puntualidad debe estar entre 0 y 100");
+      if (proVal !== null && proVal < 0) throw new Error("La Productividad debe ser mayor o igual a 0");
+      if (toVal !== null && (toVal < 0 || toVal > 100)) throw new Error("El Tiempo Operativo debe estar entre 0 y 100");
+
+      const updatePayload = {
+        resolucion: resVal,
+        reiteros: reiVal,
+        puntualidad: punVal,
+        productividad: proVal,
+        tiempo_operativo: toVal,
+        distrito_id: selectedDistrictId
+      };
+
+      const { data: existingCell } = await supabase
+        .from('metricas_mensuales')
+        .select('id')
+        .eq('celula', distrito)
+        .eq('mes', mes)
+        .eq('distrito_id', selectedDistrictId)
+        .is('tecnico_id', null)
+        .maybeSingle();
+
+      let dbError = null;
+      if (existingCell) {
+         const { error } = await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
+         dbError = error;
+      } else {
+         const { error } = await supabase.from('metricas_mensuales').insert({ celula: distrito, mes, ...updatePayload });
+         dbError = error;
+      }
+
+      if (dbError) throw dbError;
+      setMensualStatus({ type: 'success', msg: "✅ Totales mensuales guardados con éxito." });
+      
+      // Reset values
+      setMensualData(prev => ({
+        ...prev,
+        resolucion: '',
+        reiteros: '',
+        puntualidad: '',
+        productividad: '',
+        tiempo_operativo: ''
+      }));
+      
+      // Notify components if needed
+      window.dispatchEvent(new Event('carga_district_changed'));
+    } catch (err: any) {
+      console.error(err);
+      setMensualStatus({ type: 'error', msg: `❌ Error: ${err.message}` });
+    } finally {
+      setMensualLoading(false);
+    }
+  };
+
   return (
     <div style={{ padding: '32px 0', minHeight: '100vh', color: '#1e293b' }}>
       
@@ -898,6 +981,131 @@ export default function CargaTextoPage() {
         {/* Right Side: Instructions guide panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* Manual monthly totals card */}
+          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <ShieldCheck size={18} color="var(--movistar-blue)" /> Carga Manual de Totales
+            </h3>
+            
+            <form onSubmit={handleProcessMensual} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Mes de Carga</label>
+                <select
+                  value={mensualData.mes}
+                  onChange={(e) => setMensualData({...mensualData, mes: e.target.value})}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
+                >
+                  {MONTHS_LIST.map(m => (
+                    <option key={m.value} value={m.name}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Entidad Operativa</label>
+                <select 
+                  value={mensualData.distrito}
+                  onChange={(e) => setMensualData({...mensualData, distrito: e.target.value})}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
+                >
+                  <option value="DISTRITO">{`Total Distrito (Tarjetas Globales)`}</option>
+                  {availableCells.map(c => (
+                    <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Resolución (%)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: 85.5"
+                    value={mensualData.resolucion}
+                    onChange={(e) => setMensualData({...mensualData, resolucion: e.target.value})}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Reiteros (%)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: 4.2"
+                    value={mensualData.reiteros}
+                    onChange={(e) => setMensualData({...mensualData, reiteros: e.target.value})}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Puntualidad (%)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: 95.0"
+                    value={mensualData.puntualidad}
+                    onChange={(e) => setMensualData({...mensualData, puntualidad: e.target.value})}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Productividad</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: 6.0"
+                    value={mensualData.productividad}
+                    onChange={(e) => setMensualData({...mensualData, productividad: e.target.value})}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Tiempo Operativo (%)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: 70.0"
+                  value={mensualData.tiempo_operativo}
+                  onChange={(e) => setMensualData({...mensualData, tiempo_operativo: e.target.value})}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }}
+                />
+              </div>
+
+              {mensualStatus.msg && (
+                <div style={{ 
+                  padding: '10px 14px', 
+                  borderRadius: '10px', 
+                  backgroundColor: mensualStatus.type === 'success' ? '#ecfdf5' : '#fef2f2', 
+                  color: mensualStatus.type === 'success' ? '#065f46' : '#991b1b', 
+                  fontWeight: '800',
+                  fontSize: '12px'
+                }}>
+                  {mensualStatus.msg}
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={mensualLoading} 
+                style={{ 
+                  width: '100%', 
+                  backgroundColor: 'var(--movistar-blue)', 
+                  color: 'white', 
+                  padding: '12px', 
+                  borderRadius: '12px', 
+                  fontWeight: '900', 
+                  fontSize: '13px',
+                  cursor: 'pointer', 
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(30, 64, 175, 0.2)' 
+                }}
+              >
+                {mensualLoading ? "Guardando..." : "Guardar Totales Mensuales"}
+              </button>
+            </form>
+          </div>
+
           <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
               <HelpCircle size={18} color="var(--movistar-blue)" /> ¿Cómo funciona la Carga?
