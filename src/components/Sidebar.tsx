@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
-    { name: 'Carga de Datos', icon: <Database size={20} />, path: '/admin/carga-ocr' },
+    { name: 'Carga de Datos', icon: <Database size={20} />, path: isAlternativeDistrict ? `${homePath}/carga` : '/admin/carga-ocr' },
   ].filter(item => {
     if (isAlternativeDistrict) {
       return ['KPIs Resolución', 'Ranking Técnicos', 'Carga de Datos'].includes(item.name);
