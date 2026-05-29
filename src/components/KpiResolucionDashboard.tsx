@@ -1265,10 +1265,10 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
           monthlyDistrictData={monthlyDistrictKPIs} 
           calendarMode={calendarMode} 
           selectedMonth={selectedMonth}
-          onOpenCalendar={() => {
+          onOpenCalendar={isVarela ? (() => {
             setCalendarModalCelula(null);
             setCalendarModalOpen(true);
-          }}
+          }) : undefined}
         />
       </section>
 
@@ -1674,10 +1674,10 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                         setSelectedTechnician(tech);
                         setShowDetails(true);
                       }}
-                      onOpenCalendar={(celula) => {
+                      onOpenCalendar={isVarela ? ((celula) => {
                         setCalendarModalCelula(celula);
                         setCalendarModalOpen(true);
-                      }}
+                      }) : undefined}
                     />
                   ))}
                 </div>
