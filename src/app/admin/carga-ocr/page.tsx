@@ -296,18 +296,6 @@ export default function CargaTextoPage() {
     }
   };
 
-  // Clipboard Paste listener directly on textbox
-  const handleTextAreaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const text = e.clipboardData.getData('text');
-    if (text) {
-      setPastedText(text);
-      // Wait for state sync or pass directly
-      setTimeout(() => {
-        // Auto process on paste if preferred
-      }, 100);
-    }
-  };
-
   // Edit Preview Grid row
   const handleEditRow = (key: string, field: keyof ParsedRow, value: string | number) => {
     setParsedData(prev => prev.map(row => {
@@ -701,7 +689,6 @@ export default function CargaTextoPage() {
             <textarea
               value={pastedText}
               onChange={(e) => setPastedText(e.target.value)}
-              onPaste={handleTextAreaPaste}
               placeholder="Pega acá el texto de la tabla (Soporta múltiples espacios, tabs de Excel y saltos de línea)..."
               style={{
                 width: '100%',
