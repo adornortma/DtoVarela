@@ -83,8 +83,15 @@ export default function CargaTextoPage() {
         const filtered = data.filter(d => d.slug !== 'varela');
         setDistricts(filtered);
         if (filtered.length > 0) {
-          setSelectedDistrictId(filtered[0].id);
-          setSelectedDistrictSlug(filtered[0].slug);
+          const savedSlug = localStorage.getItem('selected_carga_district_slug');
+          const found = savedSlug ? filtered.find(d => d.slug === savedSlug) : null;
+          if (found) {
+            setSelectedDistrictId(found.id);
+            setSelectedDistrictSlug(found.slug);
+          } else {
+            setSelectedDistrictId(filtered[0].id);
+            setSelectedDistrictSlug(filtered[0].slug);
+          }
         }
       }
     };
@@ -96,6 +103,8 @@ export default function CargaTextoPage() {
     const dist = districts.find(d => d.id === selectedDistrictId);
     if (dist) {
       setSelectedDistrictSlug(dist.slug);
+      localStorage.setItem('selected_carga_district_slug', dist.slug);
+      window.dispatchEvent(new Event('carga_district_changed'));
       fetchCells(dist.id);
     }
   }, [selectedDistrictId, districts]);

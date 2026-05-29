@@ -13,9 +13,25 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
   const pathname = usePathname();
   const [showInfo, setShowInfo] = useState(false);
-  const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
-  const isLomas = pathname === '/lomas' || pathname?.startsWith('/lomas/');
-  const isMontegrande = pathname === '/montegrande' || pathname?.startsWith('/montegrande/');
+  const [cargaDistrictSlug, setCargaDistrictSlug] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const updateSlug = () => {
+      if (typeof window !== 'undefined') {
+        setCargaDistrictSlug(localStorage.getItem('selected_carga_district_slug'));
+      }
+    };
+    updateSlug();
+    window.addEventListener('carga_district_changed', updateSlug);
+    return () => window.removeEventListener('carga_district_changed', updateSlug);
+  }, []);
+
+  const isCargaPage = pathname === '/admin/carga-ocr';
+  const activeDistrictSlug = isCargaPage ? (cargaDistrictSlug || 'lanus') : null;
+
+  const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/') || activeDistrictSlug === 'lanus';
+  const isLomas = pathname === '/lomas' || pathname?.startsWith('/lomas/') || activeDistrictSlug === 'lomas';
+  const isMontegrande = pathname === '/montegrande' || pathname?.startsWith('/montegrande/') || activeDistrictSlug === 'montegrande';
   const isAlternativeDistrict = isLanus || isLomas || isMontegrande;
 
   let currentDistrictName = 'F. VARELA';
@@ -43,12 +59,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
-    { name: 'CARGA OCR', icon: <Database size={20} />, path: '/admin/carga-ocr' },
+    { name: 'Carga de Datos', icon: <Database size={20} />, path: '/admin/carga-ocr' },
   ].filter(item => {
     if (isAlternativeDistrict) {
-      return ['KPIs Resolución', 'Ranking Técnicos', 'CARGA OCR'].includes(item.name);
+      return ['KPIs Resolución', 'Ranking Técnicos', 'Carga de Datos'].includes(item.name);
     }
-    return item.name !== 'CARGA OCR';
+    return item.name !== 'Carga de Datos';
   });
 
   const sidebarContent = (

@@ -2,7 +2,7 @@
 
 import Sidebar from "@/components/Sidebar";
 import './globals.css';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, Briefcase } from 'lucide-react';
 
@@ -12,11 +12,31 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [cargaDistrictSlug, setCargaDistrictSlug] = useState<string | null>(null);
   const pathname = usePathname();
+
+  useState(() => {
+    // Avoid SSR error, just hook state
+  });
+
+  React.useEffect(() => {
+    const updateSlug = () => {
+      if (typeof window !== 'undefined') {
+        setCargaDistrictSlug(localStorage.getItem('selected_carga_district_slug'));
+      }
+    };
+    updateSlug();
+    window.addEventListener('carga_district_changed', updateSlug);
+    return () => window.removeEventListener('carga_district_changed', updateSlug);
+  }, []);
+
   const isBPPage = pathname?.startsWith('/seguimiento-bp');
-  const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/');
-  const isLomas = pathname === '/lomas' || pathname?.startsWith('/lomas/');
-  const isMontegrande = pathname === '/montegrande' || pathname?.startsWith('/montegrande/');
+  const isCargaPage = pathname === '/admin/carga-ocr';
+  const activeDistrictSlug = isCargaPage ? (cargaDistrictSlug || 'lanus') : null;
+
+  const isLanus = pathname === '/lanus' || pathname?.startsWith('/lanus/') || activeDistrictSlug === 'lanus';
+  const isLomas = pathname === '/lomas' || pathname?.startsWith('/lomas/') || activeDistrictSlug === 'lomas';
+  const isMontegrande = pathname === '/montegrande' || pathname?.startsWith('/montegrande/') || activeDistrictSlug === 'montegrande';
 
   let currentDistrictName = 'F. VARELA';
   let districtDisplayTitle = 'Varela';
