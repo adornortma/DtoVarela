@@ -409,24 +409,30 @@ export default function CargaTextoPage() {
   const executeSave = async (isReplace: boolean) => {
     setIsSaving(true);
     setShowConfirmModal(false);
-    try {
+    
+    const attemptSave = async (includeUtilizacion: boolean): Promise<boolean> => {
       // 1. Log load raw details in ocr_cargas
       const payloadOcr = {
         distrito_id: selectedDistrictId,
         celula: cargaType === 'detalle_celula' ? selectedCelula : null,
         mes: selectedMonth,
         anio: selectedYear,
-        imagen_url: null, // No image in text copy-paste flow
-        ocr_raw: pastedText, // Save pasted raw text
-        datos_interpretados: parsedData.map(r => ({
-          name: r.name,
-          productividad: r.productividad,
-          resolucion: r.resolucion,
-          reiteros: r.reiteros,
-          tiempo_operativo: r.tiempo_operativo,
-          utilizacion: r.utilizacion
-        })),
-        ocr_confidence: 100, // 100% confidence for digital raw text
+        imagen_url: null,
+        ocr_raw: pastedText,
+        datos_interpretados: parsedData.map(r => {
+          const base: any = {
+            name: r.name,
+            productividad: r.productividad,
+            resolucion: r.resolucion,
+            reiteros: r.reiteros,
+            tiempo_operativo: r.tiempo_operativo
+          };
+          if (includeUtilizacion) {
+            base.utilizacion = r.utilizacion;
+          }
+          return base;
+        }),
+        ocr_confidence: 100,
         replaced_previous: isReplace,
         processing_status: 'confirmed'
       };
@@ -456,14 +462,16 @@ export default function CargaTextoPage() {
             await checkAndInsertCell(cellName);
           }
 
-          const updatePayload = {
+          const updatePayload: any = {
             resolucion: row.resolucion,
             reiteros: row.reiteros,
             productividad: row.productividad,
             tiempo_operativo: row.tiempo_operativo,
-            utilizacion: row.utilizacion,
             distrito_id: selectedDistrictId
           };
+          if (includeUtilizacion) {
+            updatePayload.utilizacion = row.utilizacion;
+          }
 
           const { data: existingMetric } = await supabase
             .from('metricas_mensuales')
@@ -475,18 +483,20 @@ export default function CargaTextoPage() {
             .maybeSingle();
 
           if (existingMetric) {
-            await supabase
+            const { error: updateError } = await supabase
               .from('metricas_mensuales')
               .update(updatePayload)
               .eq('id', existingMetric.id);
+            if (updateError) throw updateError;
           } else {
-            await supabase
+            const { error: insertError } = await supabase
               .from('metricas_mensuales')
               .insert({
                 celula: cellName,
                 mes: monthName,
                 ...updatePayload
               });
+            if (insertError) throw insertError;
           }
         }
       } else {
@@ -526,15 +536,17 @@ export default function CargaTextoPage() {
           }
 
           if (tecnicoId) {
-            const updatePayload = {
+            const updatePayload: any = {
               resolucion: row.resolucion,
               reiteros: row.reiteros,
               productividad: row.productividad,
               tiempo_operativo: row.tiempo_operativo,
-              utilizacion: row.utilizacion,
               distrito_id: selectedDistrictId,
               celula: selectedCelula
             };
+            if (includeUtilizacion) {
+              updatePayload.utilizacion = row.utilizacion;
+            }
 
             const { data: existingMetric } = await supabase
               .from('metricas_mensuales')
@@ -545,24 +557,45 @@ export default function CargaTextoPage() {
               .maybeSingle();
 
             if (existingMetric) {
-              await supabase
+              const { error: updateError } = await supabase
                 .from('metricas_mensuales')
                 .update(updatePayload)
                 .eq('id', existingMetric.id);
+              if (updateError) throw updateError;
             } else {
-              await supabase
+              const { error: insertError } = await supabase
                 .from('metricas_mensuales')
                 .insert({
                   tecnico_id: tecnicoId,
                   mes: monthName,
                   ...updatePayload
                 });
+              if (insertError) throw insertError;
             }
           }
         }
       }
+      return true;
+    };
 
-      setSaveStatus({ type: 'success', msg: `¡Carga guardada con éxito! Se grabaron ${parsedData.length} registros.` });
+    try {
+      try {
+        await attemptSave(true);
+        setSaveStatus({ type: 'success', msg: `¡Carga guardada con éxito! Se grabaron ${parsedData.length} registros (incluyendo Utilización).` });
+      } catch (innerErr: any) {
+        const errStr = JSON.stringify(innerErr) || '';
+        const isUtilizacionError = errStr.includes('utilizacion') || (innerErr?.message && innerErr.message.includes('utilizacion'));
+        if (isUtilizacionError) {
+          console.warn('Utilizacion column not found in DB schema cache. Retrying save without it...');
+          await attemptSave(false);
+          setSaveStatus({ 
+            type: 'warning', 
+            msg: `Carga guardada con éxito (${parsedData.length} registros), pero no se guardó la 'utilización' porque aún no se ejecuta la migración SQL en Supabase (ejecutar add_utilizacion_column.sql).` 
+          });
+        } else {
+          throw innerErr;
+        }
+      }
       setPastedText('');
       setParsedData([]);
     } catch (err: any) {
