@@ -3,28 +3,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
-  Upload, 
-  FileImage, 
+  Clipboard, 
   Trash2, 
   AlertTriangle, 
   CheckCircle2, 
   Loader2, 
   Save, 
-  Edit3, 
-  Eye,
-  RefreshCw,
-  Plus,
+  Plus, 
   HelpCircle,
   Database,
-  ArrowRight,
-  TrendingUp,
   Clock,
   Zap,
   Activity,
-  User,
   ShieldCheck
 } from 'lucide-react';
-import { createWorker } from 'tesseract.js';
 
 interface District {
   id: string;
@@ -45,7 +37,9 @@ interface ParsedRow {
   resolucion: number;
   reiteros: number;
   tiempo_operativo: number;
-  confidence: number; // Tesseract confidence score for this row
+  utilizacion: number;
+  confidence: number;
+  edited?: boolean; // track manual adjustments
 }
 
 const MONTHS_LIST = [
@@ -63,7 +57,7 @@ const MONTHS_LIST = [
   { value: 12, name: 'Diciembre' },
 ];
 
-export default function CargaOcrPage() {
+export default function CargaTextoPage() {
   const [districts, setDistricts] = useState<District[]>([]);
   const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
   const [selectedDistrictSlug, setSelectedDistrictSlug] = useState<string>('');
@@ -72,14 +66,8 @@ export default function CargaOcrPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(5); // Default Mayo
   const [selectedYear, setSelectedYear] = useState<number>(2026); // Default 2026
   
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [pastedText, setPastedText] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState<number>(0);
-  const [progressStatus, setProgressStatus] = useState<string>('');
-  
-  const [ocrRaw, setOcrRaw] = useState<string>('');
-  const [ocrAvgConfidence, setOcrAvgConfidence] = useState<number>(0);
   
   const [cargaType, setCargaType] = useState<'resumen_distrito' | 'detalle_celula'>('resumen_distrito');
   const [selectedCelula, setSelectedCelula] = useState<string>('');
@@ -87,20 +75,16 @@ export default function CargaOcrPage() {
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | 'warning' | null, msg: string }>({ type: null, msg: '' });
   const [isSaving, setIsSaving] = useState(false);
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [willReplace, setWillReplace] = useState(false);
   const [existingCargaId, setExistingCargaId] = useState<string | null>(null);
-  const [duplicateMessage, setDuplicateMessage] = useState<string>('');
-
-  const dropRef = useRef<HTMLDivElement>(null);
 
   // Fetch Districts on mount
   useEffect(() => {
     const fetchDistricts = async () => {
       const { data } = await supabase.from('distritos').select('*').order('nombre');
       if (data && data.length > 0) {
-        // Exclude varela from selectable districts for OCR flow
+        // Exclude varela from selectable districts
         const filtered = data.filter(d => d.slug !== 'varela');
         setDistricts(filtered);
         if (filtered.length > 0) {
@@ -130,204 +114,197 @@ export default function CargaOcrPage() {
     if (data) {
       setAvailableCells(data);
       if (data.length > 0) {
-        // Select first operative cell as default for detail flow
         const operative = data.filter(c => c.operativa);
         setSelectedCelula(operative.length > 0 ? operative[0].nombre : data[0].nombre);
       }
     }
   };
 
-  // Drag and Drop handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dropRef.current) {
-      dropRef.current.style.borderColor = 'var(--movistar-blue)';
-      dropRef.current.style.backgroundColor = 'rgba(30, 64, 175, 0.05)';
+  // Helper to parse numbers and NA values to 0
+  const parseValue = (valStr: string | undefined): number => {
+    if (!valStr) return 0;
+    const cleanVal = valStr.replace(/%/g, '').replace(/,/g, '.').trim();
+    if (/^(n\/a|na|n\.a\.?)$/i.test(cleanVal)) {
+      return 0;
     }
+    const parsed = parseFloat(cleanVal);
+    return isNaN(parsed) ? 0 : parsed;
   };
 
-  const handleDragLeave = () => {
-    if (dropRef.current) {
-      dropRef.current.style.borderColor = '#e2e8f0';
-      dropRef.current.style.backgroundColor = 'transparent';
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    handleDragLeave();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  // Paste Event Handler on the Dropzone Container
-  const handlePaste = (e: React.ClipboardEvent) => {
-    if (e.clipboardData.files && e.clipboardData.files[0]) {
-      processFile(e.clipboardData.files[0]);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
-    }
-  };
-
-  const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setSaveStatus({ type: 'error', msg: 'El archivo debe ser una imagen (PNG, JPG, JPEG).' });
+  // Parse clipboard/pasted text
+  const handleProcessText = () => {
+    if (!pastedText.trim()) {
+      setSaveStatus({ type: 'error', msg: 'Por favor, pega el texto de la tabla antes de procesar.' });
       return;
     }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-    setSaveStatus({ type: null, msg: '' });
-  };
 
-  const handleClearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setOcrRaw('');
-    setParsedData([]);
-    setOcrAvgConfidence(0);
-    setProgress(0);
-    setProgressStatus('');
-  };
-
-  // Smart OCR parsing and column normalization
-  const runOcr = async () => {
-    if (!imagePreview) return;
     setIsProcessing(true);
-    setProgress(0);
-    setProgressStatus('Iniciando Tesseract.js...');
+    setSaveStatus({ type: null, msg: '' });
+
     try {
-      const worker = await createWorker('spa');
-      
-      // Track progress
-      // tesseract.js worker updates progress through logger
-      // Note: We use simpler progress logic or manual ticks because logger in v7 can be set up inside configure.
-      setProgress(20);
-      setProgressStatus('Analizando imagen con Tesseract OCR...');
+      const lines = pastedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const rows: ParsedRow[] = [];
 
-      const { data: { text, confidence } } = await worker.recognize(imagePreview);
-      setProgress(80);
-      setProgressStatus('Normalizando y extrayendo datos...');
+      let headerIdxs = {
+        name: -1,
+        productividad: -1,
+        resolucion: -1,
+        reiteros: -1,
+        tiempo_operativo: -1,
+        utilizacion: -1
+      };
 
-      setOcrRaw(text);
-      setOcrAvgConfidence(confidence);
+      let headerFound = false;
+      let dataStartLine = 0;
 
-      await worker.terminate();
+      // Scan first few lines for header keywords
+      for (let i = 0; i < Math.min(lines.length, 3); i++) {
+        const line = lines[i];
+        let cols = line.split(/\t/).map(p => p.trim());
+        if (cols.length <= 1) {
+          cols = line.split(/\s{2,}/).map(p => p.trim());
+        }
 
-      parseOcrText(text, confidence);
-      setProgress(100);
-      setProgressStatus('¡Procesamiento completo!');
-      setTimeout(() => setIsProcessing(false), 800);
-    } catch (error: any) {
-      console.error('OCR Error:', error);
-      setSaveStatus({ type: 'error', msg: `Error en procesamiento OCR: ${error.message}` });
+        const hasHeaderKeywords = cols.some(col => 
+          /nombre|prod|resol|reit|tiemp|oper|util|celu/i.test(col)
+        );
+
+        if (hasHeaderKeywords) {
+          cols.forEach((col, idx) => {
+            const cleanCol = col.toLowerCase();
+            if (cleanCol.includes('nombre') || cleanCol.includes('técnico') || cleanCol.includes('tecnico') || cleanCol.includes('célula') || cleanCol.includes('celula')) {
+              headerIdxs.name = idx;
+            } else if (cleanCol.includes('prod') || cleanCol.includes('productividad')) {
+              headerIdxs.productividad = idx;
+            } else if (cleanCol.includes('resol') || cleanCol.includes('resolución')) {
+              headerIdxs.resolucion = idx;
+            } else if (cleanCol.includes('reit') || cleanCol.includes('reitero')) {
+              headerIdxs.reiteros = idx;
+            } else if (cleanCol.includes('tiemp') || cleanCol.includes('oper') || cleanCol.includes('tiempo operativo')) {
+              headerIdxs.tiempo_operativo = idx;
+            } else if (cleanCol.includes('util') || cleanCol.includes('utilizacion') || cleanCol.includes('utilización')) {
+              headerIdxs.utilizacion = idx;
+            }
+          });
+          headerFound = true;
+          dataStartLine = i + 1;
+          break;
+        }
+      }
+
+      // Default fallback ordering
+      if (!headerFound) {
+        headerIdxs = {
+          name: 0,
+          productividad: 1,
+          resolucion: 2,
+          reiteros: 3,
+          tiempo_operativo: 4,
+          utilizacion: 5
+        };
+        dataStartLine = 0;
+      }
+
+      // Process data lines
+      for (let i = dataStartLine; i < lines.length; i++) {
+        const line = lines[i];
+        
+        let cols = line.split(/\t/).map(p => p.trim());
+        if (cols.length <= 1) {
+          cols = line.split(/\s{2,}/).map(p => p.trim());
+        }
+        
+        // Single space fallback logic (with name parsing support)
+        if (cols.length <= 1) {
+          const parts = line.split(/\s+/).map(p => p.trim()).filter(p => p.length > 0);
+          if (parts.length >= 4) {
+            const numericParts: string[] = [];
+            const nameParts: string[] = [];
+            
+            parts.forEach(part => {
+              const cleanPart = part.replace(/%/g, '').replace(/,/g, '.');
+              const isNum = !isNaN(parseFloat(cleanPart)) && /^\d+(\.\d+)?$/.test(cleanPart);
+              const isNA = /^(n\/a|na|n\.a\.?)$/i.test(cleanPart);
+              if (isNum || isNA) {
+                numericParts.push(part);
+              } else {
+                nameParts.push(part);
+              }
+            });
+
+            if (nameParts.length > 0 && numericParts.length >= 3) {
+              cols = [nameParts.join(' '), ...numericParts];
+              headerIdxs = {
+                name: 0,
+                productividad: 1,
+                resolucion: 2,
+                reiteros: 3,
+                tiempo_operativo: 4,
+                utilizacion: 5
+              };
+            }
+          }
+        }
+
+        if (cols.length > 0) {
+          const nameVal = cols[headerIdxs.name] || '';
+          if (nameVal && nameVal !== 'Nombre' && nameVal !== 'NOMBRE' && nameVal !== 'Técnico' && nameVal !== 'TECNICO') {
+            const prod = headerIdxs.productividad !== -1 ? parseValue(cols[headerIdxs.productividad]) : 0;
+            const resol = headerIdxs.resolucion !== -1 ? parseValue(cols[headerIdxs.resolucion]) : 0;
+            const reit = headerIdxs.reiteros !== -1 ? parseValue(cols[headerIdxs.reiteros]) : 0;
+            const to = headerIdxs.tiempo_operativo !== -1 ? parseValue(cols[headerIdxs.tiempo_operativo]) : 0;
+            const util = headerIdxs.utilizacion !== -1 ? parseValue(cols[headerIdxs.utilizacion]) : 0;
+
+            rows.push({
+              key: `row-${i}-${Date.now()}`,
+              name: nameVal.toUpperCase().replace(/[:;|]/g, '').trim(),
+              productividad: prod,
+              resolucion: resol,
+              reiteros: reit,
+              tiempo_operativo: to,
+              utilizacion: util,
+              confidence: 100
+            });
+          }
+        }
+      }
+
+      setParsedData(rows);
+
+      // Auto-detect load type
+      if (rows.length > 0) {
+        const cellNames = new Set(availableCells.map(c => c.nombre.toUpperCase()));
+        let cellMatches = 0;
+        rows.forEach(r => {
+          if (cellNames.has(r.name.toUpperCase())) {
+            cellMatches++;
+          }
+        });
+        if (cellMatches >= rows.length / 2) {
+          setCargaType('resumen_distrito');
+        } else {
+          setCargaType('detalle_celula');
+        }
+      }
+
+      setSaveStatus({ type: 'success', msg: `Se interpretaron con éxito ${rows.length} filas.` });
+    } catch (err: any) {
+      console.error(err);
+      setSaveStatus({ type: 'error', msg: `Error al procesar el texto: ${err.message}` });
+    } finally {
       setIsProcessing(false);
     }
   };
 
-  // Normalize column mapping
-  const parseOcrText = (rawText: string, generalConfidence: number) => {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const rows: ParsedRow[] = [];
-
-    // Helper to check if string contains headers
-    const matchesHeader = (str: string, keywords: string[]) => {
-      const lower = str.toLowerCase();
-      return keywords.some(k => lower.includes(k));
-    };
-
-    const headerKeywords = ['prod', 'resol', 'reit', 'tiemp', 'oper', 'tecn', 'celu'];
-    
-    // Attempt parsing
-    lines.forEach((line, idx) => {
-      // Skip headers
-      if (matchesHeader(line, headerKeywords)) return;
-
-      // Extract numbers and names
-      // Example line: "ACCESO_LANUS 5.8 74.2% 4.1% 68.2%"
-      // Example line: "GOMEZ, RUBEN 6,1 78.4 4,2 71%"
-      
-      // Clean commas to dots, remove percent symbols
-      const cleanLine = line.replace(/,/g, '.').replace(/%/g, '');
-      const parts = cleanLine.split(/\s+/).filter(p => p.length > 0);
-
-      if (parts.length >= 4) {
-        // Find numbers or NA values in parts (usually the last 3 or 4 elements)
-        const numericValues: number[] = [];
-        const nameParts: string[] = [];
-
-        parts.forEach(part => {
-          const cleanPart = part.trim();
-          const isNaValue = /^(n\/a|na|n\.a\.?)$/i.test(cleanPart);
-          if (isNaValue) {
-            numericValues.push(0);
-          } else {
-            const num = parseFloat(cleanPart);
-            if (!isNaN(num) && /^\d+(\.\d+)?$/.test(cleanPart)) {
-              numericValues.push(num);
-            } else {
-              nameParts.push(part);
-            }
-          }
-        });
-
-        const name = nameParts.join(' ').replace(/[:;|]/g, '').trim();
-
-        if (name && numericValues.length >= 3) {
-          // If we got 3 values, assume: resolucion, reiteros, productividad (historical)
-          // If 4 values, resolve: productividad, resolucion, reiteros, tiempo_operativo
-          let prod = 0;
-          let resol = 0;
-          let reit = 0;
-          let to = 0;
-
-          if (numericValues.length >= 4) {
-            prod = numericValues[0];
-            resol = numericValues[1];
-            reit = numericValues[2];
-            to = numericValues[3];
-          } else {
-            // fallback
-            prod = numericValues[2];
-            resol = numericValues[0];
-            reit = numericValues[1];
-            to = 0; // Default/NULL
-          }
-
-          // Row-level mock confidence based on name matches & general score
-          rows.push({
-            key: `row-${idx}-${Date.now()}`,
-            name: name.toUpperCase(),
-            productividad: prod,
-            resolucion: resol,
-            reiteros: reit,
-            tiempo_operativo: to,
-            confidence: generalConfidence
-          });
-        }
-      }
-    });
-
-    setParsedData(rows);
-
-    // Auto-detect load type: if parsed rows match cells, set to 'resumen_distrito'
-    if (rows.length > 0) {
-      const cellNames = new Set(availableCells.map(c => c.nombre.toUpperCase()));
-      let cellMatches = 0;
-      rows.forEach(r => {
-        if (cellNames.has(r.name.toUpperCase())) {
-          cellMatches++;
-        }
-      });
-      if (cellMatches >= rows.length / 2) {
-        setCargaType('resumen_distrito');
-      } else {
-        setCargaType('detalle_celula');
-      }
+  // Clipboard Paste listener directly on textbox
+  const handleTextAreaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData.getData('text');
+    if (text) {
+      setPastedText(text);
+      // Wait for state sync or pass directly
+      setTimeout(() => {
+        // Auto process on paste if preferred
+      }, 100);
     }
   };
 
@@ -335,7 +312,7 @@ export default function CargaOcrPage() {
   const handleEditRow = (key: string, field: keyof ParsedRow, value: string | number) => {
     setParsedData(prev => prev.map(row => {
       if (row.key === key) {
-        return { ...row, [field]: value };
+        return { ...row, [field]: value, edited: true };
       }
       return row;
     }));
@@ -351,7 +328,9 @@ export default function CargaOcrPage() {
         resolucion: 0,
         reiteros: 0,
         tiempo_operativo: 0,
-        confidence: 100
+        utilizacion: 0,
+        confidence: 100,
+        edited: true
       }
     ]);
   };
@@ -360,13 +339,11 @@ export default function CargaOcrPage() {
     setParsedData(prev => prev.filter(r => r.key !== key));
   };
 
-  // Parse Month representation to string like "Mayo" for the existing metricas table
   const getMonthName = (monthVal: number): string => {
     const match = MONTHS_LIST.find(m => m.value === monthVal);
     return match ? match.name : 'Mayo';
   };
 
-  // Ensure Cell exists or insert it
   const checkAndInsertCell = async (cellName: string) => {
     const clean = cellName.toUpperCase().trim();
     if (!clean) return;
@@ -386,10 +363,20 @@ export default function CargaOcrPage() {
     }
   };
 
-  // Main Save logic triggers duplicate checking
+  // Duplicate warning checks
   const handleCheckDuplicates = async () => {
     if (parsedData.length === 0) {
       setSaveStatus({ type: 'error', msg: 'No hay datos interpretados para guardar.' });
+      return;
+    }
+
+    // Basic Validations
+    if (!selectedDistrictId) {
+      setSaveStatus({ type: 'error', msg: 'Distrito no seleccionado.' });
+      return;
+    }
+    if (cargaType === 'detalle_celula' && !selectedCelula) {
+      setSaveStatus({ type: 'error', msg: 'Célula de destino no seleccionada.' });
       return;
     }
 
@@ -397,7 +384,6 @@ export default function CargaOcrPage() {
     setSaveStatus({ type: null, msg: '' });
 
     try {
-      // Check if ocr_cargas already has entries for this month + district + cell (if detail)
       let query = supabase
         .from('ocr_cargas')
         .select('id, uploaded_at')
@@ -412,7 +398,6 @@ export default function CargaOcrPage() {
       }
 
       const { data, error } = await query.maybeSingle();
-
       if (error) throw error;
 
       if (data) {
@@ -422,6 +407,7 @@ export default function CargaOcrPage() {
         setExistingCargaId(null);
         setWillReplace(false);
       }
+
       setShowConfirmModal(true);
       setIsSaving(false);
     } catch (err: any) {
@@ -431,52 +417,28 @@ export default function CargaOcrPage() {
     }
   };
 
-  // Upload image to Supabase Storage and Insert/Update stats
+  // Final confirmation Save
   const executeSave = async (isReplace: boolean) => {
     setIsSaving(true);
     setShowConfirmModal(false);
     try {
-      let uploadedPath = '';
-
-      if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${selectedDistrictSlug}/${selectedYear}-${selectedMonth}/${fileName}`;
-
-        // Upload to bucket 'ocr-screenshots'
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('ocr-screenshots')
-          .upload(filePath, imageFile, {
-            cacheControl: '3600',
-            upsert: true
-          });
-
-        if (uploadError) {
-          // If storage fails (e.g. bucket doesn't exist), log warning but proceed with placeholder URL to avoid blocking pilot
-          console.warn('Storage bucket upload failed:', uploadError.message);
-          uploadedPath = `fallback-local-storage/${filePath}`;
-        } else {
-          uploadedPath = uploadData.path;
-        }
-      }
-
-      // 1. Save / Update in ocr_cargas
+      // 1. Log load raw details in ocr_cargas
       const payloadOcr = {
         distrito_id: selectedDistrictId,
         celula: cargaType === 'detalle_celula' ? selectedCelula : null,
         mes: selectedMonth,
         anio: selectedYear,
-        imagen_url: uploadedPath,
-        ocr_raw: ocrRaw,
+        imagen_url: null, // No image in text copy-paste flow
+        ocr_raw: pastedText, // Save pasted raw text
         datos_interpretados: parsedData.map(r => ({
           name: r.name,
           productividad: r.productividad,
           resolucion: r.resolucion,
           reiteros: r.reiteros,
           tiempo_operativo: r.tiempo_operativo,
-          confidence: r.confidence
+          utilizacion: r.utilizacion
         })),
-        ocr_confidence: Math.round(ocrAvgConfidence),
+        ocr_confidence: 100, // 100% confidence for digital raw text
         replaced_previous: isReplace,
         processing_status: 'confirmed'
       };
@@ -498,7 +460,6 @@ export default function CargaOcrPage() {
       const monthName = getMonthName(selectedMonth);
 
       if (cargaType === 'resumen_distrito') {
-        // Save cell-level monthly metrics
         for (const row of parsedData) {
           const isDistSummary = row.name.toUpperCase() === 'DISTRITO';
           const cellName = isDistSummary ? 'DISTRITO' : row.name.toUpperCase();
@@ -512,6 +473,7 @@ export default function CargaOcrPage() {
             reiteros: row.reiteros,
             productividad: row.productividad,
             tiempo_operativo: row.tiempo_operativo,
+            utilizacion: row.utilizacion,
             distrito_id: selectedDistrictId
           };
 
@@ -540,18 +502,16 @@ export default function CargaOcrPage() {
           }
         }
       } else {
-        // Save technician-level monthly metrics in 'metricas_mensuales'
+        // Save detail of technicians
         for (const row of parsedData) {
-          // Resolve / create technician
           const cleanTechName = row.name.trim().toUpperCase();
           const [apellido, nombre] = cleanTechName.includes(',') 
             ? cleanTechName.split(',').map(s => s.trim()) 
             : [cleanTechName, ''];
 
           let tecnicoId = null;
-
-          // Lookup technician by name normalizado
           const normalName = cleanTechName.replace(/[^A-Z]/g, '');
+          
           const { data: tech } = await supabase
             .from('tecnicos')
             .select('id')
@@ -562,7 +522,6 @@ export default function CargaOcrPage() {
           if (tech) {
             tecnicoId = tech.id;
           } else {
-            // Auto create tech record
             const { data: newTech } = await supabase
               .from('tecnicos')
               .insert({
@@ -582,6 +541,7 @@ export default function CargaOcrPage() {
               reiteros: row.reiteros,
               productividad: row.productividad,
               tiempo_operativo: row.tiempo_operativo,
+              utilizacion: row.utilizacion,
               distrito_id: selectedDistrictId,
               celula: selectedCelula
             };
@@ -613,11 +573,8 @@ export default function CargaOcrPage() {
       }
 
       setSaveStatus({ type: 'success', msg: `¡Carga guardada con éxito! Se grabaron ${parsedData.length} registros.` });
-      // Reset after success
-      setImageFile(null);
-      setImagePreview(null);
+      setPastedText('');
       setParsedData([]);
-      setOcrRaw('');
     } catch (err: any) {
       console.error(err);
       setSaveStatus({ type: 'error', msg: `Error al guardar carga: ${err.message}` });
@@ -634,22 +591,22 @@ export default function CargaOcrPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <div style={{ backgroundColor: '#1e293b', padding: '8px', borderRadius: '10px', color: 'white' }}>
-              <Database size={20} />
+              <Clipboard size={20} />
             </div>
-            <h1 style={{ fontSize: '32px', fontWeight: '950', letterSpacing: '-1px' }}>Módulo de Carga Inteligente (OCR)</h1>
+            <h1 style={{ fontSize: '32px', fontWeight: '950', letterSpacing: '-1px' }}>Módulo de Carga por Copiar/Pegar</h1>
           </div>
           <p style={{ fontSize: '14px', fontWeight: '700', color: '#64748b' }}>
-            Piloto Lanús Sandbox — Procesamiento automático de capturas mediante IA y Tesseract.js
+            Piloto Lanús Sandbox — Pega directamente el texto o tablas copiadas de navegadores o Excel.
           </p>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px', alignItems: 'start' }}>
         
-        {/* Left Side: Upload & Preview Grid */}
+        {/* Left Side: Textarea & Preview Grid */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* selectors and config card */}
+          {/* Config card */}
           <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ShieldCheck size={18} color="var(--movistar-blue)" /> Configuración de Carga
@@ -693,7 +650,7 @@ export default function CargaOcrPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Tipo de Screenshot</label>
+                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Tipo de Carga</label>
                 <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
                   <button
                     onClick={() => setCargaType('resumen_distrito')}
@@ -725,106 +682,83 @@ export default function CargaOcrPage() {
             </div>
           </div>
 
-          {/* Paste & Upload dropzone */}
-          <div 
-            ref={dropRef}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onPaste={handlePaste}
-            tabIndex={0}
-            style={{
-              border: '2px dashed #e2e8f0',
-              borderRadius: '24px',
-              padding: '40px',
-              textAlign: 'center',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-              outline: 'none',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '260px'
-            }}
-          >
-            {imagePreview ? (
-              <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img 
-                  src={imagePreview} 
-                  alt="Screenshot Preview" 
-                  style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} 
-                />
-                
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    onClick={handleClearImage}
-                    className="btn-danger"
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', border: '1px solid #fee2e2', backgroundColor: '#fef2f2', color: '#ef4444', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}
-                  >
-                    <Trash2 size={16} /> Eliminar Imagen
-                  </button>
-
-                  <button
-                    onClick={runOcr}
-                    disabled={isProcessing}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--movistar-blue)', color: 'white', fontWeight: '900', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(30, 64, 175, 0.2)' }}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" /> Procesando OCR...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw size={16} /> Iniciar Reconocimiento OCR
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <label style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%', height: '100%' }}>
-                <div style={{ backgroundColor: '#eff6ff', padding: '16px', borderRadius: '50%', color: 'var(--movistar-blue)' }}>
-                  <Upload size={32} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '950', letterSpacing: '-0.5px' }}>Pegá un screenshot o arrastrá una imagen</h3>
-                  <p style={{ fontSize: '13px', fontWeight: '700', color: '#64748b', marginTop: '4px' }}>
-                    Hace click acá y presioná <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px' }}>Ctrl + V</kbd> o subí un archivo
-                  </p>
-                </div>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleFileChange} 
-                  style={{ display: 'none' }} 
-                />
+          {/* Large Text Area */}
+          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '14px', fontWeight: '900', color: '#1e293b' }}>
+                Copiar y Pegar Tabla
               </label>
-            )}
+              {pastedText && (
+                <button
+                  onClick={() => setPastedText('')}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Trash2 size={14} /> Limpiar
+                </button>
+              )}
+            </div>
+
+            <textarea
+              value={pastedText}
+              onChange={(e) => setPastedText(e.target.value)}
+              onPaste={handleTextAreaPaste}
+              placeholder="Pega acá el texto de la tabla (Soporta múltiples espacios, tabs de Excel y saltos de línea)..."
+              style={{
+                width: '100%',
+                height: '180px',
+                padding: '16px',
+                borderRadius: '16px',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                fontFamily: 'monospace',
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--movistar-blue)'}
+              onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleProcessText}
+                disabled={isProcessing}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: 'var(--movistar-blue)',
+                  color: 'white',
+                  fontWeight: '900',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(30, 64, 175, 0.2)'
+                }}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Clipboard size={16} /> Procesar texto
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* Progress bar */}
-          {isProcessing && (
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '20px', padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px' }}>
-                <span>{progressStatus}</span>
-                <span>{progress}%</span>
-              </div>
-              <div style={{ width: '100%', height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${progress}%`, height: '100%', backgroundColor: 'var(--movistar-blue)', borderRadius: '4px', transition: 'width 0.2s' }} />
-              </div>
-            </div>
-          )}
-
-          {/* Parsed Editable Grid */}
+          {/* Parsed Preview Grid */}
           {parsedData.length > 0 && (
             <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '28px', overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: '900' }}>Previsualización y Edición de Datos</h3>
                   <p style={{ fontSize: '11px', fontWeight: '700', color: '#64748b' }}>
-                    Revisá y corregí cualquier imperfección del OCR. Valores <span style={{ color: '#ef4444' }}>debajo del 75% de confianza</span> se resaltan.
+                    Revisá, agregá o eliminá registros. Las filas corregidas manualmente se registran para la confirmación.
                   </p>
                 </div>
 
@@ -839,12 +773,13 @@ export default function CargaOcrPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
                   <colgroup>
-                    <col style={{ width: '40%' }} />
+                    <col style={{ width: '30%' }} />
                     <col style={{ width: '14%' }} />
                     <col style={{ width: '14%' }} />
                     <col style={{ width: '14%' }} />
                     <col style={{ width: '14%' }} />
-                    <col style={{ width: '60px' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '50px' }} />
                   </colgroup>
                   <thead>
                     <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
@@ -853,87 +788,100 @@ export default function CargaOcrPage() {
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>Resol. %</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>Reit. %</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>T. Oper. %</th>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#64748b' }}>Util.</th>
                       <th style={{ padding: '12px 16px' }} />
                     </tr>
                   </thead>
                   <tbody>
-                    {parsedData.map((row) => (
-                      <tr 
-                        key={row.key} 
-                        style={{ 
-                          borderBottom: '1px solid #f1f5f9',
-                          backgroundColor: row.confidence < 75 ? 'rgba(239, 68, 68, 0.02)' : 'transparent' 
-                        }}
-                      >
-                        <td style={{ padding: '8px 16px' }}>
-                          <input 
-                            type="text" 
-                            value={row.name} 
-                            onChange={(e) => handleEditRow(row.key, 'name', e.target.value)}
-                            style={{ 
-                              width: '100%', 
-                              padding: '8px 10px', 
-                              borderRadius: '8px', 
-                              border: row.confidence < 75 ? '1px solid #fca5a5' : '1px solid #e2e8f0',
-                              fontSize: '13px', 
-                              fontWeight: '800',
-                              backgroundColor: row.confidence < 75 ? '#fef2f2' : 'white'
-                            }} 
-                          />
-                        </td>
-                        <td style={{ padding: '8px 16px' }}>
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            value={row.productividad} 
-                            onChange={(e) => handleEditRow(row.key, 'productividad', parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
-                          />
-                        </td>
-                        <td style={{ padding: '8px 16px' }}>
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            value={row.resolucion} 
-                            onChange={(e) => handleEditRow(row.key, 'resolucion', parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
-                          />
-                        </td>
-                        <td style={{ padding: '8px 16px' }}>
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            value={row.reiteros} 
-                            onChange={(e) => handleEditRow(row.key, 'reiteros', parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
-                          />
-                        </td>
-                        <td style={{ padding: '8px 16px' }}>
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            value={row.tiempo_operativo} 
-                            onChange={(e) => handleEditRow(row.key, 'tiempo_operativo', parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
-                          />
-                        </td>
-                        <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => handleRemoveRow(row.key)}
-                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px' }}
-                            onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
-                            onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {parsedData.map((row) => {
+                      const hasWarning = row.name === 'NUEVO REGISTRO' || !row.name || row.productividad < 0 || row.resolucion < 0 || row.reiteros < 0 || row.tiempo_operativo < 0 || row.utilizacion < 0;
+                      return (
+                        <tr 
+                          key={row.key} 
+                          style={{ 
+                            borderBottom: '1px solid #f1f5f9',
+                            backgroundColor: hasWarning ? 'rgba(239, 68, 68, 0.02)' : 'transparent' 
+                          }}
+                        >
+                          <td style={{ padding: '8px 16px' }}>
+                            <input 
+                              type="text" 
+                              value={row.name} 
+                              onChange={(e) => handleEditRow(row.key, 'name', e.target.value)}
+                              style={{ 
+                                width: '100%', 
+                                padding: '8px 10px', 
+                                borderRadius: '8px', 
+                                border: hasWarning ? '1px solid #fca5a5' : '1px solid #e2e8f0',
+                                fontSize: '13px', 
+                                fontWeight: '800',
+                                backgroundColor: hasWarning ? '#fef2f2' : 'white'
+                              }} 
+                            />
+                          </td>
+                          <td style={{ padding: '8px 16px' }}>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={row.productividad} 
+                              onChange={(e) => handleEditRow(row.key, 'productividad', parseFloat(e.target.value) || 0)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
+                            />
+                          </td>
+                          <td style={{ padding: '8px 16px' }}>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={row.resolucion} 
+                              onChange={(e) => handleEditRow(row.key, 'resolucion', parseFloat(e.target.value) || 0)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
+                            />
+                          </td>
+                          <td style={{ padding: '8px 16px' }}>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={row.reiteros} 
+                              onChange={(e) => handleEditRow(row.key, 'reiteros', parseFloat(e.target.value) || 0)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
+                            />
+                          </td>
+                          <td style={{ padding: '8px 16px' }}>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={row.tiempo_operativo} 
+                              onChange={(e) => handleEditRow(row.key, 'tiempo_operativo', parseFloat(e.target.value) || 0)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
+                            />
+                          </td>
+                          <td style={{ padding: '8px 16px' }}>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={row.utilizacion} 
+                              onChange={(e) => handleEditRow(row.key, 'utilizacion', parseFloat(e.target.value) || 0)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800' }} 
+                            />
+                          </td>
+                          <td style={{ padding: '8px 16px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => handleRemoveRow(row.key)}
+                              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px' }}
+                              onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                              onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
-              {/* Bottom save action inside grid card */}
+              {/* Save trigger button inside card */}
               <div style={{ padding: '20px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
                 <button
                   onClick={handleCheckDuplicates}
@@ -954,7 +902,7 @@ export default function CargaOcrPage() {
             </div>
           )}
 
-          {/* Feedback logs */}
+          {/* Feedback message logs */}
           {saveStatus.type && (
             <div style={{ 
               borderRadius: '20px', 
@@ -973,7 +921,7 @@ export default function CargaOcrPage() {
 
         </div>
 
-        {/* Right Side: Information / Guide panel */}
+        {/* Right Side: Instructions guide panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px' }}>
@@ -983,16 +931,16 @@ export default function CargaOcrPage() {
             
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingLeft: '20px', margin: 0, fontSize: '13px', fontWeight: '700', color: '#475569' }}>
               <li>
-                <strong>Pega capturas directamente:</strong> Presiona en el dropzone e introduce la captura de la pantalla de métricas de TOA/Resolución usando tu portapapeles.
+                <strong>Copia de Excel o Web:</strong> Copia el bloque de datos de la tabla (incluyendo o no la fila de encabezados) y pegala directamente en el cuadro de texto.
               </li>
               <li>
-                <strong>Soporte multilínea:</strong> El motor OCR procesa filas con nombres de técnicos o células operativas e interpreta los porcentajes.
+                <strong>Soporte inteligente:</strong> El interpretador de texto procesa delimitaciones por tabulaciones, múltiples espacios y saltos de línea automáticamente.
               </li>
               <li>
-                <strong>Control de confianza:</strong> Si la lectura del texto digitalizado posee ambigüedad, el campo de edición se sombreará en rojo para llamar tu atención.
+                <strong>Auto-Mapping de NA:</strong> Cualquier ocurrencia de <em>n/a%</em>, <em>N/A</em> o similar es interpretada automáticamente como 0.
               </li>
               <li>
-                <strong>Tiempo Operativo:</strong> Este campo se almacena de forma numérica y se representa como porcentaje en todo el sistema.
+                <strong>Edición previa:</strong> Podrás corregir errores de tipeo, borrar filas de totales incorrectas, o agregar elementos a la tabla manualmente antes de guardar.
               </li>
             </ul>
           </div>
@@ -1042,7 +990,7 @@ export default function CargaOcrPage() {
             </div>
             
             <p style={{ fontSize: '15px', fontWeight: '700', color: '#475569', lineHeight: '1.6', margin: 0 }}>
-              Está guardando los KPIs {cargaType === 'detalle_celula' ? `de la célula ${selectedCelula}` : 'del resumen de distrito'} para el mes de {getMonthName(selectedMonth).toUpperCase()} {selectedYear}. ¿Desea continuar?
+              Está guardando los KPIs de la célula {cargaType === 'detalle_celula' ? selectedCelula : 'Resumen Distrito'} para el mes de {getMonthName(selectedMonth).toUpperCase()} {selectedYear}. ¿Desea continuar?
             </p>
 
             <div style={{ 
@@ -1071,9 +1019,9 @@ export default function CargaOcrPage() {
                 <span style={{ color: '#1e293b' }}>{cargaType === 'detalle_celula' ? parsedData.length : 0}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
-                <span style={{ color: '#64748b' }}>Errores OCR:</span>
-                <span style={{ color: parsedData.filter(row => row.confidence < 75).length > 0 ? '#ef4444' : '#10b981' }}>
-                  {parsedData.filter(row => row.confidence < 75).length}
+                <span style={{ color: '#64748b' }}>Filas corregidas manualmente:</span>
+                <span style={{ color: parsedData.filter(row => row.edited).length > 0 ? '#f59e0b' : '#1e293b' }}>
+                  {parsedData.filter(row => row.edited).length}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800' }}>
