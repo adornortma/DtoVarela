@@ -510,12 +510,14 @@ export default function CargaTextoPage() {
           if (tech) {
             tecnicoId = tech.id;
           } else {
+            const mockDni = 'TEMP-' + Math.floor(10000000 + Math.random() * 90000000);
             const { data: newTech } = await supabase
               .from('tecnicos')
               .insert({
                 nombre: nombre || 'TÉCNICO',
                 apellido: apellido,
                 nombre_normalizado: normalName || 'TECNICO',
+                dni: mockDni,
                 distrito_id: selectedDistrictId
               })
               .select('id')
