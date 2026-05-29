@@ -912,6 +912,23 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
     setMonthlyDistrictKPIs(calculateMonthlyDistrictKPIs(monthlyMetrics, nonOp));
     setData(processData(metrics, cellTotals, monthlyMetrics, monthIndex, year, calendarMode, nonOp));
 
+    // Fetch District KPIs (most recent row) for this specific district to avoid losing cards on re-fetch
+    const { data: distData } = await supabase
+        .from('indicadores_distrito')
+        .select('*')
+        .eq('distrito_id', districtId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    
+    if (distData) {
+        setDistrictKPIs(distData);
+        setLastUpdate(distData.updated_at);
+    } else {
+        setDistrictKPIs(null);
+        setLastUpdate(null);
+    }
+
     const allDates = [...metrics.map(m => m.fecha), ...cellTotals.map(ct => ct.fecha)];
     if (allDates.length > 0) {
       const lastDateStr = allDates.reduce((max, d) => d > max ? d : max, allDates[0]);
