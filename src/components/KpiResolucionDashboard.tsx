@@ -424,7 +424,8 @@ const CellGroup = ({
   selectedMonth,
   onUpdateMetric,
   onTechnicianClick,
-  onOpenCalendar
+  onOpenCalendar,
+  isVarela
 }: { 
   row: ItemRow, 
   kpi: KpiType, 
@@ -436,7 +437,8 @@ const CellGroup = ({
   selectedMonth: string,
   onUpdateMetric: (techId: string, date: string, value: number, celula: string) => void,
   onTechnicianClick: (tech: ItemRow) => void,
-  onOpenCalendar?: (celula: string) => void
+  onOpenCalendar?: (celula: string) => void,
+  isVarela: boolean
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const metrics = row.metrics[kpi];
@@ -551,7 +553,14 @@ const CellGroup = ({
                       <>
                         <MetricCard entry={row.metrics.resolucion[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="resolucion" unit={config.resolucion.unit} config={config} />
                         <MetricCard entry={row.metrics.reiteros[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="reiteros" unit={config.reiteros.unit} config={config} />
-                        <MetricCard entry={row.metrics.puntualidad[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="puntualidad" unit={config.puntualidad.unit} config={config} />
+                        <MetricCard 
+                          entry={row.metrics.puntualidad[calendarMode === 'mensual' ? 's1' : selectedWeek]} 
+                          kpi="puntualidad" 
+                          unit={config.puntualidad.unit} 
+                          config={config} 
+                          isEditable={!isVarela}
+                          onUpdate={(val) => onUpdateMetric('cell-metric', row.metrics.puntualidad[calendarMode === 'mensual' ? 's1' : selectedWeek]?.date || '', val, row.name)}
+                        />
                         <MetricCard entry={row.metrics.productividad[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="productividad" unit={config.productividad.unit} config={config} />
                         <MetricCard entry={row.metrics.tiempo_operativo[calendarMode === 'mensual' ? 's1' : selectedWeek]} kpi="tiempo_operativo" unit={config.tiempo_operativo.unit} config={config} />
                       </>
@@ -1147,22 +1156,45 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
   };
 
   const updatePuntualidad = async (techId: string, date: string, value: number, celula: string) => {
-    if (techId.startsWith('mock-') || !districtId) return;
+    if (!districtId) return;
     try {
-      const { data: existing } = await supabase.from('metricas').select('id').eq('tecnico_id', techId).eq('fecha', date).maybeSingle();
-      if (existing) {
-        await supabase.from('metricas').update({ puntualidad: value }).eq('id', existing.id);
+      if (techId === 'cell-metric') {
+        const { data: existing } = await supabase
+          .from('metricas_mensuales')
+          .select('id')
+          .eq('celula', celula)
+          .eq('mes', selectedMonth)
+          .eq('distrito_id', districtId)
+          .is('tecnico_id', null)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from('metricas_mensuales').update({ puntualidad: value }).eq('id', existing.id);
+        } else {
+          await supabase.from('metricas_mensuales').insert({
+            celula: celula,
+            mes: selectedMonth,
+            puntualidad: value,
+            distrito_id: districtId
+          });
+        }
       } else {
-        await supabase.from('metricas').insert({ 
-          tecnico_id: techId, 
-          fecha: date, 
-          celula: celula, 
-          puntualidad: value, 
-          resolucion: 0, 
-          reitero: 0, 
-          productividad: 0,
-          distrito_id: districtId
-        });
+        if (techId.startsWith('mock-')) return;
+        const { data: existing } = await supabase.from('metricas').select('id').eq('tecnico_id', techId).eq('fecha', date).maybeSingle();
+        if (existing) {
+          await supabase.from('metricas').update({ puntualidad: value }).eq('id', existing.id);
+        } else {
+          await supabase.from('metricas').insert({ 
+            tecnico_id: techId, 
+            fecha: date, 
+            celula: celula, 
+            puntualidad: value, 
+            resolucion: 0, 
+            reitero: 0, 
+            productividad: 0,
+            distrito_id: districtId
+          });
+        }
       }
       fetchData();
     } catch (err) {
@@ -1678,6 +1710,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                         setCalendarModalCelula(celula);
                         setCalendarModalOpen(true);
                       }) : undefined}
+                      isVarela={isVarela}
                     />
                   ))}
                 </div>
