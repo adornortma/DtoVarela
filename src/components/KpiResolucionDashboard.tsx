@@ -192,7 +192,7 @@ const calculateAverage = (metrics: MetricData, calendarMode: CalendarMode = 'ope
   return parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
 };
 
-const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictData, calendarMode, selectedMonth, onOpenCalendar }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null, monthlyDistrictData: Record<KpiType, number> | null, calendarMode: CalendarMode, selectedMonth: string, onOpenCalendar?: () => void }) => {
+const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictData, calendarMode, selectedMonth, onOpenCalendar, isVarela }: { config: Record<KpiType, KpiConfigItem>, districtData: Record<KpiType, number> | null, lastUpdate: string | null, monthlyDistrictData: Record<KpiType, number> | null, calendarMode: CalendarMode, selectedMonth: string, onOpenCalendar?: () => void, isVarela: boolean }) => {
   const formattedDate = lastUpdate ? new Date(lastUpdate).toLocaleString('es-AR') : 'Nunca';
 
   const stats = [
@@ -201,7 +201,7 @@ const DistrictOverview = ({ config, districtData, lastUpdate, monthlyDistrictDat
     { kpi: 'puntualidad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.puntualidad ?? 0) : (monthlyDistrictData?.puntualidad ?? 0) },
     { kpi: 'productividad' as KpiType, value: calendarMode === 'operativo' ? (districtData?.productividad ?? 0) : (monthlyDistrictData?.productividad ?? 0) },
     { kpi: 'tiempo_operativo' as KpiType, value: calendarMode === 'operativo' ? (districtData?.tiempo_operativo ?? 0) : (monthlyDistrictData?.tiempo_operativo ?? 0) }
-  ];
+  ].filter(stat => !(isVarela && stat.kpi === 'tiempo_operativo'));
 
   return (
     <div style={{ marginBottom: '20px' }}>
@@ -1333,6 +1333,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
           monthlyDistrictData={monthlyDistrictKPIs} 
           calendarMode={calendarMode} 
           selectedMonth={selectedMonth}
+          isVarela={isVarela}
           onOpenCalendar={isVarela ? (() => {
             setCalendarModalCelula(null);
             setCalendarModalOpen(true);
