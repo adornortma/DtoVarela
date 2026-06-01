@@ -828,7 +828,23 @@ export default function ActividadesToaPage() {
                             ))
                           ) : (
                             (Object.keys(TOA_KPI_CONFIG) as ToaKpiType[]).map(k => (
-                              <th key={k} style={{ padding: '0', fontSize: '10px', fontWeight: '900', color: 'rgba(0,0,0,0.8)', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>{TOA_KPI_CONFIG[k].label}</th>
+                              <th 
+                                key={k} 
+                                title={k === 'no_encontrados' ? "SIN DATOS EN REPORTE" : undefined}
+                                style={{ 
+                                  padding: '0', 
+                                  fontSize: '10px', 
+                                  fontWeight: '900', 
+                                  color: 'rgba(0,0,0,0.8)', 
+                                  textTransform: 'uppercase', 
+                                  textAlign: 'center', 
+                                  letterSpacing: '1px',
+                                  cursor: k === 'no_encontrados' ? 'help' : 'default',
+                                  textDecoration: k === 'no_encontrados' ? 'underline dotted rgba(0,0,0,0.4)' : 'none'
+                                }}
+                              >
+                                {TOA_KPI_CONFIG[k].label}
+                              </th>
                             ))
                           )}
                       </tr>
