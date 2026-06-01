@@ -45,3 +45,9 @@ export const parseTechnicianInput = (input: string) => {
   // Caso 4: Solo nombre
   return { name: cleanInput, dni: null, normalized: normalizeName(cleanInput) };
 };
+
+export const normalizeBpDni = (dni: string | undefined | null): string => {
+  if (!dni) return '';
+  return dni.replace(/^DNI-/i, '').replace(/\s+/g, '').replace(/\D/g, '');
+};
+

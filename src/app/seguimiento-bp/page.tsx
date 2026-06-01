@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { normalizeBpDni } from '@/lib/utils';
+
 import {
   ChevronRight,
   TrendingUp,
@@ -1124,7 +1126,7 @@ const BPDirectory = ({ user, onLogout }: { user: UserSession, onLogout: () => vo
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '34px' }}>
                   {cel.tecnicos.map(tech => {
-                    const dni = techMapping[tech.name.toUpperCase()];
+                    const dni = normalizeBpDni(techMapping[tech.name.toUpperCase()]);
                     const rs = getRoleStyle(tech.role);
                     return (
                       <a 
@@ -1263,7 +1265,11 @@ function BPTrackingContent() {
     if (!dni) return;
     setLoading(true);
     try {
-      const { data: tech } = await supabase.from('tecnicos').select('*').eq('dni', dni).single();
+      let { data: tech } = await supabase.from('tecnicos').select('*').eq('dni', dni).single();
+      if (!tech && dni) {
+        const { data: techWithPrefix } = await supabase.from('tecnicos').select('*').eq('dni', `DNI-${dni}`).single();
+        tech = techWithPrefix;
+      }
       if (!tech) return;
 
       const now = new Date();

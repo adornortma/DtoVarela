@@ -15,6 +15,7 @@ import {
   ArrowRightLeft,
   AlertCircle
 } from 'lucide-react';
+import { normalizeBpDni } from '@/lib/utils';
 
 interface MetricEntry {
   value: number | null;
@@ -433,7 +434,7 @@ export default function TechnicianDetailsSheet({ isOpen, onClose, technician }: 
                   <h2 style={{ fontSize: '32px', fontWeight: '950', color: '#1F2937', letterSpacing: '-1.5px', lineHeight: 1, margin: 0 }}>{technician.name}</h2>
                   {technician.dni && (
                     <a 
-                      href={`/seguimiento-bp?dni=${technician.dni}`}
+                      href={`/seguimiento-bp?dni=${normalizeBpDni(technician.dni)}`}
                       style={{ 
                         backgroundColor: '#f0f9ff', color: '#019df4', padding: '8px 16px', 
                         borderRadius: '12px', fontSize: '11px', fontWeight: '950', 
