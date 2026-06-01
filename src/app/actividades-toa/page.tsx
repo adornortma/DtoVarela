@@ -418,10 +418,16 @@ export default function ActividadesToaPage() {
     setLoading(true);
     const monthIndex = MONTHS.indexOf(selectedMonth);
     const year = new Date().getFullYear();
+    const firstMonday = getMondayOfNextWeek(year, monthIndex, 0);
+    const fifthMonday = getMondayOfNextWeek(year, monthIndex, 4);
+    const startMonStr = `${firstMonday.getFullYear()}-${(firstMonday.getMonth() + 1).toString().padStart(2, '0')}-${firstMonday.getDate().toString().padStart(2, '0')}`;
+    const endMonStr = `${fifthMonday.getFullYear()}-${(fifthMonday.getMonth() + 1).toString().padStart(2, '0')}-${fifthMonday.getDate().toString().padStart(2, '0')}`;
     const startMonth = (monthIndex + 1).toString().padStart(2, '0');
-    const startDate = `${year}-${startMonth}-01`;
+    const calendarStart = `${year}-${startMonth}-01`;
     const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-    const endDate = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+    const calendarEnd = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+    const startDate = startMonStr < calendarStart ? startMonStr : calendarStart;
+    const endDate = endMonStr > calendarEnd ? endMonStr : calendarEnd;
 
     const [metricsRes, cellTotalsRes] = await Promise.all([
       supabase.from('metricas').select('*, tecnicos(id, nombre, apellido)').gte('fecha', startDate).lte('fecha', endDate),

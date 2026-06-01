@@ -851,10 +851,16 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
     
     const monthIndex = MONTHS.indexOf(selectedMonth);
     const year = new Date().getFullYear();
+    const firstMonday = getMondayOfNextWeek(year, monthIndex, 0);
+    const fifthMonday = getMondayOfNextWeek(year, monthIndex, 4);
+    const startMonStr = `${firstMonday.getFullYear()}-${(firstMonday.getMonth() + 1).toString().padStart(2, '0')}-${firstMonday.getDate().toString().padStart(2, '0')}`;
+    const endMonStr = `${fifthMonday.getFullYear()}-${(fifthMonday.getMonth() + 1).toString().padStart(2, '0')}-${fifthMonday.getDate().toString().padStart(2, '0')}`;
     const startMonth = (monthIndex + 1).toString().padStart(2, '0');
-    const startDate = `${year}-${startMonth}-01`;
+    const calendarStart = `${year}-${startMonth}-01`;
     const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-    const endDate = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+    const calendarEnd = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+    const startDate = startMonStr < calendarStart ? startMonStr : calendarStart;
+    const endDate = endMonStr > calendarEnd ? endMonStr : calendarEnd;
 
     const { data: dbMetrics, error } = await supabase
       .from('metricas')
@@ -1484,10 +1490,16 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                     
                     const monthIdx = MONTHS.indexOf(selectedMonth);
                     const year = new Date().getFullYear();
+                    const firstMonday = getMondayOfNextWeek(year, monthIdx, 0);
+                    const fifthMonday = getMondayOfNextWeek(year, monthIdx, 4);
+                    const startMonStr = `${firstMonday.getFullYear()}-${(firstMonday.getMonth() + 1).toString().padStart(2, '0')}-${firstMonday.getDate().toString().padStart(2, '0')}`;
+                    const endMonStr = `${fifthMonday.getFullYear()}-${(fifthMonday.getMonth() + 1).toString().padStart(2, '0')}-${fifthMonday.getDate().toString().padStart(2, '0')}`;
                     const startMonth = (monthIdx + 1).toString().padStart(2, '0');
-                    const start = `${year}-${startMonth}-01`;
+                    const calendarStart = `${year}-${startMonth}-01`;
                     const lastDay = new Date(year, monthIdx + 1, 0).getDate();
-                    const end = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+                    const calendarEnd = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+                    const start = startMonStr < calendarStart ? startMonStr : calendarStart;
+                    const end = endMonStr > calendarEnd ? endMonStr : calendarEnd;
                     
                     const { data: hasData } = await supabase.from('metricas').select('id').gte('fecha', start).lte('fecha', end).limit(1).maybeSingle();
                     if (!hasData) {
@@ -1525,10 +1537,16 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                     
                     const monthIdx = MONTHS.indexOf(selectedMonth);
                     const year = new Date().getFullYear();
+                    const firstMonday = getMondayOfNextWeek(year, monthIdx, 0);
+                    const fifthMonday = getMondayOfNextWeek(year, monthIdx, 4);
+                    const startMonStr = `${firstMonday.getFullYear()}-${(firstMonday.getMonth() + 1).toString().padStart(2, '0')}-${firstMonday.getDate().toString().padStart(2, '0')}`;
+                    const endMonStr = `${fifthMonday.getFullYear()}-${(fifthMonday.getMonth() + 1).toString().padStart(2, '0')}-${fifthMonday.getDate().toString().padStart(2, '0')}`;
                     const startMonth = (monthIdx + 1).toString().padStart(2, '0');
-                    const start = `${year}-${startMonth}-01`;
+                    const calendarStart = `${year}-${startMonth}-01`;
                     const lastDay = new Date(year, monthIdx + 1, 0).getDate();
-                    const end = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+                    const calendarEnd = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
+                    const start = startMonStr < calendarStart ? startMonStr : calendarStart;
+                    const end = endMonStr > calendarEnd ? endMonStr : calendarEnd;
                     
                     const { data: hasData } = await supabase
                       .from('metricas')
