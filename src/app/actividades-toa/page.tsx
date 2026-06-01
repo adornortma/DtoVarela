@@ -416,11 +416,12 @@ export default function ActividadesToaPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    
     const monthIndex = MONTHS.indexOf(selectedMonth);
     const year = new Date().getFullYear();
-    const startDate = new Date(year, monthIndex, 1).toISOString();
-    const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59).toISOString();
+    const startMonth = (monthIndex + 1).toString().padStart(2, '0');
+    const startDate = `${year}-${startMonth}-01`;
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const endDate = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
 
     const [metricsRes, cellTotalsRes] = await Promise.all([
       supabase.from('metricas').select('*, tecnicos(id, nombre, apellido)').gte('fecha', startDate).lte('fecha', endDate),

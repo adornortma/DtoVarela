@@ -851,8 +851,10 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
     
     const monthIndex = MONTHS.indexOf(selectedMonth);
     const year = new Date().getFullYear();
-    const startDate = new Date(year, monthIndex, 1).toISOString();
-    const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59).toISOString();
+    const startMonth = (monthIndex + 1).toString().padStart(2, '0');
+    const startDate = `${year}-${startMonth}-01`;
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const endDate = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
 
     const { data: dbMetrics, error } = await supabase
       .from('metricas')
@@ -1468,8 +1470,10 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                     
                     const monthIdx = MONTHS.indexOf(selectedMonth);
                     const year = new Date().getFullYear();
-                    const start = new Date(year, monthIdx, 1).toISOString();
-                    const end = new Date(year, monthIdx + 1, 0, 23, 59, 59).toISOString();
+                    const startMonth = (monthIdx + 1).toString().padStart(2, '0');
+                    const start = `${year}-${startMonth}-01`;
+                    const lastDay = new Date(year, monthIdx + 1, 0).getDate();
+                    const end = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
                     
                     const { data: hasData } = await supabase.from('metricas').select('id').gte('fecha', start).lte('fecha', end).limit(1).maybeSingle();
                     if (!hasData) {
@@ -1507,8 +1511,10 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
                     
                     const monthIdx = MONTHS.indexOf(selectedMonth);
                     const year = new Date().getFullYear();
-                    const start = new Date(year, monthIdx, 1).toISOString();
-                    const end = new Date(year, monthIdx + 1, 0, 23, 59, 59).toISOString();
+                    const startMonth = (monthIdx + 1).toString().padStart(2, '0');
+                    const start = `${year}-${startMonth}-01`;
+                    const lastDay = new Date(year, monthIdx + 1, 0).getDate();
+                    const end = `${year}-${startMonth}-${lastDay.toString().padStart(2, '0')}`;
                     
                     const { data: hasData } = await supabase
                       .from('metricas')
