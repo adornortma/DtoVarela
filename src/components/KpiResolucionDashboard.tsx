@@ -961,6 +961,20 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
   const processData = (metrics: any[], cellTotals: any[], monthlyMetrics: any[], month: number, year: number, mode: CalendarMode, nonOpSet: Set<string> = new Set()) => {
     const cellMap: Record<string, ItemRow> = {};
 
+    const getWeekKeyForDate = (dateStr: string): WeekKey => {
+      const d = new Date(dateStr + 'T00:00:00Z');
+      const dTime = d.getTime();
+      
+      for (let i = 0; i < 6; i++) {
+        const mon = getMondayOfNextWeek(year, month, i);
+        const monUTC = new Date(Date.UTC(mon.getFullYear(), mon.getMonth(), mon.getDate()));
+        if (monUTC.getTime() === dTime) {
+          return `s${i + 1}` as WeekKey;
+        }
+      }
+      return getWeekOfDate(new Date(dateStr));
+    };
+
     const createEmptyMetricData = (m: number, y: number): MetricData => {
       return {
         s1: { value: null, date: new Date(Date.UTC(y, m, 1)).toISOString().split('T')[0] },
@@ -1044,7 +1058,7 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
       const cellName = (m.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
-      const week = getWeekOfDate(new Date(m.fecha));
+      const week = getWeekKeyForDate(m.fecha);
 
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
@@ -1108,8 +1122,8 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
 
     cellTotals.forEach(ct => {
       const cellName = (ct.celula || "DISTRITO").toUpperCase().replace(/_/g, ' ').trim();
-      const dateStr = ct.fecha.includes('T') ? ct.fecha : `${ct.fecha}T00:00:00Z`;
-      const week = getWeekOfDate(new Date(dateStr));
+      const dateOnly = ct.fecha.split('T')[0];
+      const week = getWeekKeyForDate(dateOnly);
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
           name: cellName,

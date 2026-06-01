@@ -485,6 +485,20 @@ export default function ActividadesToaPage() {
   const processToaData = (metrics: any[], cellTotals: any[], month: number, year: number) => {
     const cellMap: Record<string, ItemRow> = {};
 
+    const getWeekKeyForDate = (dateStr: string): WeekKey => {
+      const d = new Date(dateStr + 'T00:00:00Z');
+      const dTime = d.getTime();
+      
+      for (let i = 0; i < 6; i++) {
+        const mon = getMondayOfNextWeek(year, month, i);
+        const monUTC = new Date(Date.UTC(mon.getFullYear(), mon.getMonth(), mon.getDate()));
+        if (monUTC.getTime() === dTime) {
+          return `s${i + 1}` as WeekKey;
+        }
+      }
+      return getWeekOfDate(new Date(dateStr));
+    };
+
     const createEmptyMetricData = (m: number, y: number): MetricData => ({
       s1: { value: null, date: new Date(Date.UTC(y, m, 1)).toISOString().split('T')[0] },
       s2: { value: null, date: new Date(Date.UTC(y, m, 8)).toISOString().split('T')[0] },
@@ -497,7 +511,7 @@ export default function ActividadesToaPage() {
       const cellName = (m.celula || 'DISTRITO').toUpperCase().replace(/_/g, ' ').trim();
       const techId = m.tecnicos?.id;
       const techName = m.tecnico || (m.tecnicos ? `${m.tecnicos.apellido}, ${m.tecnicos.nombre}` : 'Desconocido');
-      const week = getWeekOfDate(new Date(m.fecha));
+      const week = getWeekKeyForDate(m.fecha);
 
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
@@ -561,7 +575,8 @@ export default function ActividadesToaPage() {
     // POS-PROCESAMIENTO: Integrar totales cargados manualmente (Sobrescriben promedios)
     cellTotals.forEach(ct => {
       const cellName = (ct.celula || 'DISTRITO').toUpperCase().replace(/_/g, ' ').trim();
-      const week = getWeekOfDate(new Date(ct.fecha));
+      const dateOnly = ct.fecha.split('T')[0];
+      const week = getWeekKeyForDate(dateOnly);
       
       if (!cellMap[cellName]) {
         cellMap[cellName] = {
