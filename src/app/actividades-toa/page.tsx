@@ -453,7 +453,21 @@ export default function ActividadesToaPage() {
     const allDates = [...(metricsRes.data?.map((m: any) => m.fecha) || []), ...(cellTotalsRes.data?.map((ct: any) => ct.fecha) || [])];
     if (allDates.length > 0) {
       const lastDateStr = allDates.reduce((max, d) => d > max ? d : max, allDates[0]);
-      setSelectedWeek(getWeekOfDate(new Date(lastDateStr)));
+      
+      const getWeekKeyForDate = (dateStr: string, y: number, m: number): WeekKey => {
+        const d = new Date(dateStr + 'T00:00:00Z');
+        const dTime = d.getTime();
+        for (let i = 0; i < 6; i++) {
+          const mon = getMondayOfNextWeek(y, m, i);
+          const monUTC = new Date(Date.UTC(mon.getFullYear(), mon.getMonth(), mon.getDate()));
+          if (monUTC.getTime() === dTime) {
+            return `s${i + 1}` as WeekKey;
+          }
+        }
+        return getWeekOfDate(new Date(dateStr));
+      };
+
+      setSelectedWeek(getWeekKeyForDate(lastDateStr, year, monthIndex));
     }
 
     setLoading(false);
