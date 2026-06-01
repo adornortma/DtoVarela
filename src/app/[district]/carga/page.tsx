@@ -574,14 +574,14 @@ export default function CargaDistritoPage() {
       if (proVal !== null && proVal < 0) throw new Error("La Productividad debe ser mayor o igual a 0");
       if (toVal !== null && (toVal < 0 || toVal > 100)) throw new Error("El Tiempo Operativo debe estar entre 0 y 100");
 
-      const updatePayload = {
-        resolucion: resVal,
-        reiteros: reiVal,
-        puntualidad: punVal,
-        productividad: proVal,
-        tiempo_operativo: toVal,
+      const cleanUpdatePayload: any = {
         distrito_id: selectedDistrictId
       };
+      if (resVal !== null) cleanUpdatePayload.resolucion = resVal;
+      if (reiVal !== null) cleanUpdatePayload.reiteros = reiVal;
+      if (punVal !== null) cleanUpdatePayload.puntualidad = punVal;
+      if (proVal !== null) cleanUpdatePayload.productividad = proVal;
+      if (toVal !== null) cleanUpdatePayload.tiempo_operativo = toVal;
 
       const dbCelula = distrito === 'DISTRITO'
         ? (selectedDistrictSlug === 'varela' ? 'DISTRITO' : `DISTRITO_${selectedDistrictSlug.toUpperCase()}`)
@@ -598,10 +598,10 @@ export default function CargaDistritoPage() {
 
       let dbError = null;
       if (existingCell) {
-         const { error } = await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
+         const { error } = await supabase.from('metricas_mensuales').update(cleanUpdatePayload).eq('id', existingCell.id);
          dbError = error;
       } else {
-         const { error } = await supabase.from('metricas_mensuales').insert({ celula: dbCelula, mes, ...updatePayload });
+         const { error } = await supabase.from('metricas_mensuales').insert({ celula: dbCelula, mes, ...cleanUpdatePayload });
          dbError = error;
       }
 

@@ -204,13 +204,13 @@ export default function CargaAdminPage() {
       if (punVal !== null && (punVal < 0 || punVal > 100)) throw new Error("La Puntualidad debe estar entre 0 y 100");
       if (proVal !== null && proVal < 0) throw new Error("La Productividad debe ser mayor o igual a 0");
 
-      const updatePayload = {
-        resolucion: resVal,
-        reiteros: reiVal,
-        puntualidad: punVal,
-        productividad: proVal,
+      const cleanUpdatePayload: any = {
         distrito_id: selectedDistrictId
       };
+      if (resVal !== null) cleanUpdatePayload.resolucion = resVal;
+      if (reiVal !== null) cleanUpdatePayload.reiteros = reiVal;
+      if (punVal !== null) cleanUpdatePayload.puntualidad = punVal;
+      if (proVal !== null) cleanUpdatePayload.productividad = proVal;
 
       // Auto-insert cell if it doesn't exist
       if (distrito !== 'DISTRITO') {
@@ -228,10 +228,10 @@ export default function CargaAdminPage() {
 
       let dbError = null;
       if (existingCell) {
-         const { error } = await supabase.from('metricas_mensuales').update(updatePayload).eq('id', existingCell.id);
+         const { error } = await supabase.from('metricas_mensuales').update(cleanUpdatePayload).eq('id', existingCell.id);
          dbError = error;
       } else {
-         const { error } = await supabase.from('metricas_mensuales').insert({ celula: distrito, mes, ...updatePayload });
+         const { error } = await supabase.from('metricas_mensuales').insert({ celula: distrito, mes, ...cleanUpdatePayload });
          dbError = error;
       }
 
