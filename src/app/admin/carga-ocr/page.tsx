@@ -498,33 +498,70 @@ export default function CargaTextoPage() {
             if (insertError) throw insertError;
           }
         }
-      } else {
-        // Save detail of technicians
+        // Fetch all technicians of the district to do in-memory matching
+        const { data: allTechs } = await supabase
+          .from('tecnicos')
+          .select('id, nombre, apellido, nombre_normalizado, dni')
+          .eq('distrito_id', selectedDistrictId);
+
+        const cleanAndNormalize = (str: string) => {
+          return (str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Z0-9\s]/gi, '')
+            .toUpperCase()
+            .trim();
+        };
+
         for (const row of parsedData) {
-          const cleanTechName = row.name.trim().toUpperCase();
-          const [apellido, nombre] = cleanTechName.includes(',') 
-            ? cleanTechName.split(',').map(s => s.trim()) 
-            : [cleanTechName, ''];
+          const targetClean = cleanAndNormalize(row.name);
+          const targetWords = targetClean.split(/\s+/).filter(Boolean);
+          
+          let bestMatch = null;
+          let maxOverlap = 0;
+
+          if (allTechs) {
+            for (const t of allTechs) {
+              const techClean = cleanAndNormalize((t.apellido || '') + ' ' + (t.nombre || ''));
+              const techWords = techClean.split(/\s+/).filter(Boolean);
+              
+              // Calculate overlap
+              const intersection = targetWords.filter(w => techWords.includes(w));
+              if (intersection.length > 0) {
+                const overlapScore = intersection.length / Math.max(targetWords.length, techWords.length);
+                if (overlapScore > maxOverlap && overlapScore >= 0.5) {
+                  maxOverlap = overlapScore;
+                  bestMatch = t;
+                }
+              }
+            }
+          }
 
           let tecnicoId = null;
-          const normalName = cleanTechName.replace(/[^A-Z]/g, '');
-          
-          const { data: tech } = await supabase
-            .from('tecnicos')
-            .select('id')
-            .ilike('nombre_normalizado', `%${normalName}%`)
-            .limit(1)
-            .maybeSingle();
-
-          if (tech) {
-            tecnicoId = tech.id;
+          if (bestMatch) {
+            tecnicoId = bestMatch.id;
           } else {
+            const cleanTechName = row.name.trim();
+            let apellido = '';
+            let nombre = '';
+            if (cleanTechName.includes(',')) {
+              const parts = cleanTechName.split(',').map(s => s.trim());
+              apellido = parts[0] || '';
+              nombre = parts.slice(1).join(', ') || '';
+            } else {
+              const parts = cleanTechName.split(/\s+/).map(s => s.trim());
+              apellido = parts[0] || '';
+              nombre = parts.slice(1).join(' ') || '';
+            }
+            
+            const normalName = cleanAndNormalize(cleanTechName).replace(/\s+/g, '');
             const mockDni = 'TEMP-' + Math.floor(10000000 + Math.random() * 90000000);
+            
             const { data: newTech } = await supabase
               .from('tecnicos')
               .insert({
-                nombre: nombre || 'TÉCNICO',
-                apellido: apellido,
+                nombre: nombre || 'TECNICO',
+                apellido: apellido || 'TECNICO',
                 nombre_normalizado: normalName || 'TECNICO',
                 dni: mockDni,
                 distrito_id: selectedDistrictId
