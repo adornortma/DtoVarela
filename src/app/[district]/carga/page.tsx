@@ -468,6 +468,7 @@ export default function CargaDistritoPage() {
             if (insertError) throw insertError;
           }
         }
+      } else {
         // Fetch all technicians of the district to do in-memory matching
         const { data: allTechs } = await supabase
           .from('tecnicos')
