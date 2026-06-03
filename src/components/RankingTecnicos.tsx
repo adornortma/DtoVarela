@@ -196,6 +196,20 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
   const [viewLevel, setViewLevel] = useState<'distrito' | 'celula'>('distrito');
   const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[3]); // Abril as default
+  const [visibleMonths, setVisibleMonths] = useState(
+    MONTHS.slice(Math.max(0, new Date().getMonth() - 2), Math.max(0, new Date().getMonth() - 2) + 5)
+  );
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleMonthSelect = (month: string) => {
+    setSelectedMonth(month);
+    setIsDropdownOpen(false);
+    if (!visibleMonths.includes(month)) {
+      const newVisible = [...visibleMonths];
+      newVisible[3] = month; 
+      setVisibleMonths(newVisible);
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [thresholds, setThresholds] = useState<any>(null);
@@ -435,6 +449,8 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontWeight: '900', color: '#64748b' }}>CARGANDO RANKING ({districtName})...</div>;
 
+  const hiddenMonths = MONTHS.filter(m => !visibleMonths.includes(m));
+
   return (
     <div style={{ padding: '24px 0', minHeight: '100vh', color: '#1e293b' }}>
       
@@ -449,15 +465,102 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
             </div>
             <p style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Productividad, Resolución y Control de Reiteros</p>
           </div>
+        </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-             <select 
-                value={selectedMonth} 
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                style={{ padding: '10px 16px', borderRadius: '14px', border: '1px solid #e2e8f0', backgroundColor: 'white', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
-             >
-                {MONTHS.map(m => <option key={m} value={m}>{m} 2026</option>)}
-             </select>
+        {/* Mes Seleccionado Buttons */}
+        <div style={{ marginBottom: '24px', position: 'relative', zIndex: 100 }}>
+          <span style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
+            Mes seleccionado
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {visibleMonths.map(month => (
+              <button 
+                key={month} 
+                onClick={() => handleMonthSelect(month)} 
+                style={{ 
+                  padding: '10px 20px', 
+                  borderRadius: '12px', 
+                  fontSize: '13px', 
+                  fontWeight: selectedMonth === month ? '900' : '700', 
+                  backgroundColor: selectedMonth === month ? 'var(--movistar-blue)' : '#e2e8f0', 
+                  color: selectedMonth === month ? 'white' : '#1e293b', 
+                  transition: 'all 0.2s ease', 
+                  border: '1px solid transparent',
+                  cursor: 'pointer', 
+                  boxShadow: selectedMonth === month ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                }}
+              >
+                {month}
+              </button>
+            ))}
+            
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                style={{ 
+                  padding: '10px 16px', 
+                  borderRadius: '12px', 
+                  fontSize: '13px', 
+                  fontWeight: '950', 
+                  backgroundColor: 'white', 
+                  color: '#64748b', 
+                  border: '1px solid #e2e8f0', 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span style={{ fontSize: '18px', lineHeight: 0, marginBottom: '6px' }}>...</span>
+              </button>
+              
+              {isDropdownOpen && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 'calc(100% + 8px)', 
+                  left: 0, 
+                  backgroundColor: 'white', 
+                  borderRadius: '16px', 
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.12)', 
+                  border: '1px solid #e2e8f0', 
+                  zIndex: 100, 
+                  minWidth: '180px',
+                  padding: '10px',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: '4px'
+                }}>
+                  {hiddenMonths.map(month => (
+                    <button
+                      key={month}
+                      onClick={() => handleMonthSelect(month)}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        color: '#475569',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f1f5f9';
+                        e.currentTarget.style.color = '#0f172a';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#475569';
+                      }}
+                    >
+                      {month}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
