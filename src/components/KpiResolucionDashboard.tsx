@@ -633,7 +633,9 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
   const [districtName, setDistrictName] = useState<string>('Florencio Varela');
   
   const [viewMode, setViewMode] = useState<ViewMode>('indicador');
-  const [calendarMode, setCalendarMode] = useState<CalendarMode>('mensual'); // Default to mensual as requested for Lanus and multi-district
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>(
+    districtSlug === 'varela' ? 'operativo' : 'mensual'
+  );
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
   const [visibleMonths, setVisibleMonths] = useState(
@@ -812,11 +814,12 @@ export default function KpiResolucionDashboard({ districtSlug = 'varela' }: { di
         if (lastMetric || lastMonthlyMonth) {
           let date;
           let monthName;
+          const targetCalendarMode = districtSlug === 'varela' ? 'operativo' : 'mensual';
           
-          if (calendarMode === 'operativo' && lastMetric) {
+          if (targetCalendarMode === 'operativo' && lastMetric) {
             date = new Date(lastMetric.fecha);
             monthName = MONTHS[date.getUTCMonth()];
-          } else if (calendarMode === 'mensual' && lastMonthlyMonth) {
+          } else if (targetCalendarMode === 'mensual' && lastMonthlyMonth) {
             monthName = lastMonthlyMonth;
           } else if (lastMetric) {
             date = new Date(lastMetric.fecha);

@@ -232,6 +232,20 @@ export default function RankingTecnicos({ districtSlug = 'varela' }: { districtS
       if (distRec) {
         setDistrictId(distRec.id);
         setDistrictName(distRec.nombre);
+
+        // Fetch latest month with monthly metrics data for this specific district
+        const { data: allMonthly } = await supabase
+          .from('metricas_mensuales')
+          .select('mes')
+          .eq('distrito_id', distRec.id);
+
+        if (allMonthly && allMonthly.length > 0) {
+          const unique = Array.from(new Set(allMonthly.map((m: any) => m.mes)));
+          const latestMonth = unique.reduce((a, b) => MONTHS.indexOf(a) > MONTHS.indexOf(b) ? a : b);
+          setSelectedMonth(latestMonth);
+          const monthIdx = MONTHS.indexOf(latestMonth);
+          setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 2), Math.max(0, monthIdx - 2) + 5));
+        }
       }
     };
     resolveDistrict();
