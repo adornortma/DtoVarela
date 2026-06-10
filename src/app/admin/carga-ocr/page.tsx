@@ -719,81 +719,7 @@ export default function CargaTextoPage() {
         {/* Left Side: Textarea & Preview Grid */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Config card */}
-          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldCheck size={18} color="var(--movistar-blue)" /> Configuración de Carga
-            </h2>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Distrito Sandbox</label>
-                <select
-                  value={selectedDistrictId}
-                  onChange={(e) => setSelectedDistrictId(e.target.value)}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
-                >
-                  {districts.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Periodo (Mes)</label>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
-                >
-                  {MONTHS_LIST.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Año</label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
-                >
-                  <option value={2026}>2026</option>
-                  <option value={2027}>2027</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Tipo de Carga</label>
-                <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
-                  <button
-                    onClick={() => setCargaType('resumen_distrito')}
-                    style={{ flex: 1, padding: '8px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '900', backgroundColor: cargaType === 'resumen_distrito' ? 'white' : 'transparent', color: cargaType === 'resumen_distrito' ? '#1e293b' : '#64748b', boxShadow: cargaType === 'resumen_distrito' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
-                  >
-                    Resumen Distrito
-                  </button>
-                  <button
-                    onClick={() => setCargaType('detalle_celula')}
-                    style={{ flex: 1, padding: '8px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '900', backgroundColor: cargaType === 'detalle_celula' ? 'white' : 'transparent', color: cargaType === 'detalle_celula' ? '#1e293b' : '#64748b', boxShadow: cargaType === 'detalle_celula' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
-                  >
-                    Detalle Célula
-                  </button>
-                </div>
-              </div>
-
-              {cargaType === 'detalle_celula' && (
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Célula Destino</label>
-                  <select
-                    value={selectedCelula}
-                    onChange={(e) => setSelectedCelula(e.target.value)}
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
-                  >
-                    {availableCells.map(c => <option key={c.id} value={c.nombre}>{c.nombre} {c.operativa === false ? '(NO OPERATIVA)' : ''}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Config card is hidden initially and will be displayed below parsed table */}
 
           {/* Large Text Area */}
           <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -980,6 +906,81 @@ export default function CargaTextoPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              <div style={{ backgroundColor: '#f8fafc', borderTop: '1px solid #f1f5f9', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+                  <ShieldCheck size={18} color="var(--movistar-blue)" /> Configuración de Destino de Carga
+                </h2>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Distrito Sandbox</label>
+                    <select
+                      value={selectedDistrictId}
+                      onChange={(e) => setSelectedDistrictId(e.target.value)}
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
+                    >
+                      {districts.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Periodo (Mes)</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
+                    >
+                      {MONTHS_LIST.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Año</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
+                    >
+                      <option value={2026}>2026</option>
+                      <option value={2027}>2027</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Tipo de Carga</label>
+                    <div style={{ display: 'flex', gap: '8px', backgroundColor: '#e2e8f0', padding: '4px', borderRadius: '12px' }}>
+                      <button
+                        onClick={() => setCargaType('resumen_distrito')}
+                        style={{ flex: 1, padding: '8px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '900', backgroundColor: cargaType === 'resumen_distrito' ? 'white' : 'transparent', color: cargaType === 'resumen_distrito' ? '#1e293b' : '#64748b', boxShadow: cargaType === 'resumen_distrito' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
+                      >
+                        Resumen Distrito
+                      </button>
+                      <button
+                        onClick={() => setCargaType('detalle_celula')}
+                        style={{ flex: 1, padding: '8px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '900', backgroundColor: cargaType === 'detalle_celula' ? 'white' : 'transparent', color: cargaType === 'detalle_celula' ? '#1e293b' : '#64748b', boxShadow: cargaType === 'detalle_celula' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}
+                      >
+                        Detalle Célula
+                      </button>
+                    </div>
+                  </div>
+
+                  {cargaType === 'detalle_celula' && (
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Célula Destino</label>
+                      <select
+                        value={selectedCelula}
+                        onChange={(e) => setSelectedCelula(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '800', backgroundColor: 'white' }}
+                      >
+                        {availableCells.map(c => <option key={c.id} value={c.nombre}>{c.nombre} {c.operativa === false ? '(NO OPERATIVA)' : ''}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Save trigger button inside card */}
