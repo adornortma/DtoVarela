@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
   Trophy, 
@@ -180,6 +181,36 @@ const AnalysisDrawer = ({ isOpen, onClose, tech, data, loading, month }: { isOpe
                </div>
              </>
           )}
+          
+          <div style={{ borderTop: '1px solid #e2e8f0', marginTop: '20px', paddingTop: '20px', display: 'flex', flexDirection: 'column' }}>
+            {tech.dni ? (
+              <Link 
+                href={`/tecnicos/${tech.dni}/historial`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  backgroundColor: '#1e293b',
+                  color: 'white',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: '800',
+                  textAlign: 'center',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                }}
+              >
+                📈 Ver Historial Completo
+              </Link>
+            ) : (
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textAlign: 'center', padding: '6px' }}>
+                DNI no disponible para este técnico
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
