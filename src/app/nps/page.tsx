@@ -195,11 +195,13 @@ export default function NPSDashboardPage() {
         return `${m}-${y}`;
       }).filter(Boolean);
       
-      const allMonths = [...new Set([...aggMonths, ...detMonths])].sort((a, b) => {
-        const [mA, yA] = a.split('-').map(Number);
-        const [mB, yB] = b.split('-').map(Number);
-        return yB !== yA ? yB - yA : mB - mA;
-      });
+      const allMonths = [...new Set([...aggMonths, ...detMonths])]
+        .filter(m => /^\d{2}-\d{4}$/.test(m))
+        .sort((a, b) => {
+          const [mA, yA] = a.split('-').map(Number);
+          const [mB, yB] = b.split('-').map(Number);
+          return yB !== yA ? yB - yA : mB - mA;
+        });
 
       setAvailableMonths(allMonths);
 
