@@ -81,13 +81,19 @@ const TrendChart = ({ data }: { data: any[] }) => {
       marginBottom: '24px', height: '320px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' 
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-        <TrendingUp size={16} color="#019df4" />
+        <TrendingUp size={16} color="#3B82F6" />
         <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Evolución Histórica NPS
         </h3>
       </div>
       <ResponsiveContainer width="100%" height="85%">
         <ComposedChart data={data} margin={{ top: 30, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3B82F6" />
+              <stop offset="100%" stopColor="#6366F1" />
+            </linearGradient>
+          </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis 
             dataKey="mes" 
@@ -117,8 +123,8 @@ const TrendChart = ({ data }: { data: any[] }) => {
             yAxisId="left"
             dataKey="total_encuestas" 
             name="Encuestas" 
-            fill="#1e293b" 
-            radius={[4, 4, 0, 0]} 
+            fill="url(#barGradient)" 
+            radius={[6, 6, 0, 0]} 
             barSize={40}
           />
           <Line 
@@ -149,6 +155,10 @@ export default function NPSDashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // MM-YYYY
   const [selectedCelula, setSelectedCelula] = useState<string | null>(null);
   
+  // Custom states for filtering and dynamic months
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+  const [sentimentFilter, setSentimentFilter] = useState<{ P: boolean, N: boolean, D: boolean }>({ P: false, N: false, D: false });
+
   // Expansion State
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [expandedTechs, setExpandedTechs] = useState<Set<string>>(new Set());
@@ -172,17 +182,26 @@ export default function NPSDashboardPage() {
       
       const aggMonths = safeAgg.map(d => d.mes);
       const detMonths = safeDet.map(d => {
+        if (!d.fecha) return '';
+        const parts = d.fecha.split('-');
+        if (parts.length >= 2) {
+          const y = parts[0];
+          const m = parts[1];
+          return `${m}-${y}`;
+        }
         const date = new Date(d.fecha);
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const y = date.getFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const y = date.getUTCFullYear();
         return `${m}-${y}`;
-      });
+      }).filter(Boolean);
       
       const allMonths = [...new Set([...aggMonths, ...detMonths])].sort((a, b) => {
         const [mA, yA] = a.split('-').map(Number);
         const [mB, yB] = b.split('-').map(Number);
         return yB !== yA ? yB - yA : mB - mA;
       });
+
+      setAvailableMonths(allMonths);
 
       if (allMonths.length > 0 && !selectedMonth) {
         setSelectedMonth(allMonths[0]);
@@ -233,10 +252,16 @@ export default function NPSDashboardPage() {
     if (targetAgg.length > 0) return targetAgg;
 
     const monthDetalles = detalles.filter(d => {
-      const date = new Date(d.fecha);
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const y = date.getFullYear();
-      const matchesMonth = `${m}-${y}` === selectedMonth;
+      if (!d.fecha) return false;
+      const parts = d.fecha.split('-');
+      let monthStr = '';
+      if (parts.length >= 2) {
+        monthStr = `${parts[1]}-${parts[0]}`;
+      } else {
+        const date = new Date(d.fecha);
+        monthStr = `${String(date.getUTCMonth() + 1).padStart(2, '0')}-${date.getUTCFullYear()}`;
+      }
+      const matchesMonth = monthStr === selectedMonth;
       const matchesCell = selectedCelula ? d.tx_celula === selectedCelula : true;
       return matchesMonth && matchesCell;
     });
@@ -265,10 +290,16 @@ export default function NPSDashboardPage() {
     if (fromAgg) return fromAgg;
     
     const monthDetalles = detalles.filter(d => {
-      const date = new Date(d.fecha);
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const y = date.getFullYear();
-      const matchesMonth = `${m}-${y}` === selectedMonth;
+      if (!d.fecha) return false;
+      const parts = d.fecha.split('-');
+      let monthStr = '';
+      if (parts.length >= 2) {
+        monthStr = `${parts[1]}-${parts[0]}`;
+      } else {
+        const date = new Date(d.fecha);
+        monthStr = `${String(date.getUTCMonth() + 1).padStart(2, '0')}-${date.getUTCFullYear()}`;
+      }
+      const matchesMonth = monthStr === selectedMonth;
       const matchesCell = selectedCelula ? d.tx_celula === selectedCelula : true;
       return matchesMonth && matchesCell;
     });
@@ -303,10 +334,14 @@ export default function NPSDashboardPage() {
       if (!d.fecha) return;
       if (selectedCelula && d.tx_celula !== selectedCelula) return;
 
-      const date = new Date(d.fecha);
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const y = date.getFullYear();
-      const key = `${m}-${y}`;
+      const parts = d.fecha.split('-');
+      let key = '';
+      if (parts.length >= 2) {
+        key = `${parts[1]}-${parts[0]}`;
+      } else {
+        const date = new Date(d.fecha);
+        key = `${String(date.getUTCMonth() + 1).padStart(2, '0')}-${date.getUTCFullYear()}`;
+      }
       
       const entry = monthlyMap.get(key) || { nps: 0, total_encuestas: 0, p: 0, d: 0 };
       entry.total_encuestas++;
@@ -328,28 +363,74 @@ export default function NPSDashboardPage() {
       });
   }, [filteredAgregado, detalles, selectedCelula]);
 
-  const sentimentCounts = useMemo(() => {
-    const monthDetalles = detalles.filter(d => {
-      const dDate = new Date(d.fecha);
-      const monthStr = `${String(dDate.getMonth() + 1).padStart(2, '0')}-${dDate.getFullYear()}`;
+  const monthSurveys = useMemo(() => {
+    return detalles.filter(d => {
+      if (!d.fecha) return false;
+      const parts = d.fecha.split('-');
+      let monthStr = '';
+      if (parts.length >= 2) {
+        monthStr = `${parts[1]}-${parts[0]}`;
+      } else {
+        const date = new Date(d.fecha);
+        monthStr = `${String(date.getUTCMonth() + 1).padStart(2, '0')}-${date.getUTCFullYear()}`;
+      }
       const matchesMonth = monthStr === selectedMonth;
       const matchesCell = selectedCelula ? d.tx_celula === selectedCelula : true;
       return matchesMonth && matchesCell;
     });
+  }, [detalles, selectedMonth, selectedCelula]);
 
-    return monthDetalles.reduce((acc, d) => {
+  const filteredSurveys = useMemo(() => {
+    const hasActiveFilter = sentimentFilter.P || sentimentFilter.N || sentimentFilter.D;
+    if (!hasActiveFilter) return monthSurveys;
+    
+    return monthSurveys.filter(d => {
+      if (sentimentFilter.P && d.promotor === 1) return true;
+      if (sentimentFilter.D && d.detractor === 1) return true;
+      if (sentimentFilter.N && d.promotor !== 1 && d.detractor !== 1) return true;
+      return false;
+    });
+  }, [monthSurveys, sentimentFilter]);
+
+  const filteredCellStats = useMemo(() => {
+    const cellsWithSurveys = new Set(filteredSurveys.map(s => s.tx_celula));
+    return cellStats.filter(c => cellsWithSurveys.has(c.celula!));
+  }, [cellStats, filteredSurveys]);
+
+  const sentimentCounts = useMemo(() => {
+    return monthSurveys.reduce((acc, d) => {
       if (d.promotor === 1) acc.p++;
       else if (d.detractor === 1) acc.d++;
       else acc.n++;
       return acc;
     }, { p: 0, n: 0, d: 0 });
-  }, [detalles, selectedMonth, selectedCelula]);
+  }, [monthSurveys]);
 
   const getNPSColor = (nps: number) => {
     if (nps > 70) return '#10b981';
     if (nps >= 50) return '#f59e0b';
     return '#ef4444';
   };
+
+  const toggleFilter = (type: 'P' | 'N' | 'D') => {
+    setSentimentFilter(prev => ({
+      ...prev,
+      [type]: !prev[type]
+    }));
+  };
+
+  const sortedMonthsForSelect = useMemo(() => {
+    return [...availableMonths].sort((a, b) => {
+      const [mA, yA] = a.split('-').map(Number);
+      const [mB, yB] = b.split('-').map(Number);
+      return yA !== yB ? yA - yB : mA - mB;
+    });
+  }, [availableMonths]);
+
+  const isPActive = sentimentFilter.P;
+  const isNActive = sentimentFilter.N;
+  const isDActive = sentimentFilter.D;
+  const hasActiveFilter = isPActive || isNActive || isDActive;
 
   if (loading) {
     return (
@@ -361,6 +442,67 @@ export default function NPSDashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '24px 40px' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .recharts-bar-rectangle path {
+          transition: all 0.25s ease;
+          transform-origin: bottom;
+          transform-box: fill-box;
+        }
+        .recharts-bar-rectangle path:hover {
+          transform: translateY(-3px);
+          filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.45));
+          cursor: pointer;
+        }
+        .sentiment-card {
+          flex: 1;
+          text-align: center;
+          padding: 16px;
+          border-radius: 14px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          user-select: none;
+        }
+        .sentiment-card:hover {
+          transform: scale(1.02);
+        }
+        .sentiment-card-p {
+          border: 1px solid #cbd5e1;
+          background-color: white;
+        }
+        .sentiment-card-p:hover {
+          border-color: #10b981;
+        }
+        .sentiment-card-p.active {
+          border: 2px solid #10b981;
+          background-color: #ecfdf5;
+          box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.15);
+        }
+        .sentiment-card-n {
+          border: 1px solid #cbd5e1;
+          background-color: white;
+        }
+        .sentiment-card-n:hover {
+          border-color: #f59e0b;
+        }
+        .sentiment-card-n.active {
+          border: 2px solid #f59e0b;
+          background-color: #fff7ed;
+          box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.15);
+        }
+        .sentiment-card-d {
+          border: 1px solid #cbd5e1;
+          background-color: white;
+        }
+        .sentiment-card-d:hover {
+          border-color: #ef4444;
+        }
+        .sentiment-card-d.active {
+          border: 2px solid #ef4444;
+          background-color: #fef2f2;
+          box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.15);
+        }
+      `}} />
+
       {/* Header */}
       <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -440,17 +582,18 @@ export default function NPSDashboardPage() {
             MES SELECCIONADO
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', backgroundColor: 'white', padding: '10px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
-            {['01', '02', '03', '04', '05', '06', '07', '08'].map(m => {
-              const monthVal = `${m}-2026`;
+            {sortedMonthsForSelect.map(monthVal => {
               const isActive = selectedMonth === monthVal;
+              const [m, y] = monthVal.split('-');
               const monthNames: Record<string, string> = {
                 '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio',
-                '07': 'Julio', '08': 'Agosto'
+                '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
               };
+              const monthName = monthNames[m] || m;
 
               return (
                 <button
-                  key={m}
+                  key={monthVal}
                   onClick={() => setSelectedMonth(monthVal)}
                   style={{
                     display: 'flex',
@@ -468,44 +611,107 @@ export default function NPSDashboardPage() {
                   }}
                 >
                   <span style={{ fontSize: '14px' }}>📅</span>
-                  {monthNames[m]}
+                  {monthName} {y}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* 3. Sentiment Counters (Static) */}
+        {/* 3. Sentiment Counters (Interactive Filters) */}
         <div style={{ marginBottom: '32px' }}>
           <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', paddingLeft: '4px' }}>
-            RESUMEN DE ENCUESTAS
+            RESUMEN DE ENCUESTAS {hasActiveFilter && '(Filtro Activo)'}
           </p>
-          <div style={{ display: 'flex', gap: '12px', backgroundColor: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <p style={{ fontSize: '24px', fontWeight: '950', color: '#10b981', margin: 0 }}>{sentimentCounts.p}</p>
-              <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>Promotores</p>
+          <div style={{ display: 'flex', gap: '12px', backgroundColor: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div 
+              onClick={() => toggleFilter('P')}
+              className={`sentiment-card sentiment-card-p ${isPActive ? 'active' : ''}`}
+            >
+              <p style={{ fontSize: '24px', fontWeight: '950', color: '#10b981', margin: 0 }}>
+                {isPActive ? '✓ ' : ''}{sentimentCounts.p}
+              </p>
+              <p style={{ fontSize: '9px', fontWeight: '900', color: isPActive ? '#10b981' : '#94a3b8', textTransform: 'uppercase', margin: 0 }}>
+                {isPActive ? 'Filtrando: Promotores' : 'Promotores'}
+              </p>
             </div>
             <div style={{ width: '1px', backgroundColor: '#e2e8f0' }} />
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <p style={{ fontSize: '24px', fontWeight: '950', color: '#f59e0b', margin: 0 }}>{sentimentCounts.n}</p>
-              <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>Neutros</p>
+            <div 
+              onClick={() => toggleFilter('N')}
+              className={`sentiment-card sentiment-card-n ${isNActive ? 'active' : ''}`}
+            >
+              <p style={{ fontSize: '24px', fontWeight: '950', color: '#f59e0b', margin: 0 }}>
+                {isNActive ? '✓ ' : ''}{sentimentCounts.n}
+              </p>
+              <p style={{ fontSize: '9px', fontWeight: '900', color: isNActive ? '#f59e0b' : '#94a3b8', textTransform: 'uppercase', margin: 0 }}>
+                {isNActive ? 'Filtrando: Neutros' : 'Neutros'}
+              </p>
             </div>
             <div style={{ width: '1px', backgroundColor: '#e2e8f0' }} />
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <p style={{ fontSize: '24px', fontWeight: '950', color: '#ef4444', margin: 0 }}>{sentimentCounts.d}</p>
-              <p style={{ fontSize: '9px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>Detractores</p>
+            <div 
+              onClick={() => toggleFilter('D')}
+              className={`sentiment-card sentiment-card-d ${isDActive ? 'active' : ''}`}
+            >
+              <p style={{ fontSize: '24px', fontWeight: '950', color: '#ef4444', margin: 0 }}>
+                {isDActive ? '✓ ' : ''}{sentimentCounts.d}
+              </p>
+              <p style={{ fontSize: '9px', fontWeight: '900', color: isDActive ? '#ef4444' : '#94a3b8', textTransform: 'uppercase', margin: 0 }}>
+                {isDActive ? 'Filtrando: Detractores' : 'Detractores'}
+              </p>
             </div>
           </div>
+          
+          {hasActiveFilter && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button 
+                onClick={() => setSentimentFilter({ P: false, N: false, D: false })}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#f1f5f9',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  fontSize: '11px',
+                  fontWeight: '800',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <X size={12} />
+                Limpiar filtros
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Expandable Hierarchy Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ padding: '0 4px', marginBottom: '4px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Desglose por Célula</h3>
+          <div style={{ padding: '0 4px', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+              Desglose por Célula
+            </h3>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>
+              {hasActiveFilter ? (
+                <span>
+                  Mostrando <strong>{filteredSurveys.length}</strong> de <strong>{monthSurveys.length}</strong> encuestas
+                  {" ("}
+                  {Object.entries(sentimentFilter)
+                    .filter(([_, active]) => active)
+                    .map(([type]) => type === 'P' ? 'Promotores' : type === 'N' ? 'Neutros' : 'Detractores')
+                    .join(', ')}
+                  {")"}
+                </span>
+              ) : (
+                <span>Total: <strong>{monthSurveys.length}</strong> encuestas</span>
+              )}
+            </span>
           </div>
 
-          {cellStats.length > 0 ? (
-            cellStats.map(cell => (
+          {filteredCellStats.length > 0 ? (
+            filteredCellStats.map(cell => (
               <div key={cell.celula} style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
                 {/* Cell Header */}
                 <div 
@@ -539,7 +745,7 @@ export default function NPSDashboardPage() {
                 {expandedCells.has(cell.celula!) && (
                   <div style={{ padding: '4px 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: '#fcfdfe' }}>
                     {Object.entries(
-                      detalles.filter(d => d.tx_celula === cell.celula && (`${String(new Date(d.fecha).getMonth() + 1).padStart(2, '0')}-${new Date(d.fecha).getFullYear()}` === selectedMonth))
+                      filteredSurveys.filter(d => d.tx_celula === cell.celula)
                         .reduce((acc, d) => {
                           if (!acc[d.nombre_tecnico]) acc[d.nombre_tecnico] = { count: 0, p: 0, d: 0, surveys: [] };
                           acc[d.nombre_tecnico].count++;
