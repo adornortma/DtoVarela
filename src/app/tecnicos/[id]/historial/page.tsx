@@ -67,7 +67,9 @@ interface MonthlyMetric {
   promotores: number;
   neutros: number;
   detractores: number;
-  posicion: number;
+  posicionResolucion: number;
+  posicionProductividad: number;
+  posicionReiteros: number;
 }
 
 const MONTH_NAMES: Record<string, string> = {
@@ -95,7 +97,7 @@ export default function TechnicianHistoryPage({ params: paramsPromise }: { param
   const [priorMetrics, setPriorMetrics] = useState<MetricasDiarias[]>([]);
   const [surveys, setSurveys] = useState<any[]>([]);
   const [priorSurveys, setPriorSurveys] = useState<any[]>([]);
-  const [allMonthlyRanks, setAllMonthlyRanks] = useState<{ [mes: string]: { [techId: string]: number } }>({});
+  const [allMonthlyRanks, setAllMonthlyRanks] = useState<{ [mes: string]: { [techId: string]: { resolucion: number, productividad: number, reiteros: number } } }>({});
 
   // View States
   const [viewModeSec2, setViewModeSec2] = useState<'chart' | 'table'>('chart');
@@ -170,20 +172,34 @@ export default function TechnicianHistoryPage({ params: paramsPromise }: { param
             .eq('distrito_id', districtRec.id);
           
           if (rankRecs) {
-            // Group by month and compute rank position based on Resolution
-            const groupedByMonth: { [mes: string]: { techId: string, resolucion: number }[] } = {};
+            // Group by month and compute rank position based on each KPI
+            const groupedByMonth: { [mes: string]: { techId: string, resolucion: number, productividad: number, reiteros: number }[] } = {};
             rankRecs.forEach(r => {
               if (!groupedByMonth[r.mes]) groupedByMonth[r.mes] = [];
-              groupedByMonth[r.mes].push({ techId: r.tecnico_id, resolucion: Number(r.resolucion) || 0 });
+              groupedByMonth[r.mes].push({ 
+                techId: r.tecnico_id, 
+                resolucion: Number(r.resolucion) || 0,
+                productividad: Number(r.productividad) || 0,
+                reiteros: Number(r.reiteros) || 0
+              });
             });
 
-            const rankMap: { [mes: string]: { [techId: string]: number } } = {};
+            const rankMap: { [mes: string]: { [techId: string]: { resolucion: number, productividad: number, reiteros: number } } } = {};
             Object.entries(groupedByMonth).forEach(([mes, list]) => {
-              // Sort descending by resolution to determine rank
-              const sorted = [...list].sort((a, b) => b.resolucion - a.resolucion);
+              const sortedRes = [...list].sort((a, b) => b.resolucion - a.resolucion);
+              const sortedProd = [...list].sort((a, b) => b.productividad - a.productividad);
+              const sortedReit = [...list].sort((a, b) => a.reiteros - b.reiteros); // lower reiteros is better
+
               rankMap[mes] = {};
-              sorted.forEach((item, index) => {
-                rankMap[mes][item.techId] = index + 1;
+              list.forEach(item => {
+                const rRank = sortedRes.findIndex(x => x.techId === item.techId) + 1;
+                const pRank = sortedProd.findIndex(x => x.techId === item.techId) + 1;
+                const reRank = sortedReit.findIndex(x => x.techId === item.techId) + 1;
+                rankMap[mes][item.techId] = {
+                  resolucion: rRank,
+                  productividad: pRank,
+                  reiteros: reRank
+                };
               });
             });
             setAllMonthlyRanks(rankMap);
@@ -401,9 +417,14 @@ export default function TechnicianHistoryPage({ params: paramsPromise }: { param
       const monthName = MONTH_NAMES[m] || m;
       const fullMonthNameDB = `${monthName}`; // Like "Abril" or "Mayo" in MONTHS array of DB
 
-      let rankingPos = 10; // Default fallback position if not found
+      let rankingPosRes = 10;
+      let rankingPosProd = 10;
+      let rankingPosReit = 10;
       if (allMonthlyRanks[fullMonthNameDB] && tech && allMonthlyRanks[fullMonthNameDB][tech.id]) {
-        rankingPos = allMonthlyRanks[fullMonthNameDB][tech.id];
+        const ranks = allMonthlyRanks[fullMonthNameDB][tech.id];
+        rankingPosRes = ranks.resolucion;
+        rankingPosProd = ranks.productividad;
+        rankingPosReit = ranks.reiteros;
       }
 
       list.push({
@@ -423,7 +444,9 @@ export default function TechnicianHistoryPage({ params: paramsPromise }: { param
         promotores: npsPromoters,
         neutros: npsTotal - npsPromoters - npsDetractors,
         detractores: npsDetractors,
-        posicion: rankingPos
+        posicionResolucion: rankingPosRes,
+        posicionProductividad: rankingPosProd,
+        posicionReiteros: rankingPosReit
       });
     });
 
@@ -1037,20 +1060,17 @@ export default function TechnicianHistoryPage({ params: paramsPromise }: { param
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyDataList} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="rankGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
+              <ComposedChart data={monthlyDataList} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="mes" tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
                 {/* Invert the Y axis so Rank #1 is at the top */}
                 <YAxis reversed domain={[1, 'dataMax + 2']} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
                 <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '11px', fontWeight: '700' }} />
-                <Area type="monotone" dataKey="posicion" name="Posición en Ranking" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#rankGradient)" dot={{ r: 4, fill: '#3B82F6' }} />
-              </AreaChart>
+                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: '800' }} />
+                <Line type="monotone" dataKey="posicionResolucion" name="Puesto: Resolución" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="posicionProductividad" name="Puesto: Productividad" stroke="#10B981" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="posicionReiteros" name="Puesto: Reiteros" stroke="#F59E0B" strokeWidth={2} dot={{ r: 4 }} />
+              </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
