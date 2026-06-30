@@ -395,7 +395,7 @@ export default function ActividadesToaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('indicador');
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('s1');
   const [selectedMonth, setSelectedMonth] = useState('Abril');
-  const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio']);
+  const [visibleMonths, setVisibleMonths] = useState(['Marzo', 'Abril', 'Mayo', 'Junio', 'Julio']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<ToaKpiType>('inicio');
   const [data, setData] = useState<ItemRow[]>([]);
@@ -409,7 +409,7 @@ export default function ActividadesToaPage() {
     setIsDropdownOpen(false);
     if (!visibleMonths.includes(month)) {
       const newVisible = [...visibleMonths];
-      newVisible[3] = month;
+      newVisible[newVisible.length - 1] = month;
       setVisibleMonths(newVisible);
     }
   };
@@ -491,7 +491,7 @@ export default function ActividadesToaPage() {
         
         if (!visibleMonths.includes(monthName)) {
            const monthIdx = MONTHS.indexOf(monthName);
-           setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 1), Math.max(0, monthIdx - 1) + 4));
+           setVisibleMonths(MONTHS.slice(Math.max(0, monthIdx - 2), Math.max(0, monthIdx - 2) + 5));
         }
       }
     };
@@ -760,38 +760,45 @@ export default function ActividadesToaPage() {
               )
             })
           ) : (
-            (['s1', 's2', 's3', 's4'] as WeekKey[]).map((week, idx) => {
-              const isActive = selectedWeek === week;
-              const label = weekLabels[idx].split(' - ')[0]; 
-              const subLabel = weekLabels[idx].split(' - ')[1]; 
-              return (
-                    <button 
-                      key={week} 
-                      onClick={() => setSelectedWeek(week)} 
-                      style={{ 
-                        minWidth: '160px', 
-                        padding: '10px 16px', 
-                        borderRadius: '14px', 
-                        backgroundColor: isActive ? '#f8fafc' : '#f1f5f9', 
-                        border: isActive ? '3px solid #1e293b' : '3px solid #cbd5e1',
-                        transition: 'all 0.2s ease', 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'flex-start', 
-                        gap: '2px', 
-                        cursor: 'pointer', 
-                        boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
-                        position: 'relative'
-                      }}
-                  >
-                    {WEATHER_DATA[selectedMonth]?.[week] && (
-                      <WeatherIndicator days={WEATHER_DATA[selectedMonth][week]} />
-                    )}
-                    <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1e293b' : '#64748b', textTransform: 'uppercase' }}>{label}</span>
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: isActive ? '#64748b' : '#94a3b8' }}>{subLabel}</span>
-                  </button>
-              )
-            })
+            (['s1', 's2', 's3', 's4', 's5'] as WeekKey[])
+              .map((week, idx) => {
+                const Monday = getMondayOfNextWeek(new Date().getFullYear(), MONTHS.indexOf(selectedMonth), idx);
+                const isMonthMatch = Monday.getMonth() === MONTHS.indexOf(selectedMonth);
+                return { week, idx, isMonthMatch };
+              })
+              .filter(item => item.isMonthMatch)
+              .map(({ week, idx }) => {
+                const isActive = selectedWeek === week;
+                const label = weekLabels[idx].split(' - ')[0]; 
+                const subLabel = weekLabels[idx].split(' - ')[1]; 
+                return (
+                      <button 
+                        key={week} 
+                        onClick={() => setSelectedWeek(week)} 
+                        style={{ 
+                          minWidth: '160px', 
+                          padding: '10px 16px', 
+                          borderRadius: '14px', 
+                          backgroundColor: isActive ? '#f8fafc' : '#f1f5f9', 
+                          border: isActive ? '3px solid #1e293b' : '3px solid #cbd5e1',
+                          transition: 'all 0.2s ease', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'flex-start', 
+                          gap: '2px', 
+                          cursor: 'pointer', 
+                          boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', 
+                          position: 'relative'
+                        }}
+                    >
+                      {WEATHER_DATA[selectedMonth]?.[week] && (
+                        <WeatherIndicator days={WEATHER_DATA[selectedMonth][week]} />
+                      )}
+                      <span style={{ fontSize: '14px', fontWeight: '950', color: isActive ? '#1e293b' : '#64748b', textTransform: 'uppercase' }}>{label}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: isActive ? '#64748b' : '#94a3b8' }}>{subLabel}</span>
+                    </button>
+                )
+              })
           )}
         </div>
       </section>
