@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info, LayoutDashboard, Target, MessageSquare, Trophy } from 'lucide-react';
+import { TrendingUp, Home, Database, Briefcase, X, Menu, ClipboardCheck, Info, LayoutDashboard, Target, MessageSquare, Trophy, Layers } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface SidebarProps {
@@ -58,6 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     { name: 'Detalle Diario', icon: <LayoutDashboard size={20} />, path: '/detalle-diario' },
     { name: 'Actividades TOA', icon: <ClipboardCheck size={20} />, path: '/actividades-toa' },
     { name: 'Dashboard NPS', icon: <MessageSquare size={20} />, path: '/nps' },
+    { name: 'Despliegues', icon: <Layers size={20} />, path: '/despliegues' },
     { name: 'CARGA DE DATOS', icon: <Database size={20} />, path: '/admin/carga' },
     { name: 'Carga de Datos', icon: <Database size={20} />, path: isAlternativeDistrict ? `${homePath}/carga` : '/admin/carga-ocr' },
   ].filter(item => {
