@@ -15,7 +15,7 @@ export interface TipoActividad {
 export interface Sigest {
   id: string;
   numero_sigest: string;
-  poligono: string;
+  central: string;
   fecha_creacion: string;
   fecha_actualizacion: string;
   created_at: string;
@@ -87,7 +87,7 @@ export interface HistorialDespliegue {
 
 export interface SigestStats {
   numero_sigest: string;
-  poligono: string;
+  central: string;
   totalCtos: number;
   instaladas: number;
   certificadas: number;

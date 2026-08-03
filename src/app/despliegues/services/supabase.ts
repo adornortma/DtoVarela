@@ -45,12 +45,12 @@ export const DesplieguesService = {
     return data || [];
   },
 
-  async createSigest(numero_sigest: string, poligono: string, usuario: string): Promise<Sigest> {
+  async createSigest(numero_sigest: string, central: string, usuario: string): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
       .insert({
         numero_sigest: numero_sigest.trim(),
-        poligono: poligono.trim(),
+        central: central.trim(),
         created_by: usuario,
         updated_by: usuario
       })
@@ -60,12 +60,12 @@ export const DesplieguesService = {
     return data;
   },
 
-  async updateSigest(id: string, numero_sigest: string, poligono: string, usuario: string): Promise<Sigest> {
+  async updateSigest(id: string, numero_sigest: string, central: string, usuario: string): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
       .update({
         numero_sigest: numero_sigest.trim(),
-        poligono: poligono.trim(),
+        central: central.trim(),
         updated_by: usuario,
         fecha_actualizacion: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -362,11 +362,11 @@ export const DesplieguesService = {
       .ilike('numero_sigest', `%${term}%`);
     if (err1) throw err1;
 
-    // Search by Polygon
+    // Search by Central
     const { data: sigByPol, error: err2 } = await supabase
       .from('sigests')
       .select('*')
-      .ilike('poligono', `%${term}%`);
+      .ilike('central', `%${term}%`);
     if (err2) throw err2;
 
     // Search by CTO code or address

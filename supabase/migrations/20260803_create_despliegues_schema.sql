@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.despliegues_tipos_actividad (
 CREATE TABLE IF NOT EXISTS public.sigests (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     numero_sigest text UNIQUE NOT NULL,
-    poligono text NOT NULL,
+    central text NOT NULL,
     fecha_creacion timestamptz DEFAULT now(),
     fecha_actualizacion timestamptz DEFAULT now(),
     created_at timestamptz DEFAULT now(),
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS public.historial_despliegues (
 
 -- Índices recomendados para optimización de búsquedas
 CREATE INDEX IF NOT EXISTS idx_sigests_numero ON public.sigests(numero_sigest);
-CREATE INDEX IF NOT EXISTS idx_sigests_poligono ON public.sigests(poligono);
+CREATE INDEX IF NOT EXISTS idx_sigests_central ON public.sigests(central);
 CREATE INDEX IF NOT EXISTS idx_ctos_codigo ON public.ctos(codigo);
 CREATE INDEX IF NOT EXISTS idx_actividades_cto ON public.actividades(cto_id);
 

@@ -154,7 +154,7 @@ export default function DesplieguesTrackingPage() {
         // 2. Fetch activities, materials, photos, history
         const [actList, matList, fotList, histList] = await Promise.all([
           DesplieguesService.getActividadesByCtoIds(ctoIds),
-          DesplieguesService.getActividadMateriales(ctoIds), // Note: we fetch by activity ids, we will resolve them
+          DesplieguesService.getActividadMateriales(ctoIds),
           DesplieguesService.getActividadFotos(ctoIds),
           DesplieguesService.getHistorialByActividades(ctoIds)
         ]);
@@ -219,7 +219,7 @@ export default function DesplieguesTrackingPage() {
 
     return {
       numero_sigest: selectedSigest.numero_sigest,
-      poligono: selectedSigest.poligono,
+      central: selectedSigest.central,
       totalCtos,
       instaladas,
       certificadas,
@@ -501,11 +501,11 @@ export default function DesplieguesTrackingPage() {
               type="text" 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar por SIGEST, código de CTO, dirección o polígono..."
+              placeholder="Buscar por SIGEST, código de CTO, dirección o central..."
               style={{
                 width: '100%', padding: '14px 16px 14px 48px', borderRadius: '16px', border: '1px solid #e2e8f0',
                 fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: 'white',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.02)', boxSizing: 'border-box'
               }}
             />
           </div>
@@ -540,7 +540,7 @@ export default function DesplieguesTrackingPage() {
                   }}
                 >
                   <span>SIGEST {s.numero_sigest}</span>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>({s.poligono})</span>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>({s.central})</span>
                   <ChevronRight size={14} color="#94a3b8" />
                 </button>
               ))}
@@ -580,7 +580,7 @@ export default function DesplieguesTrackingPage() {
                 <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#0f172a' }}>SIGEST: {stats.numero_sigest}</h2>
               </div>
               <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', marginTop: '6px' }}>
-                Polígono de Despliegue: <strong style={{ color: '#0f172a' }}>{stats.poligono}</strong> | Cajas CTO totales: <strong>{stats.totalCtos}</strong>
+                Central de Despliegues: <strong style={{ color: '#0f172a' }}>{stats.central}</strong> | Cajas CTO totales: <strong>{stats.totalCtos}</strong>
               </p>
 
               {/* Progress Bar */}
@@ -821,7 +821,7 @@ export default function DesplieguesTrackingPage() {
         <div style={{ backgroundColor: 'white', padding: '80px 20px', borderRadius: '24px', textAlign: 'center', border: '1px solid #f1f5f9', color: '#94a3b8' }}>
           <Briefcase size={56} style={{ margin: '0 auto 16px' }} />
           <p style={{ fontWeight: '800', fontSize: '16px', color: '#475569' }}>Consola de Despliegues</p>
-          <p style={{ fontSize: '13px', marginTop: '6px' }}>Busque un número de SIGEST, polígono o código CTO en la parte superior para visualizar el avance.</p>
+          <p style={{ fontSize: '13px', marginTop: '6px' }}>Busque un número de SIGEST, central o código CTO en la parte superior para visualizar el avance.</p>
         </div>
       )}
 
@@ -943,7 +943,7 @@ export default function DesplieguesTrackingPage() {
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -962,7 +962,7 @@ export default function DesplieguesTrackingPage() {
                   }}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '12px', border: '1px dashed #cbd5e1',
-                    fontSize: '13px', outline: 'none', cursor: 'pointer'
+                    fontSize: '13px', outline: 'none', cursor: 'pointer', boxSizing: 'border-box'
                   }}
                 />
                 {installFotos.length > 0 && (
@@ -982,7 +982,7 @@ export default function DesplieguesTrackingPage() {
                   placeholder="Detalles u observaciones de la instalación..."
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -1037,7 +1037,7 @@ export default function DesplieguesTrackingPage() {
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -1056,7 +1056,7 @@ export default function DesplieguesTrackingPage() {
                   }}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '12px', border: '1px dashed #cbd5e1',
-                    fontSize: '13px', outline: 'none', cursor: 'pointer'
+                    fontSize: '13px', outline: 'none', cursor: 'pointer', boxSizing: 'border-box'
                   }}
                 />
                 {certFotos.length > 0 && (
@@ -1076,7 +1076,7 @@ export default function DesplieguesTrackingPage() {
                   placeholder="Observaciones o notas de certificación..."
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -1128,7 +1128,8 @@ export default function DesplieguesTrackingPage() {
                   onChange={e => setSimpleEstadoId(e.target.value)}
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: 'white'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: 'white',
+                    boxSizing: 'border-box'
                   }}
                 >
                   <option value="" disabled>Seleccione un estado...</option>
@@ -1148,7 +1149,7 @@ export default function DesplieguesTrackingPage() {
                   placeholder="Nombre del técnico..."
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -1163,7 +1164,7 @@ export default function DesplieguesTrackingPage() {
                   placeholder="Ingrese el motivo u observaciones de la modificación..."
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>

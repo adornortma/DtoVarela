@@ -21,7 +21,7 @@ export default function DesplieguesAdminPage() {
   const [showSigestModal, setShowSigestModal] = useState(false);
   const [editingSigest, setEditingSigest] = useState<Sigest | null>(null);
   const [sigestNumero, setSigestNumero] = useState('');
-  const [sigestPoligono, setSigestPoligono] = useState('');
+  const [sigestCentral, setSigestCentral] = useState('');
 
   const [showCtoModal, setShowCtoModal] = useState(false);
   const [editingCto, setEditingCto] = useState<Cto | null>(null);
@@ -85,25 +85,25 @@ export default function DesplieguesAdminPage() {
     if (sigest) {
       setEditingSigest(sigest);
       setSigestNumero(sigest.numero_sigest);
-      setSigestPoligono(sigest.poligono);
+      setSigestCentral(sigest.central);
     } else {
       setEditingSigest(null);
       setSigestNumero('');
-      setSigestPoligono('');
+      setSigestCentral('');
     }
     setShowSigestModal(true);
   };
 
   const handleSaveSigest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sigestNumero.trim() || !sigestPoligono.trim()) return;
+    if (!sigestNumero.trim() || !sigestCentral.trim()) return;
 
     try {
       if (editingSigest) {
         const updated = await DesplieguesService.updateSigest(
           editingSigest.id,
           sigestNumero,
-          sigestPoligono,
+          sigestCentral,
           user
         );
         setSigests(sigests.map(s => s.id === updated.id ? updated : s));
@@ -113,7 +113,7 @@ export default function DesplieguesAdminPage() {
       } else {
         const created = await DesplieguesService.createSigest(
           sigestNumero,
-          sigestPoligono,
+          sigestCentral,
           user
         );
         setSigests([...sigests, created]);
@@ -342,7 +342,7 @@ export default function DesplieguesAdminPage() {
                         {sigest.numero_sigest}
                       </p>
                       <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px', fontWeight: '600' }}>
-                        Polígono: {sigest.poligono}
+                        Central: {sigest.central}
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
@@ -377,7 +377,7 @@ export default function DesplieguesAdminPage() {
                     CTOs del SIGEST: {selectedSigest.numero_sigest}
                   </h2>
                   <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
-                    Polígono: {selectedSigest.poligono} | Total registradas: {ctos.length}
+                    Central: {selectedSigest.central} | Total registradas: {ctos.length}
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -524,27 +524,27 @@ export default function DesplieguesAdminPage() {
                   type="text" 
                   value={sigestNumero}
                   onChange={e => setSigestNumero(e.target.value)}
-                  placeholder="Ej: 31912831"
+                  placeholder="Ej: 6103803361"
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  Polígono
+                  Central
                 </label>
                 <input 
                   type="text" 
-                  value={sigestPoligono}
-                  onChange={e => setSigestPoligono(e.target.value)}
-                  placeholder="Ej: Varela_21"
+                  value={sigestCentral}
+                  onChange={e => setSigestCentral(e.target.value)}
+                  placeholder="Ej: Varela"
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -594,7 +594,7 @@ export default function DesplieguesAdminPage() {
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
                 <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '4px' }}>
@@ -613,7 +613,7 @@ export default function DesplieguesAdminPage() {
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a'
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -670,7 +670,8 @@ export default function DesplieguesAdminPage() {
                     placeholder="31912831_1    Calle 141 Nº1370&#10;31912456_1    Calle 141 Nº1390&#10;31912888_1    Calle 143 Nº1450"
                     style={{
                       width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0',
-                      fontSize: '13px', outline: 'none', fontWeight: '600', color: '#0f172a', fontFamily: 'monospace'
+                      fontSize: '13px', outline: 'none', fontWeight: '600', color: '#0f172a', fontFamily: 'monospace',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
