@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.ctos (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     sigest_id uuid REFERENCES public.sigests(id) ON DELETE CASCADE,
     codigo text NOT NULL,
-    direccion text NOT NULL,
+    direccion text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     created_by text,

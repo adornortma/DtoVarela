@@ -524,7 +524,7 @@ export default function DesplieguesAdminPage() {
                   type="text" 
                   value={sigestNumero}
                   onChange={e => setSigestNumero(e.target.value)}
-                  placeholder="Ej: 6103803361"
+                  placeholder=""
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
@@ -540,7 +540,7 @@ export default function DesplieguesAdminPage() {
                   type="text" 
                   value={sigestCentral}
                   onChange={e => setSigestCentral(e.target.value)}
-                  placeholder="Ej: Varela"
+                  placeholder=""
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
@@ -590,7 +590,7 @@ export default function DesplieguesAdminPage() {
                   type="text" 
                   value={ctoCodigo}
                   onChange={e => setCtoCodigo(e.target.value)}
-                  placeholder="Ej: 31912831_1"
+                  placeholder=""
                   required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
@@ -609,8 +609,7 @@ export default function DesplieguesAdminPage() {
                   type="text" 
                   value={ctoDireccion}
                   onChange={e => setCtoDireccion(e.target.value)}
-                  placeholder="Ej: Calle 141 Nº1370"
-                  required
+                  placeholder=""
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
                     fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
