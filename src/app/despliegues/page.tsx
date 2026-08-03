@@ -512,9 +512,10 @@ export default function DesplieguesTrackingPage() {
           <button 
             type="submit"
             style={{
-              backgroundColor: '#019df4', color: 'white', padding: '0 24px', borderRadius: '16px',
+              backgroundColor: '#019df4', color: 'white', padding: '0 28px', borderRadius: '16px',
               fontWeight: '800', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
-              boxShadow: '0 4px 12px rgba(1, 157, 244, 0.2)'
+              boxShadow: '0 4px 12px rgba(1, 157, 244, 0.2)', flexShrink: 0, minWidth: '110px',
+              justifyContent: 'center'
             }}
           >
             {loadingSearch ? <Loader2 className="animate-spin" size={16} /> : 'Buscar'}
