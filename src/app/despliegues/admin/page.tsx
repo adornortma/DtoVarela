@@ -159,6 +159,16 @@ export default function DesplieguesAdminPage() {
     if (!selectedSigest) return;
     if (!ctoCodigo.trim()) return;
 
+    // Client-side uniqueness validation
+    const codeExists = ctos.some(c => 
+      c.codigo.toLowerCase().trim() === ctoCodigo.toLowerCase().trim() && 
+      c.id !== editingCto?.id
+    );
+    if (codeExists) {
+      alert('Esta CTO ya está registrada en este SIGEST.');
+      return;
+    }
+
     try {
       const direccionValue = ctoDireccion ? ctoDireccion.trim() : '';
       if (editingCto) {
@@ -181,7 +191,11 @@ export default function DesplieguesAdminPage() {
       setShowCtoModal(false);
     } catch (err: any) {
       console.error('Error saving CTO:', err);
-      alert(err.message || 'Error al guardar la CTO. El código debe ser único por SIGEST.');
+      if (err.message && err.message.includes('unique')) {
+        alert('Error: Ya existe una CTO con este código registrada en este SIGEST.');
+      } else {
+        alert(err.message || 'Error al guardar la CTO. El código debe ser único por SIGEST.');
+      }
     }
   };
 
