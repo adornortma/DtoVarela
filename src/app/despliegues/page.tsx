@@ -667,151 +667,136 @@ export default function DesplieguesTrackingPage() {
                 <p style={{ color: '#64748b', fontWeight: '600' }}>No hay cajas CTO asociadas a este SIGEST.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(430px, 1fr))', gap: '20px' }}>
-                {ctos.map(cto => {
-                  // Resolve activities for this CTO
-                  const ctoActs = actividades.filter(a => a.cto_id === cto.id);
-                  const installAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar'));
-                  const certAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar'));
+              <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ctos.map(cto => {
+                      // Resolve activities for this CTO
+                      const ctoActs = actividades.filter(a => a.cto_id === cto.id);
+                      const installAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar'));
+                      const certAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar'));
 
-                  // Code references
-                  const installCode = cto.codigo;
-                  // Dynamic replacement for certification visual rendering
-                  const certCode = cto.codigo.replace(/_1$/, '_5');
+                      const renderActivityStateBadge = (act: Actividad | undefined) => {
+                        if (!act) return <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>;
+                        const estNombre = act.despliegues_estados?.nombre || 'Pendiente';
+                        const estColor = act.despliegues_estados?.color_hex || '#64748b';
+                        
+                        return (
+                          <span style={{
+                            backgroundColor: `${estColor}12`,
+                            color: estColor,
+                            border: `1px solid ${estColor}33`,
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '800',
+                            display: 'inline-block',
+                            minWidth: '85px',
+                            textAlign: 'center'
+                          }}>
+                            {estNombre}
+                          </span>
+                        );
+                      };
 
-                  const renderActivityStateBadge = (act: Actividad | undefined) => {
-                    if (!act) return <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>;
-                    const estNombre = act.despliegues_estados?.nombre || 'Pendiente';
-                    const estColor = act.despliegues_estados?.color_hex || '#64748b';
-                    
-                    return (
-                      <span style={{
-                        backgroundColor: `${estColor}12`,
-                        color: estColor,
-                        border: `1px solid ${estColor}33`,
-                        padding: '4px 8px',
-                        borderRadius: '8px',
-                        fontSize: '11px',
-                        fontWeight: '800'
-                      }}>
-                        {estNombre}
-                      </span>
-                    );
-                  };
-
-                  return (
-                    <div 
-                      key={cto.id}
-                      style={{
-                        backgroundColor: 'white', borderRadius: '20px', padding: '20px',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9',
-                        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px'
-                      }}
-                    >
-                      {/* Card Top Title & Actions */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ backgroundColor: '#f0f9ff', color: '#019df4', fontWeight: '900', fontSize: '14px', padding: '4px 8px', borderRadius: '8px' }}>
+                      return (
+                        <tr key={cto.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' }}>
+                          <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '14px' }}>
+                            <span style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '4px 8px', borderRadius: '8px' }}>
                               {cto.codigo}
                             </span>
-                          </div>
-                          <p style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginTop: '6px' }}>
-                            {cto.direccion}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button 
-                            onClick={() => handleOpenPhotos(cto)}
-                            style={{
-                              padding: '8px 12px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#475569',
-                              fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
-                            }}
-                          >
-                            <Camera size={14} /> Fotos
-                          </button>
-                          <button 
-                            onClick={() => handleOpenHistory(cto)}
-                            style={{
-                              padding: '8px 12px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#475569',
-                              fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
-                            }}
-                          >
-                            <History size={14} /> Historial
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Card Activities Tracking detail */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '14px' }}>
-                        
-                        {/* Actividad 1: Instalar */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <span style={{ fontSize: '12px', fontWeight: '850', color: '#0f172a' }}>Instalar CTO</span>
-                            <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>Ref: {installCode}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {renderActivityStateBadge(installAct)}
-                            
-                            {installAct && (
-                              <div style={{ position: 'relative' }}>
-                                <select
-                                  value={installAct.despliegues_estados?.nombre}
-                                  onChange={(e) => handleOpenStatusDialog(cto, installAct, e.target.value)}
-                                  style={{
-                                    appearance: 'none', backgroundColor: 'white', border: '1px solid #e2e8f0',
-                                    borderRadius: '8px', padding: '4px 24px 4px 8px', fontSize: '11px', fontWeight: '800',
-                                    color: '#475569', cursor: 'pointer', outline: 'none'
-                                  }}
-                                >
-                                  {estados.map(est => (
-                                    <option key={est.id} value={est.nombre}>{est.nombre}</option>
-                                  ))}
-                                </select>
-                                <ChevronRight size={10} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: '#94a3b8' }} />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ height: '1px', backgroundColor: '#e2e8f0' }}></div>
-
-                        {/* Actividad 2: Certificar */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <span style={{ fontSize: '12px', fontWeight: '850', color: '#0f172a' }}>Certificar CTO</span>
-                            <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>Ref: {certCode}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {renderActivityStateBadge(certAct)}
-                            
-                            {certAct && (
-                              <div style={{ position: 'relative' }}>
-                                <select
-                                  value={certAct.despliegues_estados?.nombre}
-                                  onChange={(e) => handleOpenStatusDialog(cto, certAct, e.target.value)}
-                                  style={{
-                                    appearance: 'none', backgroundColor: 'white', border: '1px solid #e2e8f0',
-                                    borderRadius: '8px', padding: '4px 24px 4px 8px', fontSize: '11px', fontWeight: '800',
-                                    color: '#475569', cursor: 'pointer', outline: 'none'
-                                  }}
-                                >
-                                  {estados.map(est => (
-                                    <option key={est.id} value={est.nombre}>{est.nombre}</option>
-                                  ))}
-                                </select>
-                                <ChevronRight size={10} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: '#94a3b8' }} />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                      </div>
-
-                    </div>
-                  );
-                })}
+                          </td>
+                          <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                            {cto.direccion || '-'}
+                          </td>
+                          
+                          {/* Instalacion */}
+                          <td style={{ padding: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {renderActivityStateBadge(installAct)}
+                              {installAct && (
+                                <div style={{ position: 'relative' }}>
+                                  <select
+                                    value={installAct.despliegues_estados?.nombre}
+                                    onChange={(e) => handleOpenStatusDialog(cto, installAct, e.target.value)}
+                                    style={{
+                                      appearance: 'none', backgroundColor: 'white', border: '1px solid #e2e8f0',
+                                      borderRadius: '8px', padding: '4px 24px 4px 8px', fontSize: '11px', fontWeight: '800',
+                                      color: '#475569', cursor: 'pointer', outline: 'none'
+                                    }}
+                                  >
+                                    {estados.map(est => (
+                                      <option key={est.id} value={est.nombre}>{est.nombre}</option>
+                                    ))}
+                                  </select>
+                                  <ChevronRight size={10} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: '#94a3b8' }} />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          
+                          {/* Certificacion */}
+                          <td style={{ padding: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {renderActivityStateBadge(certAct)}
+                              {certAct && (
+                                <div style={{ position: 'relative' }}>
+                                  <select
+                                    value={certAct.despliegues_estados?.nombre}
+                                    onChange={(e) => handleOpenStatusDialog(cto, certAct, e.target.value)}
+                                    style={{
+                                      appearance: 'none', backgroundColor: 'white', border: '1px solid #e2e8f0',
+                                      borderRadius: '8px', padding: '4px 24px 4px 8px', fontSize: '11px', fontWeight: '800',
+                                      color: '#475569', cursor: 'pointer', outline: 'none'
+                                    }}
+                                  >
+                                    {estados.map(est => (
+                                      <option key={est.id} value={est.nombre}>{est.nombre}</option>
+                                    ))}
+                                  </select>
+                                  <ChevronRight size={10} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: '#94a3b8' }} />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          
+                          {/* Acciones */}
+                          <td style={{ padding: '16px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button 
+                                onClick={() => handleOpenPhotos(cto)}
+                                style={{
+                                  padding: '6px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569',
+                                  fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
+                                }}
+                              >
+                                <Camera size={12} /> Fotos
+                              </button>
+                              <button 
+                                onClick={() => handleOpenHistory(cto)}
+                                style={{
+                                  padding: '6px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569',
+                                  fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
+                                }}
+                              >
+                                <History size={12} /> Historial
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
