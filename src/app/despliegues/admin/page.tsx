@@ -157,14 +157,15 @@ export default function DesplieguesAdminPage() {
   const handleSaveCto = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSigest) return;
-    if (!ctoCodigo.trim() || !ctoDireccion.trim()) return;
+    if (!ctoCodigo.trim()) return;
 
     try {
+      const direccionValue = ctoDireccion ? ctoDireccion.trim() : '';
       if (editingCto) {
         const updated = await DesplieguesService.updateCto(
           editingCto.id,
           ctoCodigo,
-          ctoDireccion,
+          direccionValue,
           user
         );
         setCtos(ctos.map(c => c.id === updated.id ? updated : c));
@@ -172,7 +173,7 @@ export default function DesplieguesAdminPage() {
         const created = await DesplieguesService.createCto(
           selectedSigest.id,
           ctoCodigo,
-          ctoDireccion,
+          direccionValue,
           user
         );
         setCtos([...ctos, created]);
