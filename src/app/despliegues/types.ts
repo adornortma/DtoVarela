@@ -19,6 +19,7 @@ export interface Sigest {
   tipo?: 'balanceado' | 'desbalanceado' | null;
   material_requerido?: Record<string, number> | null;
   material_entregado?: Record<string, number> | null;
+  material_usado?: Record<string, number> | null;
   fecha_creacion: string;
   fecha_actualizacion: string;
   created_at: string;

@@ -51,7 +51,8 @@ export const DesplieguesService = {
     usuario: string,
     tipo?: 'balanceado' | 'desbalanceado',
     material_requerido?: Record<string, number>,
-    material_entregado?: Record<string, number>
+    material_entregado?: Record<string, number>,
+    material_usado?: Record<string, number>
   ): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
@@ -61,6 +62,7 @@ export const DesplieguesService = {
         tipo: tipo || 'balanceado',
         material_requerido: material_requerido || {},
         material_entregado: material_entregado || {},
+        material_usado: material_usado || {},
         created_by: usuario,
         updated_by: usuario
       })
@@ -77,7 +79,8 @@ export const DesplieguesService = {
     usuario: string,
     tipo?: 'balanceado' | 'desbalanceado',
     material_requerido?: Record<string, number>,
-    material_entregado?: Record<string, number>
+    material_entregado?: Record<string, number>,
+    material_usado?: Record<string, number>
   ): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
@@ -87,6 +90,7 @@ export const DesplieguesService = {
         tipo: tipo || 'balanceado',
         material_requerido: material_requerido || {},
         material_entregado: material_entregado || {},
+        material_usado: material_usado || {},
         updated_by: usuario,
         fecha_actualizacion: new Date().toISOString(),
         updated_at: new Date().toISOString()

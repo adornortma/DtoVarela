@@ -457,7 +457,7 @@ export default function SigestDetailPage({ params }: PageProps) {
   };
 
   const handleUpdateMaterialQty = async (
-    type: 'requerido' | 'entregado', 
+    type: 'requerido' | 'entregado' | 'usado', 
     matName: string, 
     value: string
   ) => {
@@ -465,7 +465,14 @@ export default function SigestDetailPage({ params }: PageProps) {
     
     const numValue = parseInt(value, 10) || 0;
     
-    const currentRecord = { ...((type === 'requerido' ? selectedSigest.material_requerido : selectedSigest.material_entregado) as Record<string, number> || {}) };
+    let currentRecord: Record<string, number> = {};
+    if (type === 'requerido') {
+      currentRecord = { ...((selectedSigest.material_requerido as Record<string, number>) || {}) };
+    } else if (type === 'entregado') {
+      currentRecord = { ...((selectedSigest.material_entregado as Record<string, number>) || {}) };
+    } else if (type === 'usado') {
+      currentRecord = { ...((selectedSigest.material_usado as Record<string, number>) || {}) };
+    }
     
     if (currentRecord[matName] === numValue) return;
     
@@ -479,7 +486,8 @@ export default function SigestDetailPage({ params }: PageProps) {
         usuario,
         selectedSigest.tipo || 'balanceado',
         type === 'requerido' ? currentRecord : (selectedSigest.material_requerido as Record<string, number> || {}),
-        type === 'entregado' ? currentRecord : (selectedSigest.material_entregado as Record<string, number> || {})
+        type === 'entregado' ? currentRecord : (selectedSigest.material_entregado as Record<string, number> || {}),
+        type === 'usado' ? currentRecord : (selectedSigest.material_usado as Record<string, number> || {})
       );
       
       setSelectedSigest(updated);
@@ -718,15 +726,35 @@ export default function SigestDetailPage({ params }: PageProps) {
                       else if (key === 'Drop 75 mts') usd = materialsSummary.drop75;
                       else if (key === 'Drop 125 mts') usd = materialsSummary.drop125;
                       else if (key === 'Drop 175 mts') usd = materialsSummary.drop175;
+
+                      const overriddenUsd = (selectedSigest?.material_usado as Record<string, number>)?.[key];
+                      const currentUsd = overriddenUsd !== undefined ? overriddenUsd : usd;
+
                       return (
-                        <td key={key} style={{ padding: '16px', textAlign: 'center' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            backgroundColor: '#e0f2fe', color: '#0369a1', padding: '6px 16px', borderRadius: '10px',
-                            fontWeight: '900', fontSize: '18px', minWidth: '45px'
-                          }}>
-                            {usd}
-                          </span>
+                        <td key={key} style={{ padding: '12px 8px', textAlign: 'center' }}>
+                          <input 
+                            type="number"
+                            min="0"
+                            key={`usd-${key}-${currentUsd}`}
+                            defaultValue={currentUsd}
+                            onBlur={(e) => handleUpdateMaterialQty('usado', key, e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                            style={{
+                              width: '70px', padding: '8px 10px', border: '1.5px solid #bae6fd', outline: 'none',
+                              fontSize: '18px', fontWeight: '900', color: '#0369a1', textAlign: 'center', borderRadius: '10px',
+                              backgroundColor: '#f0f9ff', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.border = '1.5px solid #019df4';
+                              e.target.style.backgroundColor = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(1, 157, 244, 0.15)';
+                            }}
+                            onBlurCapture={(e) => {
+                              e.target.style.border = '1.5px solid #bae6fd';
+                              e.target.style.backgroundColor = '#f0f9ff';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                          />
                         </td>
                       );
                     })}

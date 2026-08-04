@@ -4,6 +4,8 @@ ALTER TABLE public.sigests DROP COLUMN IF EXISTS material_requerido;
 ALTER TABLE public.sigests DROP COLUMN IF EXISTS material_entregado;
 ALTER TABLE public.sigests ADD COLUMN material_requerido jsonb DEFAULT '{}'::jsonb;
 ALTER TABLE public.sigests ADD COLUMN material_entregado jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.sigests ADD COLUMN IF NOT EXISTS material_usado jsonb DEFAULT '{}'::jsonb;
+
 
 -- Add check constraint for tipo
 ALTER TABLE public.sigests DROP CONSTRAINT IF EXISTS check_sigest_tipo;
