@@ -493,5 +493,15 @@ export const DesplieguesService = {
         progreso
       };
     });
+  },
+
+  async checkDuplicateCtos(codigos: string[]): Promise<string[]> {
+    if (codigos.length === 0) return [];
+    const { data, error } = await supabase
+      .from('ctos')
+      .select('codigo')
+      .in('codigo', codigos);
+    if (error) throw error;
+    return (data || []).map(item => item.codigo);
   }
 };

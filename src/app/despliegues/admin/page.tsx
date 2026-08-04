@@ -311,6 +311,28 @@ export default function DesplieguesAdminPage() {
         }
       }
 
+      // Check globally for duplicates across the database
+      if (validItems.length > 0) {
+        try {
+          const globalDuplicateCodes = await DesplieguesService.checkDuplicateCtos(validItems.map(item => item.codigo));
+          if (globalDuplicateCodes.length > 0) {
+            const globalDupSet = new Set(globalDuplicateCodes.map(c => c.toLowerCase()));
+            const filteredValid: typeof validItems = [];
+            validItems.forEach(item => {
+              if (globalDupSet.has(item.codigo.toLowerCase())) {
+                duplicates.push(item.codigo);
+              } else {
+                filteredValid.push(item);
+              }
+            });
+            validItems.length = 0;
+            validItems.push(...filteredValid);
+          }
+        } catch (e) {
+          console.error('Error querying global duplicates:', e);
+        }
+      }
+
       let successCount = 0;
       if (validItems.length > 0) {
         const results = await Promise.all(
