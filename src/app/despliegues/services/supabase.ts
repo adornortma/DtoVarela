@@ -45,12 +45,22 @@ export const DesplieguesService = {
     return data || [];
   },
 
-  async createSigest(numero_sigest: string, central: string, usuario: string): Promise<Sigest> {
+  async createSigest(
+    numero_sigest: string, 
+    central: string, 
+    usuario: string,
+    tipo?: 'balanceado' | 'desbalanceado',
+    material_requerido?: number,
+    material_entregado?: number
+  ): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
       .insert({
         numero_sigest: numero_sigest.trim(),
         central: central.trim(),
+        tipo: tipo || 'balanceado',
+        material_requerido: material_requerido || 0,
+        material_entregado: material_entregado || 0,
         created_by: usuario,
         updated_by: usuario
       })
@@ -60,12 +70,23 @@ export const DesplieguesService = {
     return data;
   },
 
-  async updateSigest(id: string, numero_sigest: string, central: string, usuario: string): Promise<Sigest> {
+  async updateSigest(
+    id: string, 
+    numero_sigest: string, 
+    central: string, 
+    usuario: string,
+    tipo?: 'balanceado' | 'desbalanceado',
+    material_requerido?: number,
+    material_entregado?: number
+  ): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
       .update({
         numero_sigest: numero_sigest.trim(),
         central: central.trim(),
+        tipo: tipo || 'balanceado',
+        material_requerido: material_requerido || 0,
+        material_entregado: material_entregado || 0,
         updated_by: usuario,
         fecha_actualizacion: new Date().toISOString(),
         updated_at: new Date().toISOString()

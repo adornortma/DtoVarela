@@ -16,6 +16,9 @@ export interface Sigest {
   id: string;
   numero_sigest: string;
   central: string;
+  tipo?: 'balanceado' | 'desbalanceado' | null;
+  material_requerido?: number | null;
+  material_entregado?: number | null;
   fecha_creacion: string;
   fecha_actualizacion: string;
   created_at: string;

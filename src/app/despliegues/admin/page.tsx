@@ -22,6 +22,9 @@ export default function DesplieguesAdminPage() {
   const [editingSigest, setEditingSigest] = useState<Sigest | null>(null);
   const [sigestNumero, setSigestNumero] = useState('');
   const [sigestCentral, setSigestCentral] = useState('');
+  const [sigestTipo, setSigestTipo] = useState<'balanceado' | 'desbalanceado'>('balanceado');
+  const [sigestRequerido, setSigestRequerido] = useState<string>('0');
+  const [sigestEntregado, setSigestEntregado] = useState<string>('0');
 
   const [showCtoModal, setShowCtoModal] = useState(false);
   const [editingCto, setEditingCto] = useState<Cto | null>(null);
@@ -88,10 +91,16 @@ export default function DesplieguesAdminPage() {
       setEditingSigest(sigest);
       setSigestNumero(sigest.numero_sigest);
       setSigestCentral(sigest.central);
+      setSigestTipo(sigest.tipo || 'balanceado');
+      setSigestRequerido(String(sigest.material_requerido || 0));
+      setSigestEntregado(String(sigest.material_entregado || 0));
     } else {
       setEditingSigest(null);
       setSigestNumero('');
       setSigestCentral('');
+      setSigestTipo('balanceado');
+      setSigestRequerido('0');
+      setSigestEntregado('0');
     }
     setShowSigestModal(true);
   };
@@ -100,13 +109,19 @@ export default function DesplieguesAdminPage() {
     e.preventDefault();
     if (!sigestNumero.trim() || !sigestCentral.trim()) return;
 
+    const reqNum = parseInt(sigestRequerido, 10) || 0;
+    const entNum = parseInt(sigestEntregado, 10) || 0;
+
     try {
       if (editingSigest) {
         const updated = await DesplieguesService.updateSigest(
           editingSigest.id,
           sigestNumero,
           sigestCentral,
-          user
+          user,
+          sigestTipo,
+          reqNum,
+          entNum
         );
         setSigests(sigests.map(s => s.id === updated.id ? updated : s));
         if (selectedSigest?.id === updated.id) {
@@ -116,7 +131,10 @@ export default function DesplieguesAdminPage() {
         const created = await DesplieguesService.createSigest(
           sigestNumero,
           sigestCentral,
-          user
+          user,
+          sigestTipo,
+          reqNum,
+          entNum
         );
         setSigests([...sigests, created]);
       }
@@ -599,7 +617,7 @@ export default function DesplieguesAdminPage() {
                   }}
                 />
               </div>
-              <div>
+               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
                   Central
                 </label>
@@ -614,6 +632,57 @@ export default function DesplieguesAdminPage() {
                     fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
                   }}
                 />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  Tipo de Polígono
+                </label>
+                <select
+                  value={sigestTipo}
+                  onChange={e => setSigestTipo(e.target.value as any)}
+                  style={{
+                    width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: 'white',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="balanceado">Balanceado</option>
+                  <option value="desbalanceado">Desbalanceado</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Material Requerido (CTOs)
+                  </label>
+                  <input 
+                    type="number" 
+                    value={sigestRequerido}
+                    onChange={e => setSigestRequerido(e.target.value)}
+                    min="0"
+                    required
+                    style={{
+                      width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
+                      fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Material Entregado (CTOs)
+                  </label>
+                  <input 
+                    type="number" 
+                    value={sigestEntregado}
+                    onChange={e => setSigestEntregado(e.target.value)}
+                    min="0"
+                    required
+                    style={{
+                      width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
+                      fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
               <button 
                 type="submit"

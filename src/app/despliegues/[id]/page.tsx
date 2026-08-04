@@ -52,6 +52,7 @@ export default function SigestDetailPage({ params }: PageProps) {
   const [installTecnico, setInstallTecnico] = useState('');
   const [installObservaciones, setInstallObservaciones] = useState('');
   const [installUseCaja, setInstallUseCaja] = useState(true);
+  const [installCtoType, setInstallCtoType] = useState('CTO COMÚN');
   const [installUseDrop, setInstallUseDrop] = useState(false);
   const [installDropLength, setInstallDropLength] = useState('Drop 75 mts'); // Must match material names
   const [installDropOrigen, setInstallDropOrigen] = useState('Preparado de fábrica');
@@ -212,6 +213,9 @@ export default function SigestDetailPage({ params }: PageProps) {
   // Dynamically calculate materials stats
   const materialsSummary = React.useMemo(() => {
     let cajasUsed = 0;
+    let cto7030 = 0;
+    let cto5050 = 0;
+    let ctoComun = 0;
     let drop75 = 0;
     let drop125 = 0;
     let drop175 = 0;
@@ -220,7 +224,21 @@ export default function SigestDetailPage({ params }: PageProps) {
 
     materialesActividad.forEach(am => {
       const matNombre = am.materiales?.nombre;
-      if (matNombre === 'Caja CTO') cajasUsed += am.cantidad;
+      if (matNombre === 'Caja CTO') {
+        cajasUsed += am.cantidad;
+      }
+      if (matNombre === 'CTO 70/30') {
+        cajasUsed += am.cantidad;
+        cto7030 += am.cantidad;
+      }
+      if (matNombre === 'CTO 50/50') {
+        cajasUsed += am.cantidad;
+        cto5050 += am.cantidad;
+      }
+      if (matNombre === 'CTO COMÚN') {
+        cajasUsed += am.cantidad;
+        ctoComun += am.cantidad;
+      }
       if (matNombre === 'Drop 75 mts') drop75 += am.cantidad;
       if (matNombre === 'Drop 125 mts') drop125 += am.cantidad;
       if (matNombre === 'Drop 175 mts') drop175 += am.cantidad;
@@ -231,7 +249,7 @@ export default function SigestDetailPage({ params }: PageProps) {
       }
     });
 
-    return { cajasUsed, drop75, drop125, drop175, preparadoFabrica, preparadoTecnico };
+    return { cajasUsed, cto7030, cto5050, ctoComun, drop75, drop125, drop175, preparadoFabrica, preparadoTecnico };
   }, [materialesActividad]);
 
   // Open status modal
@@ -304,9 +322,16 @@ export default function SigestDetailPage({ params }: PageProps) {
       const materialsToSave: { material_id: string; cantidad: number; origen: string | null }[] = [];
       
       if (installUseCaja) {
-        const cajaMat = materialesCatalogo.find(m => m.nombre === 'Caja CTO');
+        const targetCtoName = selectedSigest?.tipo === 'desbalanceado' ? installCtoType : 'Caja CTO';
+        const cajaMat = materialesCatalogo.find(m => m.nombre === targetCtoName);
         if (cajaMat) {
           materialsToSave.push({ material_id: cajaMat.id, cantidad: 1, origen: null });
+        } else {
+          const dbMats = await DesplieguesService.getMateriales();
+          const found = dbMats.find(m => m.nombre === targetCtoName);
+          if (found) {
+            materialsToSave.push({ material_id: found.id, cantidad: 1, origen: null });
+          }
         }
       }
 
@@ -537,11 +562,40 @@ export default function SigestDetailPage({ params }: PageProps) {
             </h3>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              {/* Materiales SIGEST Requerido vs Entregado vs Utilizado */}
               <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Cajas CTO Utilizadas</span>
-                <p style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a', marginTop: '4px' }}>{materialsSummary.cajasUsed}</p>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Materiales SIGEST (CTOs)</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Requerido:</span> <strong style={{ color: '#0f172a' }}>{selectedSigest?.material_requerido || 0}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Entregado:</span> <strong style={{ color: '#0f172a' }}>{selectedSigest?.material_entregado || 0}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Utilizado:</span> <strong style={{ color: '#019df4' }}>{materialsSummary.cajasUsed}</strong>
+                  </div>
+                </div>
               </div>
-              
+
+              {/* Show different CTO types in desbalanced sigests */}
+              {selectedSigest?.tipo === 'desbalanceado' && (
+                <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Desglose CTOs Utilizadas</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>CTO 70/30:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.cto7030}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>CTO 50/50:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.cto5050}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>CTO COMÚN:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.ctoComun}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Consumo Drop Fibra</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
@@ -839,9 +893,33 @@ export default function SigestDetailPage({ params }: PageProps) {
                   </label>
                 </div>
                 {installUseCaja && (
-                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', paddingLeft: '26px' }}>
-                    Cantidad por defecto: 1 unidad.
-                  </p>
+                  <div style={{ marginTop: '8px', paddingLeft: '26px' }}>
+                    <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>
+                      Cantidad por defecto: 1 unidad.
+                    </p>
+                    {selectedSigest?.tipo === 'desbalanceado' && (
+                      <div>
+                        <span style={{ display: 'block', fontSize: '11px', fontWeight: '850', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Tipo de CTO (Desbalanceado)</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {['CTO 70/30', 'CTO 50/50', 'CTO COMÚN'].map(type => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setInstallCtoType(type)}
+                              style={{
+                                flex: 1, padding: '8px', fontSize: '11px', fontWeight: '705', borderRadius: '8px',
+                                backgroundColor: installCtoType === type ? '#019df4' : 'white',
+                                color: installCtoType === type ? 'white' : '#475569',
+                                border: installCtoType === type ? '1px solid #019df4' : '1px solid #e2e8f0'
+                              }}
+                            >
+                              {type.replace('CTO ', '')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
