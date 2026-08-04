@@ -31,6 +31,7 @@ export default function DesplieguesAdminPage() {
 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkText, setBulkText] = useState('');
+  const [importingBulk, setImportingBulk] = useState(false);
   const [bulkResult, setBulkResult] = useState<{
     processed: number;
     success: number;
@@ -220,67 +221,95 @@ export default function DesplieguesAdminPage() {
   const handleProcessBulk = async () => {
     if (!selectedSigest || !bulkText.trim()) return;
     
-    const lines = bulkText.split('\n');
-    const duplicates: string[] = [];
-    const errors: string[] = [];
-    let successCount = 0;
-    let processedCount = 0;
+    setImportingBulk(true);
+    try {
+      const lines = bulkText.split('\n');
+      const duplicates: string[] = [];
+      const errors: string[] = [];
+      const validItems: { codigo: string; direccion: string; peloCto: string }[] = [];
+      let processedCount = 0;
 
-    // Get current ctos list to validate duplicates
-    const currentCodes = new Set(ctos.map(c => c.codigo.toLowerCase()));
+      // Get current ctos list to validate duplicates
+      const currentCodes = new Set(ctos.map(c => c.codigo.toLowerCase()));
+      // Keep track of codes we are planning to insert in this batch to detect duplicates in the pasted text
+      const batchCodes = new Set<string>();
 
-    for (let line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      
-      processedCount++;
-      // Split by tab first, fallback to multiple spaces
-      const parts = trimmed.split('\t');
-      let codigo = '';
-      let direccion = '';
-      let peloCto = '';
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        
+        processedCount++;
+        // Split by tab first, fallback to multiple spaces
+        const parts = trimmed.split('\t');
+        let codigo = '';
+        let direccion = '';
+        let peloCto = '';
 
-      if (parts.length >= 2) {
-        codigo = parts[0]?.trim() || '';
-        direccion = parts[1]?.trim() || '';
-        peloCto = parts[2]?.trim() || '';
-      } else {
-        const spaceParts = trimmed.split(/\s{2,}/);
-        codigo = spaceParts[0]?.trim() || '';
-        direccion = spaceParts[1]?.trim() || '';
-        peloCto = spaceParts[2]?.trim() || '';
+        if (parts.length >= 2) {
+          codigo = parts[0]?.trim() || '';
+          direccion = parts[1]?.trim() || '';
+          peloCto = parts[2]?.trim() || '';
+        } else {
+          const spaceParts = trimmed.split(/\s{2,}/);
+          codigo = spaceParts[0]?.trim() || '';
+          direccion = spaceParts[1]?.trim() || '';
+          peloCto = spaceParts[2]?.trim() || '';
+        }
+
+        if (!codigo) {
+          errors.push(`Línea ${processedCount}: Código vacío`);
+          continue;
+        }
+
+        const codigoLower = codigo.toLowerCase().trim();
+        if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
+          duplicates.push(codigo);
+          continue;
+        }
+
+        batchCodes.add(codigoLower);
+        validItems.push({ codigo, direccion, peloCto });
       }
 
-      if (!codigo) {
-        errors.push(`Línea ${processedCount}: Código vacío`);
-        continue;
+      let successCount = 0;
+      if (validItems.length > 0) {
+        const results = await Promise.all(
+          validItems.map(async (item) => {
+            try {
+              await DesplieguesService.createCto(selectedSigest.id, item.codigo, item.direccion, user, item.peloCto);
+              return { success: true, codigo: item.codigo };
+            } catch (err: any) {
+              console.error(err);
+              return { success: false, codigo: item.codigo, error: err.message || 'Error al guardar' };
+            }
+          })
+        );
+
+        results.forEach((r) => {
+          if (r.success) {
+            successCount++;
+          } else {
+            errors.push(`${r.codigo}: ${r.error}`);
+          }
+        });
       }
 
-      if (currentCodes.has(codigo.toLowerCase())) {
-        duplicates.push(codigo);
-        continue;
-      }
+      setBulkResult({
+        processed: processedCount,
+        success: successCount,
+        duplicates,
+        errors
+      });
 
-      try {
-        await DesplieguesService.createCto(selectedSigest.id, codigo, direccion, user, peloCto);
-        currentCodes.add(codigo.toLowerCase());
-        successCount++;
-      } catch (err: any) {
-        console.error(err);
-        errors.push(`${codigo}: ${err.message || 'Error al guardar'}`);
-      }
+      // Refresh CTO list
+      const updatedCtos = await DesplieguesService.getCtosBySigest(selectedSigest.id);
+      setCtos(updatedCtos);
+    } catch (e: any) {
+      console.error(e);
+      alert('Error durante el proceso de importación: ' + (e.message || e));
+    } finally {
+      setImportingBulk(false);
     }
-
-    setBulkResult({
-      processed: processedCount,
-      success: successCount,
-      duplicates,
-      errors
-    });
-
-    // Refresh CTO list
-    const updatedCtos = await DesplieguesService.getCtosBySigest(selectedSigest.id);
-    setCtos(updatedCtos);
   };
 
   return (
@@ -729,12 +758,21 @@ export default function DesplieguesAdminPage() {
                 </div>
                 <button 
                   onClick={handleProcessBulk}
+                  disabled={importingBulk}
                   style={{
                     backgroundColor: '#019df4', color: 'white', padding: '14px', borderRadius: '12px',
-                    fontWeight: '800', fontSize: '14px', cursor: 'pointer', textAlign: 'center'
+                    fontWeight: '800', fontSize: '14px', cursor: importingBulk ? 'not-allowed' : 'pointer', textAlign: 'center',
+                    display: 'flex', justifyContent: 'center', gap: '8px', opacity: importingBulk ? 0.7 : 1
                   }}
                 >
-                  Procesar Importación
+                  {importingBulk ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Procesando...
+                    </>
+                  ) : (
+                    'Procesar Importación'
+                  )}
                 </button>
               </div>
             ) : (
