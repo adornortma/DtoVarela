@@ -171,6 +171,7 @@ export default function DesplieguesTrackingPage() {
                 <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
                   <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Número SIGEST</th>
                   <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Central</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Estado</th>
                   <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instaladas / Totales</th>
                   <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificadas / Totales</th>
                   <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '200px' }}>Avance Central</th>
@@ -195,6 +196,33 @@ export default function DesplieguesTrackingPage() {
                       </td>
                       <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
                         {item.central}
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        {item.progreso === 100 ? (
+                          <span style={{
+                            display: 'inline-block', backgroundColor: '#ecfdf5', color: '#047857',
+                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                            border: '1px solid #a7f3d0', textTransform: 'uppercase'
+                          }}>
+                            Finalizado
+                          </span>
+                        ) : item.progreso === 0 ? (
+                          <span style={{
+                            display: 'inline-block', backgroundColor: '#fffbeb', color: '#b45309',
+                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                            border: '1px solid #fde68a', textTransform: 'uppercase'
+                          }}>
+                            Pendiente
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-block', backgroundColor: '#fef2f2', color: '#b91c1c',
+                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                            border: '1px solid #fecaca', textTransform: 'uppercase'
+                          }}>
+                            Iniciado
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
                         <span style={{ color: '#16a34a', fontWeight: '800' }}>{item.instaladas}</span> / {item.total_ctos}
