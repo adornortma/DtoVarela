@@ -605,14 +605,13 @@ export default function SigestDetailPage({ params }: PageProps) {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Concepto</th>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                    <th style={{ padding: '16px', fontSize: '13px', fontWeight: '850', color: '#475569', textTransform: 'uppercase' }}>Concepto</th>
                     {(selectedSigest?.tipo === 'desbalanceado'
                       ? [
                           { key: 'Caja CTO', label: 'CTO' },
                           { key: 'CTO 70/30', label: 'CTO 70/30' },
                           { key: 'CTO 50/50', label: 'CTO 50/50' },
-                          { key: 'CTO COMÚN', label: 'CTO COMÚN' },
                           { key: 'Drop 75 mts', label: 'DROP 75' },
                           { key: 'Drop 125 mts', label: 'DROP 125' },
                           { key: 'Drop 175 mts', label: 'DROP 175' }
@@ -624,7 +623,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                           { key: 'Drop 175 mts', label: 'DROP 175' }
                         ]
                     ).map(col => (
-                      <th key={col.key} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', textAlign: 'center' }}>
+                      <th key={col.key} style={{ padding: '16px', fontSize: '13px', fontWeight: '850', color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>
                         {col.label}
                       </th>
                     ))}
@@ -633,14 +632,14 @@ export default function SigestDetailPage({ params }: PageProps) {
                 <tbody>
                   {/* Requerido row */}
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px', fontWeight: '800', color: '#475569', fontSize: '13px' }}>Requerido</td>
+                    <td style={{ padding: '16px', fontWeight: '900', color: '#0f172a', fontSize: '15px' }}>Requerido</td>
                     {(selectedSigest?.tipo === 'desbalanceado'
-                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'CTO COMÚN', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                       : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                     ).map(key => {
                       const req = (selectedSigest?.material_requerido as Record<string, number>)?.[key] ?? 0;
                       return (
-                        <td key={key} style={{ padding: '8px 16px', textAlign: 'center' }}>
+                        <td key={key} style={{ padding: '12px 8px', textAlign: 'center' }}>
                           <input 
                             type="number"
                             min="0"
@@ -649,17 +648,19 @@ export default function SigestDetailPage({ params }: PageProps) {
                             onBlur={(e) => handleUpdateMaterialQty('requerido', key, e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                             style={{
-                              width: '60px', padding: '6px', border: '1px solid transparent', outline: 'none',
-                              fontSize: '14px', fontWeight: '700', color: '#0f172a', textAlign: 'center', borderRadius: '6px',
-                              backgroundColor: 'transparent', transition: 'all 0.2s'
+                              width: '70px', padding: '8px 10px', border: '1.5px solid #e2e8f0', outline: 'none',
+                              fontSize: '18px', fontWeight: '900', color: '#0f172a', textAlign: 'center', borderRadius: '10px',
+                              backgroundColor: '#f8fafc', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
                             }}
                             onFocus={(e) => {
-                              e.target.style.border = '1px solid #cbd5e1';
+                              e.target.style.border = '1.5px solid #019df4';
                               e.target.style.backgroundColor = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(1, 157, 244, 0.15)';
                             }}
                             onBlurCapture={(e) => {
-                              e.target.style.border = '1px solid transparent';
-                              e.target.style.backgroundColor = 'transparent';
+                              e.target.style.border = '1.5px solid #e2e8f0';
+                              e.target.style.backgroundColor = '#f8fafc';
+                              e.target.style.boxShadow = 'none';
                             }}
                           />
                         </td>
@@ -668,14 +669,14 @@ export default function SigestDetailPage({ params }: PageProps) {
                   </tr>
                   {/* Entregado row */}
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px', fontWeight: '800', color: '#475569', fontSize: '13px' }}>Entregados</td>
+                    <td style={{ padding: '16px', fontWeight: '900', color: '#0f172a', fontSize: '15px' }}>Entregados</td>
                     {(selectedSigest?.tipo === 'desbalanceado'
-                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'CTO COMÚN', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                       : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                     ).map(key => {
                       const ent = (selectedSigest?.material_entregado as Record<string, number>)?.[key] ?? 0;
                       return (
-                        <td key={key} style={{ padding: '8px 16px', textAlign: 'center' }}>
+                        <td key={key} style={{ padding: '12px 8px', textAlign: 'center' }}>
                           <input 
                             type="number"
                             min="0"
@@ -684,17 +685,19 @@ export default function SigestDetailPage({ params }: PageProps) {
                             onBlur={(e) => handleUpdateMaterialQty('entregado', key, e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                             style={{
-                              width: '60px', padding: '6px', border: '1px solid transparent', outline: 'none',
-                              fontSize: '14px', fontWeight: '700', color: '#0f172a', textAlign: 'center', borderRadius: '6px',
-                              backgroundColor: 'transparent', transition: 'all 0.2s'
+                              width: '70px', padding: '8px 10px', border: '1.5px solid #e2e8f0', outline: 'none',
+                              fontSize: '18px', fontWeight: '900', color: '#0f172a', textAlign: 'center', borderRadius: '10px',
+                              backgroundColor: '#f8fafc', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
                             }}
                             onFocus={(e) => {
-                              e.target.style.border = '1px solid #cbd5e1';
+                              e.target.style.border = '1.5px solid #019df4';
                               e.target.style.backgroundColor = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(1, 157, 244, 0.15)';
                             }}
                             onBlurCapture={(e) => {
-                              e.target.style.border = '1px solid transparent';
-                              e.target.style.backgroundColor = 'transparent';
+                              e.target.style.border = '1.5px solid #e2e8f0';
+                              e.target.style.backgroundColor = '#f8fafc';
+                              e.target.style.boxShadow = 'none';
                             }}
                           />
                         </td>
@@ -703,22 +706,27 @@ export default function SigestDetailPage({ params }: PageProps) {
                   </tr>
                   {/* Usado row */}
                   <tr>
-                    <td style={{ padding: '16px', fontWeight: '800', color: '#475569', fontSize: '13px' }}>Usado</td>
+                    <td style={{ padding: '16px', fontWeight: '900', color: '#0f172a', fontSize: '15px' }}>Usado</td>
                     {(selectedSigest?.tipo === 'desbalanceado'
-                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'CTO COMÚN', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                       : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                     ).map(key => {
                       let usd = 0;
                       if (key === 'Caja CTO') usd = materialsSummary.cajasUsed;
                       else if (key === 'CTO 70/30') usd = materialsSummary.cto7030;
                       else if (key === 'CTO 50/50') usd = materialsSummary.cto5050;
-                      else if (key === 'CTO COMÚN') usd = materialsSummary.ctoComun;
                       else if (key === 'Drop 75 mts') usd = materialsSummary.drop75;
                       else if (key === 'Drop 125 mts') usd = materialsSummary.drop125;
                       else if (key === 'Drop 175 mts') usd = materialsSummary.drop175;
                       return (
-                        <td key={key} style={{ padding: '16px', textAlign: 'center', fontWeight: '800', color: '#019df4', fontSize: '14px' }}>
-                          {usd}
+                        <td key={key} style={{ padding: '16px', textAlign: 'center' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            backgroundColor: '#e0f2fe', color: '#0369a1', padding: '6px 16px', borderRadius: '10px',
+                            fontWeight: '900', fontSize: '18px', minWidth: '45px'
+                          }}>
+                            {usd}
+                          </span>
                         </td>
                       );
                     })}
