@@ -22,6 +22,12 @@ export default function DesplieguesTrackingPage() {
     certificadas: number;
     progreso: number;
   }[]>([]);
+  const [summaryStats, setSummaryStats] = useState<{
+    totalSigests: number;
+    totalInstalledCtos: number;
+    totalPendingCtos: number;
+    totalObservedCtos: number;
+  } | null>(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
 
@@ -29,7 +35,8 @@ export default function DesplieguesTrackingPage() {
     setLoadingDashboard(true);
     try {
       const stats = await DesplieguesService.getDashboardStats();
-      setDashboardItems(stats);
+      setDashboardItems(stats.items);
+      setSummaryStats(stats.summary);
     } catch (e) {
       console.error('Error loading dashboard stats:', e);
     } finally {
@@ -93,6 +100,28 @@ export default function DesplieguesTrackingPage() {
             <Database size={16} /> Modo Admin / CRUD
           </Link>
         </div>
+
+        {/* Summary Stats Cards */}
+        {summaryStats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '8px', marginBottom: '8px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '850', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SIGESTs Asignados</span>
+              <span style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a' }}>{summaryStats.totalSigests}</span>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '850', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CTOs Instaladas</span>
+              <span style={{ fontSize: '26px', fontWeight: '950', color: '#2563eb' }}>{summaryStats.totalInstalledCtos}</span>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '850', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CTOs Pendientes</span>
+              <span style={{ fontSize: '26px', fontWeight: '950', color: '#b45309' }}>{summaryStats.totalPendingCtos}</span>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '850', color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CTOs Observadas</span>
+              <span style={{ fontSize: '26px', fontWeight: '950', color: '#dc2626' }}>{summaryStats.totalObservedCtos}</span>
+            </div>
+          </div>
+        )}
 
         {/* Search Input Box */}
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '700px' }}>

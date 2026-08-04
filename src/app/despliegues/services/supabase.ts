@@ -423,17 +423,30 @@ export const DesplieguesService = {
   },
 
   async getDashboardStats(): Promise<{
-    id: string;
-    numero_sigest: string;
-    central: string;
-    total_ctos: number;
-    instaladas: number;
-    certificadas: number;
-    progreso: number;
-  }[]> {
+    items: {
+      id: string;
+      numero_sigest: string;
+      central: string;
+      total_ctos: number;
+      instaladas: number;
+      certificadas: number;
+      progreso: number;
+    }[];
+    summary: {
+      totalSigests: number;
+      totalInstalledCtos: number;
+      totalPendingCtos: number;
+      totalObservedCtos: number;
+    };
+  }> {
     // 1. Fetch all SIGESTs
     const sigests = await this.getSigests();
-    if (sigests.length === 0) return [];
+    if (sigests.length === 0) {
+      return {
+        items: [],
+        summary: { totalSigests: 0, totalInstalledCtos: 0, totalPendingCtos: 0, totalObservedCtos: 0 }
+      };
+    }
 
     // 2. Fetch all CTOs
     const { data: ctos, error: ctosError } = await supabase
@@ -466,6 +479,12 @@ export const DesplieguesService = {
       }
     });
 
+    // Compute activity states map for CTO summary cards
+    const ctoStates: Record<string, { instalar?: string; certificar?: string }> = {};
+    ctos?.forEach(c => {
+      ctoStates[c.id] = {};
+    });
+
     acts?.forEach(act => {
       const sigestId = ctoToSigest[act.cto_id];
       if (!sigestId || !statsMap[sigestId]) return;
@@ -481,9 +500,33 @@ export const DesplieguesService = {
           statsMap[sigestId].certificadas++;
         }
       }
+
+      if (ctoStates[act.cto_id]) {
+        if (tipoNombre?.includes('instalar')) {
+          ctoStates[act.cto_id].instalar = estNombre;
+        } else if (tipoNombre?.includes('certificar')) {
+          ctoStates[act.cto_id].certificar = estNombre;
+        }
+      }
     });
 
-    return sigests.map(s => {
+    let totalInstalledCtos = 0;
+    let totalPendingCtos = 0;
+    let totalObservedCtos = 0;
+
+    Object.values(ctoStates).forEach(states => {
+      if (states.instalar === 'completado') {
+        totalInstalledCtos++;
+      }
+      if (states.instalar === 'pendiente') {
+        totalPendingCtos++;
+      }
+      if (states.instalar === 'observado' || states.certificar === 'observado') {
+        totalObservedCtos++;
+      }
+    });
+
+    const items = sigests.map(s => {
       const info = statsMap[s.id];
       const totalActivities = info.total_ctos * 2;
       const completedActivities = info.instaladas + info.certificadas;
@@ -499,6 +542,16 @@ export const DesplieguesService = {
         progreso
       };
     });
+
+    return {
+      items,
+      summary: {
+        totalSigests: sigests.length,
+        totalInstalledCtos,
+        totalPendingCtos,
+        totalObservedCtos
+      }
+    };
   },
 
   async checkDuplicateCtos(codigos: string[]): Promise<string[]> {
