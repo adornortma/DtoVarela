@@ -1150,7 +1150,6 @@ export default function SigestDetailPage({ params }: PageProps) {
                   value={installTecnico}
                   onChange={e => setInstallTecnico(e.target.value)}
                   placeholder="Nombre y apellido del técnico..."
-                  required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
                     fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
@@ -1241,7 +1240,6 @@ export default function SigestDetailPage({ params }: PageProps) {
                   value={certTecnico}
                   onChange={e => setCertTecnico(e.target.value)}
                   placeholder="Nombre y apellido del técnico..."
-                  required
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
                     fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
