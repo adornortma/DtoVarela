@@ -693,11 +693,99 @@ export default function DesplieguesTrackingPage() {
                               {cto.codigo}
                             </span>
                           </td>
-                          <td style={{ padding: '16px', color: '#019df4', fontSize: '13px', fontWeight: '850' }}>
-                            {cto.pelo_cto || '-'}
+                          {/* Pelo/CTO */}
+                          <td style={{ padding: '12px 16px' }}>
+                            <input
+                              type="text"
+                              defaultValue={cto.pelo_cto || ''}
+                              onBlur={async (e) => {
+                                const val = e.target.value.trim();
+                                if (val !== (cto.pelo_cto || '')) {
+                                  try {
+                                    await DesplieguesService.updateCto(cto.id, cto.codigo, cto.direccion || '', usuario, val);
+                                    // Update local state
+                                    setCtos(prev => prev.map(c => c.id === cto.id ? { ...c, pelo_cto: val } : c));
+                                  } catch (err) {
+                                    console.error(err);
+                                    alert('Error al actualizar Pelo/CTO');
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              placeholder="-"
+                              style={{
+                                width: '100%',
+                                backgroundColor: 'transparent',
+                                border: '1px solid transparent',
+                                outline: 'none',
+                                fontSize: '13px',
+                                fontWeight: '850',
+                                color: '#019df4',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.border = '1px solid #019df4';
+                                e.target.style.backgroundColor = 'white';
+                              }}
+                              onBlurCapture={(e) => {
+                                e.target.style.border = '1px solid transparent';
+                                e.target.style.backgroundColor = 'transparent';
+                              }}
+                            />
                           </td>
-                          <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
-                            {cto.direccion || '-'}
+                          {/* Dirección */}
+                          <td style={{ padding: '12px 16px' }}>
+                            <input
+                              type="text"
+                              defaultValue={cto.direccion || ''}
+                              onBlur={async (e) => {
+                                const val = e.target.value.trim();
+                                if (val !== (cto.direccion || '')) {
+                                  try {
+                                    await DesplieguesService.updateCto(cto.id, cto.codigo, val, usuario, cto.pelo_cto || undefined);
+                                    // Update local state
+                                    setCtos(prev => prev.map(c => c.id === cto.id ? { ...c, direccion: val } : c));
+                                  } catch (err) {
+                                    console.error(err);
+                                    alert('Error al actualizar la dirección');
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              placeholder="-"
+                              style={{
+                                width: '100%',
+                                backgroundColor: 'transparent',
+                                border: '1px solid transparent',
+                                outline: 'none',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                color: '#475569',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.border = '1px solid #cbd5e1';
+                                e.target.style.backgroundColor = 'white';
+                              }}
+                              onBlurCapture={(e) => {
+                                e.target.style.border = '1px solid transparent';
+                                e.target.style.backgroundColor = 'transparent';
+                              }}
+                            />
                           </td>
                           
                           {/* Instalacion */}
