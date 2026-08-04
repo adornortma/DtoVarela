@@ -456,6 +456,39 @@ export default function SigestDetailPage({ params }: PageProps) {
     }
   };
 
+  const handleUpdateMaterialQty = async (
+    type: 'requerido' | 'entregado', 
+    matName: string, 
+    value: string
+  ) => {
+    if (!selectedSigest) return;
+    
+    const numValue = parseInt(value, 10) || 0;
+    
+    const currentRecord = { ...((type === 'requerido' ? selectedSigest.material_requerido : selectedSigest.material_entregado) as Record<string, number> || {}) };
+    
+    if (currentRecord[matName] === numValue) return;
+    
+    currentRecord[matName] = numValue;
+    
+    try {
+      const updated = await DesplieguesService.updateSigest(
+        selectedSigest.id,
+        selectedSigest.numero_sigest,
+        selectedSigest.central,
+        usuario,
+        selectedSigest.tipo || 'balanceado',
+        type === 'requerido' ? currentRecord : (selectedSigest.material_requerido as Record<string, number> || {}),
+        type === 'entregado' ? currentRecord : (selectedSigest.material_entregado as Record<string, number> || {})
+      );
+      
+      setSelectedSigest(updated);
+    } catch (err) {
+      console.error(err);
+      alert('Error al actualizar la cantidad de material');
+    }
+  };
+
   return (
     <div style={{ padding: '30px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       
@@ -607,8 +640,28 @@ export default function SigestDetailPage({ params }: PageProps) {
                     ).map(key => {
                       const req = (selectedSigest?.material_requerido as Record<string, number>)?.[key] ?? 0;
                       return (
-                        <td key={key} style={{ padding: '16px', textAlign: 'center', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                          {req}
+                        <td key={key} style={{ padding: '8px 16px', textAlign: 'center' }}>
+                          <input 
+                            type="number"
+                            min="0"
+                            key={`req-${key}-${req}`}
+                            defaultValue={req}
+                            onBlur={(e) => handleUpdateMaterialQty('requerido', key, e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                            style={{
+                              width: '60px', padding: '6px', border: '1px solid transparent', outline: 'none',
+                              fontSize: '14px', fontWeight: '700', color: '#0f172a', textAlign: 'center', borderRadius: '6px',
+                              backgroundColor: 'transparent', transition: 'all 0.2s'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.border = '1px solid #cbd5e1';
+                              e.target.style.backgroundColor = 'white';
+                            }}
+                            onBlurCapture={(e) => {
+                              e.target.style.border = '1px solid transparent';
+                              e.target.style.backgroundColor = 'transparent';
+                            }}
+                          />
                         </td>
                       );
                     })}
@@ -622,8 +675,28 @@ export default function SigestDetailPage({ params }: PageProps) {
                     ).map(key => {
                       const ent = (selectedSigest?.material_entregado as Record<string, number>)?.[key] ?? 0;
                       return (
-                        <td key={key} style={{ padding: '16px', textAlign: 'center', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                          {ent}
+                        <td key={key} style={{ padding: '8px 16px', textAlign: 'center' }}>
+                          <input 
+                            type="number"
+                            min="0"
+                            key={`ent-${key}-${ent}`}
+                            defaultValue={ent}
+                            onBlur={(e) => handleUpdateMaterialQty('entregado', key, e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                            style={{
+                              width: '60px', padding: '6px', border: '1px solid transparent', outline: 'none',
+                              fontSize: '14px', fontWeight: '700', color: '#0f172a', textAlign: 'center', borderRadius: '6px',
+                              backgroundColor: 'transparent', transition: 'all 0.2s'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.border = '1px solid #cbd5e1';
+                              e.target.style.backgroundColor = 'white';
+                            }}
+                            onBlurCapture={(e) => {
+                              e.target.style.border = '1px solid transparent';
+                              e.target.style.backgroundColor = 'transparent';
+                            }}
+                          />
                         </td>
                       );
                     })}
