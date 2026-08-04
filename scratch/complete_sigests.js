@@ -87,4 +87,4 @@ async function completeSigests(numbers) {
   console.log('\nProceso de completado masivo finalizado.');
 }
 
-completeSigests(['6103800661', '6103801261', '6103804561', '6103803261']);
+completeSigests(['6103800761']);
