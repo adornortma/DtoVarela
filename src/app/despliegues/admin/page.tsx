@@ -698,10 +698,10 @@ export default function DesplieguesAdminPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>
-                  Importar CTOs desde Excel
+                  Importar CTOs (Masivo)
                 </h3>
                 <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px', fontWeight: '600' }}>
-                  Pegue las columnas Código y Dirección directamente.
+                  Pegue un listado de códigos de CTO (uno por línea) o copie columnas directo de Excel.
                 </p>
               </div>
               <button onClick={() => setShowBulkModal(false)} style={{ padding: '6px', cursor: 'pointer' }}>
@@ -713,13 +713,13 @@ export default function DesplieguesAdminPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    Texto copiado de Excel (Código tab/espacio Dirección)
+                    Códigos de CTO o columnas de Excel
                   </label>
                   <textarea
                     rows={8}
                     value={bulkText}
                     onChange={e => setBulkText(e.target.value)}
-                    placeholder="31912831_1    Calle 141 Nº1370&#10;31912456_1    Calle 141 Nº1390&#10;31912888_1    Calle 143 Nº1450"
+                    placeholder="Ejemplo solo códigos:&#10;6560110503_1&#10;6560112505_1&#10;&#10;Ejemplo columnas de Excel (Código [Tab] Dirección [Tab] Pelo):&#10;6560110503_1    Calle 141    23-5"
                     style={{
                       width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0',
                       fontSize: '13px', outline: 'none', fontWeight: '600', color: '#0f172a', fontFamily: 'monospace',
