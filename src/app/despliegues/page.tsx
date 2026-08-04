@@ -672,6 +672,7 @@ export default function DesplieguesTrackingPage() {
                   <thead>
                     <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
+                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
                       <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
@@ -685,29 +686,6 @@ export default function DesplieguesTrackingPage() {
                       const installAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar'));
                       const certAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar'));
 
-                      const renderActivityStateBadge = (act: Actividad | undefined) => {
-                        if (!act) return <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>;
-                        const estNombre = act.despliegues_estados?.nombre || 'Pendiente';
-                        const estColor = act.despliegues_estados?.color_hex || '#64748b';
-                        
-                        return (
-                          <span style={{
-                            backgroundColor: `${estColor}12`,
-                            color: estColor,
-                            border: `1px solid ${estColor}33`,
-                            padding: '4px 8px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: '800',
-                            display: 'inline-block',
-                            minWidth: '85px',
-                            textAlign: 'center'
-                          }}>
-                            {estNombre}
-                          </span>
-                        );
-                      };
-
                       return (
                         <tr key={cto.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' }}>
                           <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '14px' }}>
@@ -715,58 +693,77 @@ export default function DesplieguesTrackingPage() {
                               {cto.codigo}
                             </span>
                           </td>
+                          <td style={{ padding: '16px', color: '#019df4', fontSize: '13px', fontWeight: '850' }}>
+                            {cto.pelo_cto || '-'}
+                          </td>
                           <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
                             {cto.direccion || '-'}
                           </td>
                           
                           {/* Instalacion */}
                           <td style={{ padding: '16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {renderActivityStateBadge(installAct)}
-                              {installAct && (
-                                <div style={{ position: 'relative' }}>
-                                  <select
-                                    value={installAct.despliegues_estados?.nombre}
-                                    onChange={(e) => handleOpenStatusDialog(cto, installAct, e.target.value)}
-                                    style={{
-                                      appearance: 'none', backgroundColor: 'white', border: '1px solid #e2e8f0',
-                                      borderRadius: '8px', padding: '4px 24px 4px 8px', fontSize: '11px', fontWeight: '800',
-                                      color: '#475569', cursor: 'pointer', outline: 'none'
-                                    }}
-                                  >
-                                    {estados.map(est => (
-                                      <option key={est.id} value={est.nombre}>{est.nombre}</option>
-                                    ))}
-                                  </select>
-                                  <ChevronRight size={10} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: '#94a3b8' }} />
-                                </div>
-                              )}
-                            </div>
+                            {installAct ? (
+                              <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <select
+                                  value={installAct.despliegues_estados?.nombre}
+                                  onChange={(e) => handleOpenStatusDialog(cto, installAct, e.target.value)}
+                                  style={{
+                                    appearance: 'none',
+                                    backgroundColor: `${installAct.despliegues_estados?.color_hex || '#64748b'}12`,
+                                    color: installAct.despliegues_estados?.color_hex || '#64748b',
+                                    border: `1px solid ${installAct.despliegues_estados?.color_hex || '#64748b'}33`,
+                                    borderRadius: '10px',
+                                    padding: '6px 28px 6px 14px',
+                                    fontSize: '11px',
+                                    fontWeight: '850',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    minWidth: '125px',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  {estados.map(est => (
+                                    <option key={est.id} value={est.nombre} style={{ backgroundColor: 'white', color: '#0f172a' }}>{est.nombre}</option>
+                                  ))}
+                                </select>
+                                <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: installAct.despliegues_estados?.color_hex || '#94a3b8' }} />
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>
+                            )}
                           </td>
                           
                           {/* Certificacion */}
                           <td style={{ padding: '16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {renderActivityStateBadge(certAct)}
-                              {certAct && (
-                                <div style={{ position: 'relative' }}>
-                                  <select
-                                    value={certAct.despliegues_estados?.nombre}
-                                    onChange={(e) => handleOpenStatusDialog(cto, certAct, e.target.value)}
-                                    style={{
-                                      appearance: 'none', backgroundColor: 'white', border: '1px solid #e2e8f0',
-                                      borderRadius: '8px', padding: '4px 24px 4px 8px', fontSize: '11px', fontWeight: '800',
-                                      color: '#475569', cursor: 'pointer', outline: 'none'
-                                    }}
-                                  >
-                                    {estados.map(est => (
-                                      <option key={est.id} value={est.nombre}>{est.nombre}</option>
-                                    ))}
-                                  </select>
-                                  <ChevronRight size={10} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: '#94a3b8' }} />
-                                </div>
-                              )}
-                            </div>
+                            {certAct ? (
+                              <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <select
+                                  value={certAct.despliegues_estados?.nombre}
+                                  onChange={(e) => handleOpenStatusDialog(cto, certAct, e.target.value)}
+                                  style={{
+                                    appearance: 'none',
+                                    backgroundColor: `${certAct.despliegues_estados?.color_hex || '#64748b'}12`,
+                                    color: certAct.despliegues_estados?.color_hex || '#64748b',
+                                    border: `1px solid ${certAct.despliegues_estados?.color_hex || '#64748b'}33`,
+                                    borderRadius: '10px',
+                                    padding: '6px 28px 6px 14px',
+                                    fontSize: '11px',
+                                    fontWeight: '850',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    minWidth: '125px',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  {estados.map(est => (
+                                    <option key={est.id} value={est.nombre} style={{ backgroundColor: 'white', color: '#0f172a' }}>{est.nombre}</option>
+                                  ))}
+                                </select>
+                                <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: certAct.despliegues_estados?.color_hex || '#94a3b8' }} />
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>
+                            )}
                           </td>
                           
                           {/* Acciones */}

@@ -27,6 +27,7 @@ export default function DesplieguesAdminPage() {
   const [editingCto, setEditingCto] = useState<Cto | null>(null);
   const [ctoCodigo, setCtoCodigo] = useState('');
   const [ctoDireccion, setCtoDireccion] = useState('');
+  const [ctoPeloCto, setCtoPeloCto] = useState('');
 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkText, setBulkText] = useState('');
@@ -146,10 +147,12 @@ export default function DesplieguesAdminPage() {
       setEditingCto(cto);
       setCtoCodigo(cto.codigo);
       setCtoDireccion(cto.direccion);
+      setCtoPeloCto(cto.pelo_cto || '');
     } else {
       setEditingCto(null);
       setCtoCodigo('');
       setCtoDireccion('');
+      setCtoPeloCto('');
     }
     setShowCtoModal(true);
   };
@@ -171,12 +174,14 @@ export default function DesplieguesAdminPage() {
 
     try {
       const direccionValue = ctoDireccion ? ctoDireccion.trim() : '';
+      const peloCtoValue = ctoPeloCto ? ctoPeloCto.trim() : '';
       if (editingCto) {
         const updated = await DesplieguesService.updateCto(
           editingCto.id,
           ctoCodigo,
           direccionValue,
-          user
+          user,
+          peloCtoValue
         );
         setCtos(ctos.map(c => c.id === updated.id ? updated : c));
       } else {
@@ -184,7 +189,8 @@ export default function DesplieguesAdminPage() {
           selectedSigest.id,
           ctoCodigo,
           direccionValue,
-          user
+          user,
+          peloCtoValue
         );
         setCtos([...ctos, created]);
       }
@@ -228,10 +234,22 @@ export default function DesplieguesAdminPage() {
       if (!trimmed) continue;
       
       processedCount++;
-      // Split by tab or spaces (multiple spaces)
-      const parts = trimmed.split(/\t|\s{2,}/);
-      const codigo = parts[0]?.trim();
-      const direccion = parts.slice(1).join(' ').trim() || 'Sin dirección';
+      // Split by tab first, fallback to multiple spaces
+      const parts = trimmed.split('\t');
+      let codigo = '';
+      let direccion = '';
+      let peloCto = '';
+
+      if (parts.length >= 2) {
+        codigo = parts[0]?.trim() || '';
+        direccion = parts[1]?.trim() || '';
+        peloCto = parts[2]?.trim() || '';
+      } else {
+        const spaceParts = trimmed.split(/\s{2,}/);
+        codigo = spaceParts[0]?.trim() || '';
+        direccion = spaceParts[1]?.trim() || '';
+        peloCto = spaceParts[2]?.trim() || '';
+      }
 
       if (!codigo) {
         errors.push(`Línea ${processedCount}: Código vacío`);
@@ -244,7 +262,7 @@ export default function DesplieguesAdminPage() {
       }
 
       try {
-        await DesplieguesService.createCto(selectedSigest.id, codigo, direccion, user);
+        await DesplieguesService.createCto(selectedSigest.id, codigo, direccion, user, peloCto);
         currentCodes.add(codigo.toLowerCase());
         successCount++;
       } catch (err: any) {
@@ -492,8 +510,13 @@ export default function DesplieguesAdminPage() {
                           </div>
                         </div>
                         <p style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginTop: '10px' }}>
-                          {cto.direccion}
+                          {cto.direccion || 'Sin dirección'}
                         </p>
+                        {cto.pelo_cto && (
+                          <p style={{ fontSize: '11px', fontWeight: '850', color: '#019df4', marginTop: '4px' }}>
+                            Pelo/CTO: {cto.pelo_cto}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -624,6 +647,21 @@ export default function DesplieguesAdminPage() {
                   type="text" 
                   value={ctoDireccion}
                   onChange={e => setCtoDireccion(e.target.value)}
+                  placeholder=""
+                  style={{
+                    width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',
+                    fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  Pelo/CTO (ej. 23-5)
+                </label>
+                <input 
+                  type="text" 
+                  value={ctoPeloCto}
+                  onChange={e => setCtoPeloCto(e.target.value)}
                   placeholder=""
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0',

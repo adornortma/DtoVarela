@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.ctos (
     sigest_id uuid REFERENCES public.sigests(id) ON DELETE CASCADE,
     codigo text NOT NULL,
     direccion text,
+    pelo_cto text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     created_by text,

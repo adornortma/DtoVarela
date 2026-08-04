@@ -29,6 +29,7 @@ export interface Cto {
   sigest_id: string;
   codigo: string;
   direccion: string;
+  pelo_cto?: string | null;
   created_at: string;
   updated_at: string;
   created_by?: string | null;

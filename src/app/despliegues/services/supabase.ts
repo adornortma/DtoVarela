@@ -96,7 +96,7 @@ export const DesplieguesService = {
     return data || [];
   },
 
-  async createCto(sigest_id: string, codigo: string, direccion: string, usuario: string): Promise<Cto> {
+  async createCto(sigest_id: string, codigo: string, direccion: string, usuario: string, pelo_cto?: string): Promise<Cto> {
     // 1. Insert CTO
     const { data: cto, error: ctoError } = await supabase
       .from('ctos')
@@ -104,6 +104,7 @@ export const DesplieguesService = {
         sigest_id,
         codigo: codigo.trim(),
         direccion: direccion.trim(),
+        pelo_cto: pelo_cto ? pelo_cto.trim() : null,
         created_by: usuario,
         updated_by: usuario
       })
@@ -141,12 +142,13 @@ export const DesplieguesService = {
     return cto;
   },
 
-  async updateCto(id: string, codigo: string, direccion: string, usuario: string): Promise<Cto> {
+  async updateCto(id: string, codigo: string, direccion: string, usuario: string, pelo_cto?: string): Promise<Cto> {
     const { data, error } = await supabase
       .from('ctos')
       .update({
         codigo: codigo.trim(),
         direccion: direccion.trim(),
+        pelo_cto: pelo_cto ? pelo_cto.trim() : null,
         updated_by: usuario,
         updated_at: new Date().toISOString()
       })
