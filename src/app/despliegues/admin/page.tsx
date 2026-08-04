@@ -241,7 +241,6 @@ export default function DesplieguesAdminPage() {
     
     setImportingBulk(true);
     try {
-      const lines = bulkText.split('\n');
       const duplicates: string[] = [];
       const errors: string[] = [];
       const validItems: { codigo: string; direccion: string; peloCto: string }[] = [];
@@ -252,41 +251,64 @@ export default function DesplieguesAdminPage() {
       // Keep track of codes we are planning to insert in this batch to detect duplicates in the pasted text
       const batchCodes = new Set<string>();
 
-      for (let line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+      // Check if it's the raw multi-line system log format (e.g. containing 6560228501_5 or similar)
+      const rawCtoMatches = bulkText.match(/\b\d{10}_\d\b/g);
+      
+      if (rawCtoMatches && rawCtoMatches.length > 0) {
+        // Extract unique 10-digit base codes
+        const uniqueBases = Array.from(new Set(rawCtoMatches.map(m => m.split('_')[0])));
+        processedCount = uniqueBases.length;
         
-        processedCount++;
-        // Split by tab first, fallback to multiple spaces
-        const parts = trimmed.split('\t');
-        let codigo = '';
-        let direccion = '';
-        let peloCto = '';
+        uniqueBases.forEach(base => {
+          const codigo = `${base}_1`;
+          const codigoLower = codigo.toLowerCase();
+          
+          if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
+            duplicates.push(codigo);
+          } else {
+            batchCodes.add(codigoLower);
+            validItems.push({ codigo, direccion: '', peloCto: '' });
+          }
+        });
+      } else {
+        const lines = bulkText.split('\n');
 
-        if (parts.length >= 2) {
-          codigo = parts[0]?.trim() || '';
-          direccion = parts[1]?.trim() || '';
-          peloCto = parts[2]?.trim() || '';
-        } else {
-          const spaceParts = trimmed.split(/\s{2,}/);
-          codigo = spaceParts[0]?.trim() || '';
-          direccion = spaceParts[1]?.trim() || '';
-          peloCto = spaceParts[2]?.trim() || '';
+        for (let line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          
+          processedCount++;
+          // Split by tab first, fallback to multiple spaces
+          const parts = trimmed.split('\t');
+          let codigo = '';
+          let direccion = '';
+          let peloCto = '';
+
+          if (parts.length >= 2) {
+            codigo = parts[0]?.trim() || '';
+            direccion = parts[1]?.trim() || '';
+            peloCto = parts[2]?.trim() || '';
+          } else {
+            const spaceParts = trimmed.split(/\s{2,}/);
+            codigo = spaceParts[0]?.trim() || '';
+            direccion = spaceParts[1]?.trim() || '';
+            peloCto = spaceParts[2]?.trim() || '';
+          }
+
+          if (!codigo) {
+            errors.push(`Línea ${processedCount}: Código vacío`);
+            continue;
+          }
+
+          const codigoLower = codigo.toLowerCase().trim();
+          if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
+            duplicates.push(codigo);
+            continue;
+          }
+
+          batchCodes.add(codigoLower);
+          validItems.push({ codigo, direccion, peloCto });
         }
-
-        if (!codigo) {
-          errors.push(`Línea ${processedCount}: Código vacío`);
-          continue;
-        }
-
-        const codigoLower = codigo.toLowerCase().trim();
-        if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
-          duplicates.push(codigo);
-          continue;
-        }
-
-        batchCodes.add(codigoLower);
-        validItems.push({ codigo, direccion, peloCto });
       }
 
       let successCount = 0;
