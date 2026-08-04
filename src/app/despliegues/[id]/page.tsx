@@ -586,12 +586,12 @@ export default function SigestDetailPage({ params }: PageProps) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
-                      <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -602,7 +602,7 @@ export default function SigestDetailPage({ params }: PageProps) {
 
                       return (
                         <tr key={cto.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '14px' }}>
+                          <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
                             <span style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '4px 8px', borderRadius: '8px' }}>
                               {cto.codigo}
                             </span>
@@ -635,7 +635,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 backgroundColor: 'transparent',
                                 border: '1px solid transparent',
                                 outline: 'none',
-                                fontSize: '13px',
+                                fontSize: '15px',
                                 fontWeight: '850',
                                 color: '#019df4',
                                 padding: '4px 8px',
@@ -681,7 +681,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 backgroundColor: 'transparent',
                                 border: '1px solid transparent',
                                 outline: 'none',
-                                fontSize: '13px',
+                                fontSize: '15px',
                                 fontWeight: '700',
                                 color: '#475569',
                                 padding: '4px 8px',
@@ -714,11 +714,11 @@ export default function SigestDetailPage({ params }: PageProps) {
                                     border: `1px solid ${installAct.despliegues_estados?.color_hex || '#64748b'}33`,
                                     borderRadius: '10px',
                                     padding: '6px 28px 6px 14px',
-                                    fontSize: '11px',
+                                    fontSize: '13px',
                                     fontWeight: '850',
                                     cursor: 'pointer',
                                     outline: 'none',
-                                    minWidth: '125px',
+                                    minWidth: '130px',
                                     textAlign: 'left'
                                   }}
                                 >
@@ -729,7 +729,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: installAct.despliegues_estados?.color_hex || '#94a3b8' }} />
                               </div>
                             ) : (
-                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>
+                              <span style={{ fontSize: '13px', color: '#94a3b8' }}>N/A</span>
                             )}
                           </td>
                           
@@ -747,11 +747,11 @@ export default function SigestDetailPage({ params }: PageProps) {
                                     border: `1px solid ${certAct.despliegues_estados?.color_hex || '#64748b'}33`,
                                     borderRadius: '10px',
                                     padding: '6px 28px 6px 14px',
-                                    fontSize: '11px',
+                                    fontSize: '13px',
                                     fontWeight: '850',
                                     cursor: 'pointer',
                                     outline: 'none',
-                                    minWidth: '125px',
+                                    minWidth: '130px',
                                     textAlign: 'left'
                                   }}
                                 >
@@ -762,7 +762,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: certAct.despliegues_estados?.color_hex || '#94a3b8' }} />
                               </div>
                             ) : (
-                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>N/A</span>
+                              <span style={{ fontSize: '13px', color: '#94a3b8' }}>N/A</span>
                             )}
                           </td>
                           
@@ -773,7 +773,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 onClick={() => handleOpenPhotos(cto)}
                                 style={{
                                   padding: '6px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569',
-                                  fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
+                                  fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
                                 }}
                               >
                                 <Camera size={12} /> Fotos
@@ -782,7 +782,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 onClick={() => handleOpenHistory(cto)}
                                 style={{
                                   padding: '6px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569',
-                                  fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
+                                  fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
                                 }}
                               >
                                 <History size={12} /> Historial

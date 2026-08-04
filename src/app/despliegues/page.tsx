@@ -105,7 +105,7 @@ export default function DesplieguesTrackingPage() {
               placeholder="Buscar por SIGEST, código de CTO, dirección o central..."
               style={{
                 width: '100%', padding: '14px 16px 14px 48px', borderRadius: '16px', border: '1px solid #e2e8f0',
-                fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: 'white',
+                fontSize: '16px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: 'white',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.02)', boxSizing: 'border-box'
               }}
             />
@@ -114,7 +114,7 @@ export default function DesplieguesTrackingPage() {
             type="submit"
             style={{
               backgroundColor: '#019df4', color: 'white', padding: '0 28px', borderRadius: '16px',
-              fontWeight: '800', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
+              fontWeight: '800', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px',
               boxShadow: '0 4px 12px rgba(1, 157, 244, 0.2)', flexShrink: 0, minWidth: '110px',
               justifyContent: 'center'
             }}
@@ -129,7 +129,7 @@ export default function DesplieguesTrackingPage() {
             backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0',
             padding: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '8px'
           }}>
-            <p style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Resultados encontrados ({searchResults.length}):</p>
+            <p style={{ fontSize: '14px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Resultados encontrados ({searchResults.length}):</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {searchResults.map(s => (
                 <button
@@ -137,11 +137,11 @@ export default function DesplieguesTrackingPage() {
                   onClick={() => router.push(`/despliegues/${s.id}`)}
                   style={{
                     padding: '8px 12px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '10px',
-                    fontSize: '13px', fontWeight: '700', color: '#1e293b', display: 'flex', gap: '8px', alignItems: 'center'
+                    fontSize: '15px', fontWeight: '700', color: '#1e293b', display: 'flex', gap: '8px', alignItems: 'center'
                   }}
                 >
                   <span>SIGEST {s.numero_sigest}</span>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>({s.central})</span>
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>({s.central})</span>
                   <ChevronRight size={14} color="#94a3b8" />
                 </button>
               ))}
@@ -152,7 +152,7 @@ export default function DesplieguesTrackingPage() {
 
       {/* Master Summary Dashboard Table */}
       <section style={{ marginBottom: '32px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ClipboardList size={20} color="#019df4" /> Centrales y Polígonos de Despliegue
         </h3>
         
@@ -169,11 +169,11 @@ export default function DesplieguesTrackingPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Número SIGEST</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Central</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instaladas / Totales</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificadas / Totales</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '200px' }}>Avance Central</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Número SIGEST</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Central</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instaladas / Totales</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificadas / Totales</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '200px' }}>Avance Central</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,16 +190,16 @@ export default function DesplieguesTrackingPage() {
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
-                      <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '14px' }}>
+                      <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
                         {item.numero_sigest}
                       </td>
-                      <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                      <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
                         {item.central}
                       </td>
-                      <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                      <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
                         <span style={{ color: '#16a34a', fontWeight: '800' }}>{item.instaladas}</span> / {item.total_ctos}
                       </td>
-                      <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                      <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
                         <span style={{ color: '#0369a1', fontWeight: '800' }}>{item.certificadas}</span> / {item.total_ctos}
                       </td>
                       <td style={{ padding: '16px' }}>
@@ -207,7 +207,7 @@ export default function DesplieguesTrackingPage() {
                           <div style={{ flex: 1, height: '8px', backgroundColor: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${item.progreso}%`, backgroundColor: '#019df4', borderRadius: '10px' }}></div>
                           </div>
-                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#019df4', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
+                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#019df4', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
                         </div>
                       </td>
                     </tr>
