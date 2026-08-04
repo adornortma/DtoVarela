@@ -557,71 +557,101 @@ export default function SigestDetailPage({ params }: PageProps) {
             backgroundColor: 'white', borderRadius: '24px', padding: '24px', 
             boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9'
           }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Wrench size={18} color="#019df4" /> Resumen Operativo de Materiales Consumidos
-            </h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              {/* Materiales SIGEST Requerido vs Entregado vs Utilizado */}
-              <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Materiales SIGEST (CTOs)</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Requerido:</span> <strong style={{ color: '#0f172a' }}>{selectedSigest?.material_requerido || 0}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Entregado:</span> <strong style={{ color: '#0f172a' }}>{selectedSigest?.material_entregado || 0}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Utilizado:</span> <strong style={{ color: '#019df4' }}>{materialsSummary.cajasUsed}</strong>
-                  </div>
-                </div>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <Wrench size={18} color="#019df4" /> Control Operativo de Materiales
+              </h3>
+              <span style={{
+                backgroundColor: '#019df412', color: '#019df4', padding: '6px 12px', borderRadius: '12px',
+                fontSize: '12px', fontWeight: '800', textTransform: 'uppercase'
+              }}>
+                Polígono {selectedSigest?.tipo || 'balanceado'}
+              </span>
+            </div>
 
-              {/* Show different CTO types in desbalanced sigests */}
-              {selectedSigest?.tipo === 'desbalanceado' && (
-                <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Desglose CTOs Utilizadas</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>CTO 70/30:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.cto7030}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>CTO 50/50:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.cto5050}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>CTO COMÚN:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.ctoComun}</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Consumo Drop Fibra</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>75 mts:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.drop75}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>125 mts:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.drop125}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>175 mts:</span> <strong style={{ color: '#0f172a' }}>{materialsSummary.drop175}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Preparación de Drops</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#475569' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>De fábrica:</span> <strong style={{ color: '#16a34a' }}>{materialsSummary.preparadoFabrica}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Por técnico:</span> <strong style={{ color: '#ea580c' }}>{materialsSummary.preparadoTecnico}</strong>
-                  </div>
-                </div>
-              </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Concepto</th>
+                    {(selectedSigest?.tipo === 'desbalanceado'
+                      ? [
+                          { key: 'Caja CTO', label: 'CTO' },
+                          { key: 'CTO 70/30', label: 'CTO 70/30' },
+                          { key: 'CTO 50/50', label: 'CTO 50/50' },
+                          { key: 'CTO COMÚN', label: 'CTO COMÚN' },
+                          { key: 'Drop 75 mts', label: 'DROP 75' },
+                          { key: 'Drop 125 mts', label: 'DROP 125' },
+                          { key: 'Drop 175 mts', label: 'DROP 175' }
+                        ]
+                      : [
+                          { key: 'Caja CTO', label: 'CTO' },
+                          { key: 'Drop 75 mts', label: 'DROP 75' },
+                          { key: 'Drop 125 mts', label: 'DROP 125' },
+                          { key: 'Drop 175 mts', label: 'DROP 175' }
+                        ]
+                    ).map(col => (
+                      <th key={col.key} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', textAlign: 'center' }}>
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Requerido row */}
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '16px', fontWeight: '800', color: '#475569', fontSize: '13px' }}>Requerido</td>
+                    {(selectedSigest?.tipo === 'desbalanceado'
+                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'CTO COMÚN', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                    ).map(key => {
+                      const req = (selectedSigest?.material_requerido as Record<string, number>)?.[key] ?? 0;
+                      return (
+                        <td key={key} style={{ padding: '16px', textAlign: 'center', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
+                          {req}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Entregado row */}
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '16px', fontWeight: '800', color: '#475569', fontSize: '13px' }}>Entregados</td>
+                    {(selectedSigest?.tipo === 'desbalanceado'
+                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'CTO COMÚN', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                    ).map(key => {
+                      const ent = (selectedSigest?.material_entregado as Record<string, number>)?.[key] ?? 0;
+                      return (
+                        <td key={key} style={{ padding: '16px', textAlign: 'center', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
+                          {ent}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Usado row */}
+                  <tr>
+                    <td style={{ padding: '16px', fontWeight: '800', color: '#475569', fontSize: '13px' }}>Usado</td>
+                    {(selectedSigest?.tipo === 'desbalanceado'
+                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'CTO COMÚN', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                    ).map(key => {
+                      let usd = 0;
+                      if (key === 'Caja CTO') usd = materialsSummary.cajasUsed;
+                      else if (key === 'CTO 70/30') usd = materialsSummary.cto7030;
+                      else if (key === 'CTO 50/50') usd = materialsSummary.cto5050;
+                      else if (key === 'CTO COMÚN') usd = materialsSummary.ctoComun;
+                      else if (key === 'Drop 75 mts') usd = materialsSummary.drop75;
+                      else if (key === 'Drop 125 mts') usd = materialsSummary.drop125;
+                      else if (key === 'Drop 175 mts') usd = materialsSummary.drop175;
+                      return (
+                        <td key={key} style={{ padding: '16px', textAlign: 'center', fontWeight: '800', color: '#019df4', fontSize: '14px' }}>
+                          {usd}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

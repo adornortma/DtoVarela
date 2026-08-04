@@ -50,8 +50,8 @@ export const DesplieguesService = {
     central: string, 
     usuario: string,
     tipo?: 'balanceado' | 'desbalanceado',
-    material_requerido?: number,
-    material_entregado?: number
+    material_requerido?: Record<string, number>,
+    material_entregado?: Record<string, number>
   ): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
@@ -59,8 +59,8 @@ export const DesplieguesService = {
         numero_sigest: numero_sigest.trim(),
         central: central.trim(),
         tipo: tipo || 'balanceado',
-        material_requerido: material_requerido || 0,
-        material_entregado: material_entregado || 0,
+        material_requerido: material_requerido || {},
+        material_entregado: material_entregado || {},
         created_by: usuario,
         updated_by: usuario
       })
@@ -76,8 +76,8 @@ export const DesplieguesService = {
     central: string, 
     usuario: string,
     tipo?: 'balanceado' | 'desbalanceado',
-    material_requerido?: number,
-    material_entregado?: number
+    material_requerido?: Record<string, number>,
+    material_entregado?: Record<string, number>
   ): Promise<Sigest> {
     const { data, error } = await supabase
       .from('sigests')
@@ -85,8 +85,8 @@ export const DesplieguesService = {
         numero_sigest: numero_sigest.trim(),
         central: central.trim(),
         tipo: tipo || 'balanceado',
-        material_requerido: material_requerido || 0,
-        material_entregado: material_entregado || 0,
+        material_requerido: material_requerido || {},
+        material_entregado: material_entregado || {},
         updated_by: usuario,
         fecha_actualizacion: new Date().toISOString(),
         updated_at: new Date().toISOString()
