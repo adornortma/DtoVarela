@@ -393,5 +393,84 @@ export const DesplieguesService = {
     if (err4) throw err4;
 
     return results || [];
+  },
+
+  async getDashboardStats(): Promise<{
+    id: string;
+    numero_sigest: string;
+    central: string;
+    total_ctos: number;
+    instaladas: number;
+    certificadas: number;
+    progreso: number;
+  }[]> {
+    // 1. Fetch all SIGESTs
+    const sigests = await this.getSigests();
+    if (sigests.length === 0) return [];
+
+    // 2. Fetch all CTOs
+    const { data: ctos, error: ctosError } = await supabase
+      .from('ctos')
+      .select('id, sigest_id');
+    if (ctosError) throw ctosError;
+
+    // 3. Fetch all activities
+    const { data: acts, error: actsError } = await supabase
+      .from('actividades')
+      .select(`
+        cto_id,
+        despliegues_estados ( nombre ),
+        despliegues_tipos_actividad ( nombre )
+      `);
+    if (actsError) throw actsError;
+
+    // Map CTO to its SIGEST ID
+    const ctoToSigest: Record<string, string> = {};
+    const statsMap: Record<string, { total_ctos: number; instaladas: number; certificadas: number }> = {};
+
+    sigests.forEach(s => {
+      statsMap[s.id] = { total_ctos: 0, instaladas: 0, certificadas: 0 };
+    });
+
+    ctos?.forEach(c => {
+      ctoToSigest[c.id] = c.sigest_id;
+      if (statsMap[c.sigest_id]) {
+        statsMap[c.sigest_id].total_ctos++;
+      }
+    });
+
+    acts?.forEach(act => {
+      const sigestId = ctoToSigest[act.cto_id];
+      if (!sigestId || !statsMap[sigestId]) return;
+
+      const estNombre = (act.despliegues_estados as any)?.nombre?.toLowerCase();
+      const tipoNombre = (act.despliegues_tipos_actividad as any)?.nombre?.toLowerCase();
+
+      if (estNombre === 'completado') {
+        if (tipoNombre?.includes('instalar')) {
+          statsMap[sigestId].instaladas++;
+        }
+        if (tipoNombre?.includes('certificar')) {
+          statsMap[sigestId].certificadas++;
+        }
+      }
+    });
+
+    return sigests.map(s => {
+      const info = statsMap[s.id];
+      const totalActivities = info.total_ctos * 2;
+      const completedActivities = info.instaladas + info.certificadas;
+      const progreso = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+
+      return {
+        id: s.id,
+        numero_sigest: s.numero_sigest,
+        central: s.central,
+        total_ctos: info.total_ctos,
+        instaladas: info.instaladas,
+        certificadas: info.certificadas,
+        progreso
+      };
+    });
   }
 };

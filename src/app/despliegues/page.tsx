@@ -34,6 +34,16 @@ export default function DesplieguesTrackingPage() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [savingAction, setSavingAction] = useState(false);
+  const [dashboardItems, setDashboardItems] = useState<{
+    id: string;
+    numero_sigest: string;
+    central: string;
+    total_ctos: number;
+    instaladas: number;
+    certificadas: number;
+    progreso: number;
+  }[]>([]);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
 
   // Active user session
   const [usuario, setUsuario] = useState('Invitado');
@@ -73,7 +83,19 @@ export default function DesplieguesTrackingPage() {
   const [lightboxPhotos, setLightboxPhotos] = useState<Foto[]>([]);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(0);
 
-  // Load catalogs on mount
+  const loadDashboard = async () => {
+    setLoadingDashboard(true);
+    try {
+      const stats = await DesplieguesService.getDashboardStats();
+      setDashboardItems(stats);
+    } catch (e) {
+      console.error('Error loading dashboard stats:', e);
+    } finally {
+      setLoadingDashboard(false);
+    }
+  };
+
+  // Load catalogs and dashboard on mount
   useEffect(() => {
     const saved = localStorage.getItem('bp_session');
     if (saved) {
@@ -100,6 +122,7 @@ export default function DesplieguesTrackingPage() {
       }
     };
     loadCatalogs();
+    loadDashboard();
   }, []);
 
   // Quick initial load of first SIGEST to populate screen
@@ -347,6 +370,7 @@ export default function DesplieguesTrackingPage() {
 
       // 4. Reload data
       if (selectedSigest) await loadSigestData(selectedSigest);
+      loadDashboard();
       setShowInstallDialog(false);
     } catch (err: any) {
       console.error(err);
@@ -382,6 +406,7 @@ export default function DesplieguesTrackingPage() {
 
       // 3. Reload
       if (selectedSigest) await loadSigestData(selectedSigest);
+      loadDashboard();
       setShowCertDialog(false);
     } catch (err: any) {
       console.error(err);
@@ -412,6 +437,7 @@ export default function DesplieguesTrackingPage() {
       );
 
       if (selectedSigest) await loadSigestData(selectedSigest);
+      loadDashboard();
       setShowStatusSimpleDialog(false);
     } catch (err: any) {
       console.error(err);
@@ -453,6 +479,7 @@ export default function DesplieguesTrackingPage() {
       await DesplieguesService.deleteFoto(photoId, activityId, usuario, currentStatus);
       setLightboxPhotos(lightboxPhotos.filter(p => p.id !== photoId));
       if (selectedSigest) await loadSigestData(selectedSigest);
+      loadDashboard();
     } catch (e) {
       console.error(e);
       alert('Error al eliminar la fotografía');
@@ -548,6 +575,80 @@ export default function DesplieguesTrackingPage() {
           </div>
         )}
       </header>
+
+      {/* Master Summary Dashboard Table */}
+      <section style={{ marginBottom: '32px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ClipboardList size={20} color="#019df4" /> Centrales y Polígonos de Despliegue
+        </h3>
+        
+        {loadingDashboard ? (
+          <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', display: 'flex', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
+            <Loader2 className="animate-spin" size={24} color="#019df4" />
+          </div>
+        ) : dashboardItems.length === 0 ? (
+          <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', textAlign: 'center', border: '1px solid #f1f5f9', color: '#64748b' }}>
+            No hay SIGESTs cargados en el sistema.
+          </div>
+        ) : (
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Número SIGEST</th>
+                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Central</th>
+                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instaladas / Totales</th>
+                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificadas / Totales</th>
+                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '200px' }}>Avance Central</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboardItems.map(item => {
+                  const isSelected = selectedSigest?.id === item.id;
+                  return (
+                    <tr 
+                      key={item.id} 
+                      onClick={() => {
+                        const originalSigest = { id: item.id, numero_sigest: item.numero_sigest, central: item.central } as any;
+                        loadSigestData(originalSigest);
+                      }}
+                      style={{ 
+                        borderBottom: '1px solid #f1f5f9', 
+                        cursor: 'pointer',
+                        backgroundColor: isSelected ? '#f0f9ff' : 'transparent',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                      onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      <td style={{ padding: '16px', fontWeight: '800', color: isSelected ? '#019df4' : '#0f172a', fontSize: '14px' }}>
+                        {item.numero_sigest}
+                      </td>
+                      <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                        {item.central}
+                      </td>
+                      <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                        <span style={{ color: '#16a34a', fontWeight: '800' }}>{item.instaladas}</span> / {item.total_ctos}
+                      </td>
+                      <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '700' }}>
+                        <span style={{ color: '#0369a1', fontWeight: '800' }}>{item.certificadas}</span> / {item.total_ctos}
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ flex: 1, height: '8px', backgroundColor: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${item.progreso}%`, backgroundColor: '#019df4', borderRadius: '10px' }}></div>
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#019df4', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Main Content Detail Area */}
       {loadingDetail ? (
