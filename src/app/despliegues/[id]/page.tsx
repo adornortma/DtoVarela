@@ -47,6 +47,7 @@ export default function SigestDetailPage({ params }: PageProps) {
   const [showCertDialog, setShowCertDialog] = useState(false);
   const [showStatusSimpleDialog, setShowStatusSimpleDialog] = useState(false);
   const [selectedActivityForEdit, setSelectedActivityForEdit] = useState<Actividad | null>(null);
+  const [selectedCtoForEdit, setSelectedCtoForEdit] = useState<Cto | null>(null);
 
   // Form states for installation
   const [installTecnico, setInstallTecnico] = useState('');
@@ -255,6 +256,7 @@ export default function SigestDetailPage({ params }: PageProps) {
   // Open status modal
   const handleOpenStatusDialog = (cto: Cto, act: Actividad, targetStatusNombre: string) => {
     setSelectedActivityForEdit(act);
+    setSelectedCtoForEdit(cto);
     
     const isCompleted = targetStatusNombre.toLowerCase() === 'completado';
     const isInstalar = act.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar');
@@ -407,6 +409,17 @@ export default function SigestDetailPage({ params }: PageProps) {
         selectedActivityForEdit.despliegues_estados?.nombre || 'Pendiente',
         targetState.nombre
       );
+
+      if (selectedCtoForEdit && simpleObservaciones) {
+        await DesplieguesService.updateCto(
+          selectedCtoForEdit.id,
+          selectedCtoForEdit.codigo,
+          selectedCtoForEdit.direccion || '',
+          usuario,
+          selectedCtoForEdit.pelo_cto || undefined,
+          simpleObservaciones
+        );
+      }
 
       await loadSigestData();
       setShowStatusSimpleDialog(false);
@@ -948,16 +961,6 @@ export default function SigestDetailPage({ params }: PageProps) {
                                   ))}
                                 </select>
                                 <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: installAct.despliegues_estados?.color_hex || '#94a3b8' }} />
-                                {installAct.despliegues_estados?.nombre.toLowerCase() === 'observado' && installAct.observaciones && (
-                                  <div style={{
-                                    marginTop: '6px', fontSize: '11px', fontWeight: '800', color: '#dc2626',
-                                    backgroundColor: '#fef2f2', padding: '4px 8px', borderRadius: '6px',
-                                    border: '1px solid #fee2e2', display: 'flex', alignItems: 'center', gap: '4px',
-                                    maxWidth: '140px', wordBreak: 'break-word'
-                                  }}>
-                                    <span>Obs: {installAct.observaciones}</span>
-                                  </div>
-                                )}
                               </div>
                             ) : (
                               <span style={{ fontSize: '13px', color: '#94a3b8' }}>N/A</span>
@@ -991,16 +994,6 @@ export default function SigestDetailPage({ params }: PageProps) {
                                   ))}
                                 </select>
                                 <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: certAct.despliegues_estados?.color_hex || '#94a3b8' }} />
-                                {certAct.despliegues_estados?.nombre.toLowerCase() === 'observado' && certAct.observaciones && (
-                                  <div style={{
-                                    marginTop: '6px', fontSize: '11px', fontWeight: '800', color: '#dc2626',
-                                    backgroundColor: '#fef2f2', padding: '4px 8px', borderRadius: '6px',
-                                    border: '1px solid #fee2e2', display: 'flex', alignItems: 'center', gap: '4px',
-                                    maxWidth: '140px', wordBreak: 'break-word'
-                                  }}>
-                                    <span>Obs: {certAct.observaciones}</span>
-                                  </div>
-                                )}
                               </div>
                             ) : (
                               <span style={{ fontSize: '13px', color: '#94a3b8' }}>N/A</span>
@@ -1011,6 +1004,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                           <td style={{ padding: '12px 16px' }}>
                             <input
                               type="text"
+                              key={`obs-${cto.id}-${cto.observaciones || ''}`}
                               defaultValue={cto.observaciones || ''}
                               onBlur={async (e) => {
                                 const val = e.target.value.trim();
