@@ -17,3 +17,6 @@ INSERT INTO public.materiales (nombre, activo) VALUES
 ('CTO 50/50', true),
 ('CTO COMÚN', true)
 ON CONFLICT (nombre) DO NOTHING;
+
+-- Add observaciones to ctos table
+ALTER TABLE public.ctos ADD COLUMN IF NOT EXISTS observaciones text;

@@ -68,7 +68,7 @@ export default function DesplieguesTrackingPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Briefcase size={28} color="#019df4" />
+              <Briefcase size={28} color="#2563eb" />
               <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.0px' }}>
                 Seguimiento de Despliegues FTTH
               </h1>
@@ -113,9 +113,9 @@ export default function DesplieguesTrackingPage() {
           <button 
             type="submit"
             style={{
-              backgroundColor: '#019df4', color: 'white', padding: '0 28px', borderRadius: '16px',
+              backgroundColor: '#2563eb', color: 'white', padding: '0 28px', borderRadius: '16px',
               fontWeight: '800', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px',
-              boxShadow: '0 4px 12px rgba(1, 157, 244, 0.2)', flexShrink: 0, minWidth: '110px',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)', flexShrink: 0, minWidth: '110px',
               justifyContent: 'center'
             }}
           >
@@ -153,12 +153,12 @@ export default function DesplieguesTrackingPage() {
       {/* Master Summary Dashboard Table */}
       <section style={{ marginBottom: '32px' }}>
         <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ClipboardList size={20} color="#019df4" /> Centrales y Polígonos de Despliegue
+          <ClipboardList size={20} color="#2563eb" /> Centrales y Polígonos de Despliegue
         </h3>
         
         {loadingDashboard ? (
           <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', display: 'flex', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
-            <Loader2 className="animate-spin" size={24} color="#019df4" />
+            <Loader2 className="animate-spin" size={24} color="#2563eb" />
           </div>
         ) : dashboardItems.length === 0 ? (
           <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', textAlign: 'center', border: '1px solid #f1f5f9', color: '#64748b' }}>
@@ -233,9 +233,9 @@ export default function DesplieguesTrackingPage() {
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ flex: 1, height: '8px', backgroundColor: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${item.progreso}%`, backgroundColor: '#019df4', borderRadius: '10px' }}></div>
+                            <div style={{ height: '100%', width: `${item.progreso}%`, backgroundColor: '#2563eb', borderRadius: '10px' }}></div>
                           </div>
-                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#019df4', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
+                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#2563eb', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
                         </div>
                       </td>
                     </tr>

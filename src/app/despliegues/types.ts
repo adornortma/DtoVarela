@@ -34,6 +34,7 @@ export interface Cto {
   codigo: string;
   direccion: string;
   pelo_cto?: string | null;
+  observaciones?: string | null;
   created_at: string;
   updated_at: string;
   created_by?: string | null;

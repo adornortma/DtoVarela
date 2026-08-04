@@ -519,7 +519,7 @@ export default function SigestDetailPage({ params }: PageProps) {
               }}>
                 <ArrowLeft size={16} /> Volver
               </Link>
-              <Briefcase size={28} color="#019df4" />
+              <Briefcase size={28} color="#2563eb" />
               <h1 style={{ fontSize: '32px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1.0px' }}>
                 Detalle del Despliegue
               </h1>
@@ -533,7 +533,7 @@ export default function SigestDetailPage({ params }: PageProps) {
 
       {loadingDetail ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '120px 0', gap: '16px' }}>
-          <Loader2 className="animate-spin" size={40} color="#019df4" />
+          <Loader2 className="animate-spin" size={40} color="#2563eb" />
           <p style={{ color: '#64748b', fontWeight: '700' }}>Cargando información del despliegue...</p>
         </div>
       ) : stats ? (
@@ -568,10 +568,10 @@ export default function SigestDetailPage({ params }: PageProps) {
               <div style={{ marginTop: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>
                   <span style={{ color: '#475569' }}>Avance Real del Despliegue</span>
-                  <span style={{ color: '#019df4' }}>{stats.avancePorcentaje}%</span>
+                  <span style={{ color: '#2563eb' }}>{stats.avancePorcentaje}%</span>
                 </div>
                 <div style={{ height: '10px', backgroundColor: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${stats.avancePorcentaje}%`, backgroundColor: '#019df4', borderRadius: '10px', transition: 'width 0.4s' }}></div>
+                  <div style={{ height: '100%', width: `${stats.avancePorcentaje}%`, backgroundColor: '#2563eb', borderRadius: '10px', transition: 'width 0.4s' }}></div>
                 </div>
               </div>
             </div>
@@ -600,10 +600,10 @@ export default function SigestDetailPage({ params }: PageProps) {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                <Wrench size={18} color="#019df4" /> Control Operativo de Materiales
+                <Wrench size={18} color="#2563eb" /> Control Operativo de Materiales
               </h3>
               <span style={{
-                backgroundColor: '#019df412', color: '#019df4', padding: '6px 12px', borderRadius: '12px',
+                backgroundColor: '#2563eb12', color: '#2563eb', padding: '6px 12px', borderRadius: '12px',
                 fontSize: '12px', fontWeight: '800', textTransform: 'uppercase'
               }}>
                 Polígono {selectedSigest?.tipo || 'balanceado'}
@@ -661,9 +661,9 @@ export default function SigestDetailPage({ params }: PageProps) {
                               backgroundColor: '#f8fafc', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
                             }}
                             onFocus={(e) => {
-                              e.target.style.border = '1.5px solid #019df4';
+                              e.target.style.border = '1.5px solid #2563eb';
                               e.target.style.backgroundColor = 'white';
-                              e.target.style.boxShadow = '0 0 0 3px rgba(1, 157, 244, 0.15)';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
                             }}
                             onBlurCapture={(e) => {
                               e.target.style.border = '1.5px solid #e2e8f0';
@@ -698,9 +698,9 @@ export default function SigestDetailPage({ params }: PageProps) {
                               backgroundColor: '#f8fafc', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
                             }}
                             onFocus={(e) => {
-                              e.target.style.border = '1.5px solid #019df4';
+                              e.target.style.border = '1.5px solid #2563eb';
                               e.target.style.backgroundColor = 'white';
-                              e.target.style.boxShadow = '0 0 0 3px rgba(1, 157, 244, 0.15)';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
                             }}
                             onBlurCapture={(e) => {
                               e.target.style.border = '1.5px solid #e2e8f0';
@@ -745,9 +745,9 @@ export default function SigestDetailPage({ params }: PageProps) {
                               backgroundColor: '#f0f9ff', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
                             }}
                             onFocus={(e) => {
-                              e.target.style.border = '1.5px solid #019df4';
+                              e.target.style.border = '1.5px solid #2563eb';
                               e.target.style.backgroundColor = 'white';
-                              e.target.style.boxShadow = '0 0 0 3px rgba(1, 157, 244, 0.15)';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
                             }}
                             onBlurCapture={(e) => {
                               e.target.style.border = '1.5px solid #bae6fd';
@@ -767,7 +767,7 @@ export default function SigestDetailPage({ params }: PageProps) {
           {/* CTO list table */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ClipboardList size={20} color="#019df4" /> Detalle de Cajas CTO
+              <ClipboardList size={20} color="#2563eb" /> Detalle de Cajas CTO
             </h3>
 
             {ctos.length === 0 ? (
@@ -784,7 +784,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                       <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
                       <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
                       <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
+                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Observaciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -796,9 +796,37 @@ export default function SigestDetailPage({ params }: PageProps) {
                       return (
                         <tr key={cto.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' }}>
                           <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
-                            <span style={{ backgroundColor: '#f0f9ff', color: '#019df4', padding: '4px 8px', borderRadius: '8px' }}>
-                              {cto.codigo}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ backgroundColor: '#f1f5f9', color: '#0f172a', padding: '4px 8px', borderRadius: '8px' }}>
+                                {cto.codigo}
+                              </span>
+                              <button 
+                                onClick={() => handleOpenPhotos(cto)} 
+                                title="Ver Fotos"
+                                style={{
+                                  border: 'none', background: 'transparent', cursor: 'pointer', padding: '4px', color: '#64748b',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px',
+                                  transition: 'background-color 0.2s', width: '26px', height: '26px'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              >
+                                <Camera size={15} />
+                              </button>
+                              <button 
+                                onClick={() => handleOpenHistory(cto)} 
+                                title="Ver Historial"
+                                style={{
+                                  border: 'none', background: 'transparent', cursor: 'pointer', padding: '4px', color: '#64748b',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px',
+                                  transition: 'background-color 0.2s', width: '26px', height: '26px'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              >
+                                <History size={15} />
+                              </button>
+                            </div>
                           </td>
                           {/* Pelo/CTO Inline editable */}
                           <td style={{ padding: '12px 16px' }}>
@@ -818,9 +846,9 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 }
                               }}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.currentTarget.blur();
-                                }
+                                  if (e.key === 'Enter') {
+                                    e.currentTarget.blur();
+                                  }
                               }}
                               placeholder="-"
                               style={{
@@ -830,14 +858,14 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 outline: 'none',
                                 fontSize: '15px',
                                 fontWeight: '850',
-                                color: '#019df4',
+                                color: '#475569',
                                 padding: '4px 8px',
                                 borderRadius: '6px',
                                 transition: 'all 0.2s',
                                 boxSizing: 'border-box'
                               }}
                               onFocus={(e) => {
-                                e.target.style.border = '1px solid #019df4';
+                                e.target.style.border = '1px solid #cbd5e1';
                                 e.target.style.backgroundColor = 'white';
                               }}
                               onBlurCapture={(e) => {
@@ -979,28 +1007,51 @@ export default function SigestDetailPage({ params }: PageProps) {
                             )}
                           </td>
                           
-                          {/* Acciones */}
-                          <td style={{ padding: '16px', textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                              <button 
-                                onClick={() => handleOpenPhotos(cto)}
-                                style={{
-                                  padding: '6px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569',
-                                  fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
-                                }}
-                              >
-                                <Camera size={12} /> Fotos
-                              </button>
-                              <button 
-                                onClick={() => handleOpenHistory(cto)}
-                                style={{
-                                  padding: '6px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569',
-                                  fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #e2e8f0'
-                                }}
-                              >
-                                <History size={12} /> Historial
-                              </button>
-                            </div>
+                          {/* Observaciones Inline editable */}
+                          <td style={{ padding: '12px 16px' }}>
+                            <input
+                              type="text"
+                              defaultValue={cto.observaciones || ''}
+                              onBlur={async (e) => {
+                                const val = e.target.value.trim();
+                                if (val !== (cto.observaciones || '')) {
+                                  try {
+                                    await DesplieguesService.updateCto(cto.id, cto.codigo, cto.direccion || '', usuario, cto.pelo_cto || undefined, val);
+                                    setCtos(prev => prev.map(c => c.id === cto.id ? { ...c, observaciones: val } : c));
+                                  } catch (err) {
+                                    console.error(err);
+                                    alert('Error al actualizar observaciones');
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              placeholder="Sin observaciones"
+                              style={{
+                                width: '100%',
+                                backgroundColor: 'transparent',
+                                border: '1px solid transparent',
+                                outline: 'none',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#475569',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.border = '1px solid #cbd5e1';
+                                e.target.style.backgroundColor = 'white';
+                              }}
+                              onBlurCapture={(e) => {
+                                e.target.style.border = '1px solid transparent';
+                                e.target.style.backgroundColor = 'transparent';
+                              }}
+                            />
                           </td>
                         </tr>
                       );
