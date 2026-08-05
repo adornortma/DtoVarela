@@ -21,6 +21,7 @@ export default function DesplieguesTrackingPage() {
     instaladas: number;
     certificadas: number;
     progreso: number;
+    tiene_observadas: boolean;
   }[]>([]);
   const [summaryStats, setSummaryStats] = useState<{
     totalSigests: number;
@@ -253,11 +254,19 @@ export default function DesplieguesTrackingPage() {
                           }}>
                             Pendiente
                           </span>
-                        ) : (
+                        ) : item.tiene_observadas ? (
                           <span style={{
-                            display: 'inline-block', backgroundColor: '#fef2f2', color: '#b91c1c',
+                            display: 'inline-block', backgroundColor: '#fef2f2', color: '#dc2626',
                             padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
                             border: '1px solid #fecaca', textTransform: 'uppercase'
+                          }}>
+                            Con reparos pendientes
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-block', backgroundColor: '#eff6ff', color: '#1d4ed8',
+                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                            border: '1px solid #bfdbfe', textTransform: 'uppercase'
                           }}>
                             Iniciado
                           </span>

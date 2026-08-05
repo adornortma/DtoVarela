@@ -431,6 +431,7 @@ export const DesplieguesService = {
       instaladas: number;
       certificadas: number;
       progreso: number;
+      tiene_observadas: boolean;
     }[];
     summary: {
       totalSigests: number;
@@ -468,10 +469,10 @@ export const DesplieguesService = {
 
     // Map CTO to its SIGEST ID
     const ctoToSigest: Record<string, string> = {};
-    const statsMap: Record<string, { total_ctos: number; instaladas: number; certificadas: number }> = {};
+    const statsMap: Record<string, { total_ctos: number; instaladas: number; certificadas: number; tiene_observadas: boolean }> = {};
 
     sigests.forEach(s => {
-      statsMap[s.id] = { total_ctos: 0, instaladas: 0, certificadas: 0 };
+      statsMap[s.id] = { total_ctos: 0, instaladas: 0, certificadas: 0, tiene_observadas: false };
     });
 
     ctos?.forEach(c => {
@@ -501,6 +502,10 @@ export const DesplieguesService = {
         if (tipoNombre?.includes('certificar')) {
           statsMap[sigestId].certificadas++;
         }
+      }
+
+      if (estNombre === 'observado') {
+        statsMap[sigestId].tiene_observadas = true;
       }
 
       if (ctoStates[act.cto_id]) {
@@ -549,7 +554,8 @@ export const DesplieguesService = {
         total_ctos: info.total_ctos,
         instaladas: info.instaladas,
         certificadas: info.certificadas,
-        progreso
+        progreso,
+        tiene_observadas: info.tiene_observadas
       };
     });
 
