@@ -435,8 +435,10 @@ export const DesplieguesService = {
     summary: {
       totalSigests: number;
       totalInstalledCtos: number;
-      totalPendingCtos: number;
-      totalObservedCtos: number;
+      installPendientes: number;
+      installObservadas: number;
+      certPendientes: number;
+      certObservadas: number;
     };
   }> {
     // 1. Fetch all SIGESTs
@@ -444,7 +446,7 @@ export const DesplieguesService = {
     if (sigests.length === 0) {
       return {
         items: [],
-        summary: { totalSigests: 0, totalInstalledCtos: 0, totalPendingCtos: 0, totalObservedCtos: 0 }
+        summary: { totalSigests: 0, totalInstalledCtos: 0, installPendientes: 0, installObservadas: 0, certPendientes: 0, certObservadas: 0 }
       };
     }
 
@@ -511,18 +513,26 @@ export const DesplieguesService = {
     });
 
     let totalInstalledCtos = 0;
-    let totalPendingCtos = 0;
-    let totalObservedCtos = 0;
+    let installPendientes = 0;
+    let installObservadas = 0;
+    let certPendientes = 0;
+    let certObservadas = 0;
 
     Object.values(ctoStates).forEach(states => {
       if (states.instalar === 'completado') {
         totalInstalledCtos++;
       }
       if (states.instalar === 'pendiente') {
-        totalPendingCtos++;
+        installPendientes++;
       }
-      if (states.instalar === 'observado' || states.certificar === 'observado') {
-        totalObservedCtos++;
+      if (states.instalar === 'observado') {
+        installObservadas++;
+      }
+      if (states.certificar === 'pendiente') {
+        certPendientes++;
+      }
+      if (states.certificar === 'observado') {
+        certObservadas++;
       }
     });
 
@@ -548,8 +558,10 @@ export const DesplieguesService = {
       summary: {
         totalSigests: sigests.length,
         totalInstalledCtos,
-        totalPendingCtos,
-        totalObservedCtos
+        installPendientes,
+        installObservadas,
+        certPendientes,
+        certObservadas
       }
     };
   },
