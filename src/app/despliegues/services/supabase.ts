@@ -440,6 +440,12 @@ export const DesplieguesService = {
       installObservadas: number;
       certPendientes: number;
       certObservadas: number;
+      listSigests: any[];
+      listInstalled: any[];
+      listInstallPendientes: any[];
+      listInstallObservadas: any[];
+      listCertPendientes: any[];
+      listCertObservadas: any[];
     };
   }> {
     // 1. Fetch all SIGESTs
@@ -447,14 +453,27 @@ export const DesplieguesService = {
     if (sigests.length === 0) {
       return {
         items: [],
-        summary: { totalSigests: 0, totalInstalledCtos: 0, installPendientes: 0, installObservadas: 0, certPendientes: 0, certObservadas: 0 }
+        summary: {
+          totalSigests: 0,
+          totalInstalledCtos: 0,
+          installPendientes: 0,
+          installObservadas: 0,
+          certPendientes: 0,
+          certObservadas: 0,
+          listSigests: [],
+          listInstalled: [],
+          listInstallPendientes: [],
+          listInstallObservadas: [],
+          listCertPendientes: [],
+          listCertObservadas: []
+        }
       };
     }
 
     // 2. Fetch all CTOs
     const { data: ctos, error: ctosError } = await supabase
       .from('ctos')
-      .select('id, sigest_id');
+      .select('id, sigest_id, codigo, direccion, pelo_cto, observaciones');
     if (ctosError) throw ctosError;
 
     // 3. Fetch all activities
@@ -462,6 +481,7 @@ export const DesplieguesService = {
       .from('actividades')
       .select(`
         cto_id,
+        observaciones,
         despliegues_estados ( nombre ),
         despliegues_tipos_actividad ( nombre )
       `);
@@ -469,6 +489,7 @@ export const DesplieguesService = {
 
     // Map CTO to its SIGEST ID
     const ctoToSigest: Record<string, string> = {};
+    const ctoToSigestObj: Record<string, { id: string; numero: string; central: string }> = {};
     const statsMap: Record<string, { total_ctos: number; instaladas: number; certificadas: number; tiene_observadas: boolean }> = {};
 
     sigests.forEach(s => {
@@ -477,6 +498,10 @@ export const DesplieguesService = {
 
     ctos?.forEach(c => {
       ctoToSigest[c.id] = c.sigest_id;
+      const matchingSigest = sigests.find(s => s.id === c.sigest_id);
+      if (matchingSigest) {
+        ctoToSigestObj[c.id] = { id: matchingSigest.id, numero: matchingSigest.numero_sigest, central: matchingSigest.central };
+      }
       if (statsMap[c.sigest_id]) {
         statsMap[c.sigest_id].total_ctos++;
       }
@@ -541,6 +566,61 @@ export const DesplieguesService = {
       }
     });
 
+    const listInstalled: any[] = [];
+    const listInstallPendientes: any[] = [];
+    const listInstallObservadas: any[] = [];
+    const listCertPendientes: any[] = [];
+    const listCertObservadas: any[] = [];
+
+    ctos?.forEach(c => {
+      const parent = ctoToSigestObj[c.id];
+      if (!parent) return;
+
+      const states = ctoStates[c.id] || {};
+      const baseItem = {
+        id: c.id,
+        codigo: c.codigo,
+        direccion: c.direccion,
+        pelo_cto: c.pelo_cto,
+        observaciones: c.observaciones,
+        sigest_id: parent.id,
+        sigest_numero: parent.numero,
+        central: parent.central
+      };
+
+      if (states.instalar === 'completado') {
+        listInstalled.push(baseItem);
+      }
+      if (states.instalar === 'pendiente') {
+        listInstallPendientes.push(baseItem);
+      }
+      if (states.instalar === 'observado') {
+        const act = acts.find(a => a.cto_id === c.id && (a.despliegues_tipos_actividad as any)?.nombre?.toLowerCase().includes('instalar'));
+        listInstallObservadas.push({ ...baseItem, act_observaciones: act?.observaciones });
+      }
+      if (states.certificar === 'pendiente') {
+        listCertPendientes.push(baseItem);
+      }
+      if (states.certificar === 'observado') {
+        const act = acts.find(a => a.cto_id === c.id && (a.despliegues_tipos_actividad as any)?.nombre?.toLowerCase().includes('certificar'));
+        listCertObservadas.push({ ...baseItem, act_observaciones: act?.observaciones });
+      }
+    });
+
+    const listSigests = sigests.map(s => {
+      const info = statsMap[s.id];
+      const totalActivities = info.total_ctos * 2;
+      const completedActivities = info.instaladas + info.certificadas;
+      const progreso = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+      return {
+        id: s.id,
+        numero_sigest: s.numero_sigest,
+        central: s.central,
+        total_ctos: info.total_ctos,
+        progreso
+      };
+    });
+
     const items = sigests.map(s => {
       const info = statsMap[s.id];
       const totalActivities = info.total_ctos * 2;
@@ -567,7 +647,13 @@ export const DesplieguesService = {
         installPendientes,
         installObservadas,
         certPendientes,
-        certObservadas
+        certObservadas,
+        listSigests,
+        listInstalled,
+        listInstallPendientes,
+        listInstallObservadas,
+        listCertPendientes,
+        listCertObservadas
       }
     };
   },

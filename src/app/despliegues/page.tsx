@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Search, Database, Briefcase, ChevronRight, Loader2, ClipboardList
+  Search, Database, Briefcase, ChevronRight, Loader2, ClipboardList, X, ExternalLink
 } from 'lucide-react';
 import { DesplieguesService } from './services/supabase';
 import { Sigest } from './types';
@@ -30,7 +30,17 @@ export default function DesplieguesTrackingPage() {
     installObservadas: number;
     certPendientes: number;
     certObservadas: number;
+    listSigests: any[];
+    listInstalled: any[];
+    listInstallPendientes: any[];
+    listInstallObservadas: any[];
+    listCertPendientes: any[];
+    listCertObservadas: any[];
   } | null>(null);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [bottomSheetTitle, setBottomSheetTitle] = useState('');
+  const [bottomSheetType, setBottomSheetType] = useState<'sigests' | 'ctos'>('ctos');
+  const [bottomSheetData, setBottomSheetData] = useState<any[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
 
@@ -107,27 +117,87 @@ export default function DesplieguesTrackingPage() {
         {/* Summary Stats Cards */}
         {summaryStats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '8px', marginBottom: '8px' }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div 
+              onClick={() => {
+                setBottomSheetTitle("SIGESTs Asignados");
+                setBottomSheetType("sigests");
+                setBottomSheetData(summaryStats.listSigests || []);
+                setShowBottomSheet(true);
+              }}
+              style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
               <span style={{ fontSize: '11px', fontWeight: '850', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SIGESTs Asignados</span>
               <span style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a' }}>{summaryStats.totalSigests}</span>
             </div>
-            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div 
+              onClick={() => {
+                setBottomSheetTitle("CTOs Instaladas");
+                setBottomSheetType("ctos");
+                setBottomSheetData(summaryStats.listInstalled || []);
+                setShowBottomSheet(true);
+              }}
+              style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
               <span style={{ fontSize: '11px', fontWeight: '850', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CTOs Instaladas</span>
               <span style={{ fontSize: '26px', fontWeight: '950', color: '#2563eb' }}>{summaryStats.totalInstalledCtos}</span>
             </div>
-            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div 
+              onClick={() => {
+                setBottomSheetTitle("Instalación: Pendientes");
+                setBottomSheetType("ctos");
+                setBottomSheetData(summaryStats.listInstallPendientes || []);
+                setShowBottomSheet(true);
+              }}
+              style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
               <span style={{ fontSize: '11px', fontWeight: '850', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Instalación: Pendientes</span>
               <span style={{ fontSize: '26px', fontWeight: '950', color: '#b45309' }}>{summaryStats.installPendientes}</span>
             </div>
-            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div 
+              onClick={() => {
+                setBottomSheetTitle("Instalación: Observadas");
+                setBottomSheetType("ctos");
+                setBottomSheetData(summaryStats.listInstallObservadas || []);
+                setShowBottomSheet(true);
+              }}
+              style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
               <span style={{ fontSize: '11px', fontWeight: '850', color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Instalación: Observadas</span>
               <span style={{ fontSize: '26px', fontWeight: '950', color: '#dc2626' }}>{summaryStats.installObservadas}</span>
             </div>
-            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div 
+              onClick={() => {
+                setBottomSheetTitle("Certificación: Pendientes");
+                setBottomSheetType("ctos");
+                setBottomSheetData(summaryStats.listCertPendientes || []);
+                setShowBottomSheet(true);
+              }}
+              style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
               <span style={{ fontSize: '11px', fontWeight: '850', color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Certificación: Pendientes</span>
               <span style={{ fontSize: '26px', fontWeight: '950', color: '#0284c7' }}>{summaryStats.certPendientes}</span>
             </div>
-            <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div 
+              onClick={() => {
+                setBottomSheetTitle("Certificación: Observadas");
+                setBottomSheetType("ctos");
+                setBottomSheetData(summaryStats.listCertObservadas || []);
+                setShowBottomSheet(true);
+              }}
+              style={{ backgroundColor: 'white', borderRadius: '18px', padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', display: 'flex', flexDirection: 'column', gap: '4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
               <span style={{ fontSize: '11px', fontWeight: '850', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Certificación: Observadas</span>
               <span style={{ fontSize: '26px', fontWeight: '950', color: '#7c3aed' }}>{summaryStats.certObservadas}</span>
             </div>
@@ -295,6 +365,118 @@ export default function DesplieguesTrackingPage() {
         )}
       </section>
 
+      {/* Bottom Sheet Modal */}
+      {showBottomSheet && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+          zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          transition: 'opacity 0.3s ease-in-out'
+        }} onClick={() => setShowBottomSheet(false)}>
+          <div style={{
+            width: '100%', maxWidth: '850px', backgroundColor: 'white',
+            borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
+            padding: '24px', maxHeight: '75vh', overflowY: 'auto',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.15)', boxSizing: 'border-box',
+            display: 'flex', flexDirection: 'column', gap: '20px',
+            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }} onClick={e => e.stopPropagation()}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '950', color: '#0f172a', margin: 0 }}>
+                {bottomSheetTitle} ({bottomSheetData.length})
+              </h2>
+              <button 
+                onClick={() => setShowBottomSheet(false)}
+                style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '6px', borderRadius: '50%', color: '#64748b' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {bottomSheetData.length === 0 ? (
+                <div style={{ padding: '40px 0', textTransform: 'uppercase', fontSize: '12px', fontWeight: '800', color: '#64748b', textAlign: 'center' }}>
+                  No hay elementos para mostrar.
+                </div>
+              ) : bottomSheetType === 'sigests' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {bottomSheetData.map(item => (
+                    <div 
+                      key={item.id}
+                      onClick={() => {
+                        setShowBottomSheet(false);
+                        router.push(`/despliegues/${item.id}`);
+                      }}
+                      style={{
+                        padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '15px' }}>SIGEST: {item.numero_sigest}</div>
+                        <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Central: {item.central} | Cajas: {item.total_ctos}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '900', color: '#2563eb' }}>{item.progreso}%</span>
+                        <ExternalLink size={14} color="#2563eb" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {bottomSheetData.map(item => (
+                    <div 
+                      key={item.id}
+                      onClick={() => {
+                        setShowBottomSheet(false);
+                        router.push(`/despliegues/${item.sigest_id}`);
+                      }}
+                      style={{
+                        padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s',
+                        gap: '12px'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '15px', backgroundColor: '#e2e8f0', padding: '3px 8px', borderRadius: '6px' }}>{item.codigo}</span>
+                          <span style={{ fontSize: '12px', fontWeight: '850', color: '#64748b' }}>SIGEST: {item.sigest_numero} ({item.central})</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#475569', fontWeight: '700', marginTop: '6px' }}>Dirección: {item.direccion || 'Sin dirección registrada'}</div>
+                        {item.pelo_cto && <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Pelo: {item.pelo_cto}</div>}
+                        
+                        {(item.observaciones || item.act_observaciones) && (
+                          <div style={{
+                            marginTop: '8px', fontSize: '12px', fontWeight: '800', color: '#dc2626',
+                            backgroundColor: '#fef2f2', padding: '6px 10px', borderRadius: '8px',
+                            border: '1px solid #fee2e2', display: 'inline-flex', alignItems: 'center', gap: '4px'
+                          }}>
+                            <span>Obs: {item.observaciones || item.act_observaciones}</span>
+                          </div>
+                        )}
+                      </div>
+                      <ExternalLink size={14} color="#2563eb" style={{ flexShrink: 0 }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+      `}} />
     </div>
   );
 }
