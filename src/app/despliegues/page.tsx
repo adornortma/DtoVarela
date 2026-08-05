@@ -370,16 +370,16 @@ export default function DesplieguesTrackingPage() {
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
-          zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-          transition: 'opacity 0.3s ease-in-out'
+          zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'opacity 0.3s ease-in-out', padding: '20px'
         }} onClick={() => setShowBottomSheet(false)}>
           <div style={{
             width: '100%', maxWidth: '850px', backgroundColor: 'white',
-            borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
-            padding: '24px', maxHeight: '75vh', overflowY: 'auto',
-            boxShadow: '0 -10px 40px rgba(0,0,0,0.15)', boxSizing: 'border-box',
+            borderRadius: '24px',
+            padding: '24px', maxHeight: '85vh', overflowY: 'auto',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.15)', boxSizing: 'border-box',
             display: 'flex', flexDirection: 'column', gap: '20px',
-            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            animation: 'modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }} onClick={e => e.stopPropagation()}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
@@ -472,9 +472,9 @@ export default function DesplieguesTrackingPage() {
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
+        @keyframes modalScale {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
       `}} />
     </div>
