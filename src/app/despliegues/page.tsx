@@ -41,6 +41,8 @@ export default function DesplieguesTrackingPage() {
   const [bottomSheetTitle, setBottomSheetTitle] = useState('');
   const [bottomSheetType, setBottomSheetType] = useState<'sigests' | 'ctos'>('ctos');
   const [bottomSheetData, setBottomSheetData] = useState<any[]>([]);
+  const [sortField, setSortField] = useState<'numero_sigest' | 'central' | 'estado' | 'instaladas' | 'certificadas' | 'progreso' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
 
@@ -56,6 +58,53 @@ export default function DesplieguesTrackingPage() {
       setLoadingDashboard(false);
     }
   };
+
+  const handleSort = (field: 'numero_sigest' | 'central' | 'estado' | 'instaladas' | 'certificadas' | 'progreso') => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedItems = React.useMemo(() => {
+    if (!sortField) return dashboardItems;
+    return [...dashboardItems].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+
+      if (sortField === 'numero_sigest') {
+        aVal = a.numero_sigest;
+        bVal = b.numero_sigest;
+      } else if (sortField === 'central') {
+        aVal = a.central;
+        bVal = b.central;
+      } else if (sortField === 'estado') {
+        const getStatusRank = (item: typeof a) => {
+          if (item.progreso === 100) return 3;
+          if (item.progreso === 0) return 0;
+          if (item.tiene_observadas) return 2;
+          return 1;
+        };
+        aVal = getStatusRank(a);
+        bVal = getStatusRank(b);
+      } else if (sortField === 'instaladas') {
+        aVal = a.instaladas;
+        bVal = b.instaladas;
+      } else if (sortField === 'certificadas') {
+        aVal = a.certificadas;
+        bVal = b.certificadas;
+      } else if (sortField === 'progreso') {
+        aVal = a.progreso;
+        bVal = b.progreso;
+      }
+
+      if (aVal === bVal) return 0;
+      const modifier = sortDirection === 'asc' ? 1 : -1;
+      return aVal > bVal ? modifier : -modifier;
+    });
+  }, [dashboardItems, sortField, sortDirection]);
 
   useEffect(() => {
     loadDashboard();
@@ -279,16 +328,46 @@ export default function DesplieguesTrackingPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Número SIGEST</th>
-                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Central</th>
-                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Estado</th>
-                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instaladas / Totales</th>
-                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificadas / Totales</th>
-                  <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '200px' }}>Avance Central</th>
+                  <th 
+                    onClick={() => handleSort('numero_sigest')}
+                    style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Número SIGEST {sortField === 'numero_sigest' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </th>
+                  <th 
+                    onClick={() => handleSort('central')}
+                    style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Central {sortField === 'central' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </th>
+                  <th 
+                    onClick={() => handleSort('estado')}
+                    style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Estado {sortField === 'estado' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </th>
+                  <th 
+                    onClick={() => handleSort('instaladas')}
+                    style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Instaladas / Totales {sortField === 'instaladas' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </th>
+                  <th 
+                    onClick={() => handleSort('certificadas')}
+                    style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Certificadas / Totales {sortField === 'certificadas' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </th>
+                  <th 
+                    onClick={() => handleSort('progreso')}
+                    style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '200px', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Avance Central {sortField === 'progreso' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {dashboardItems.map(item => {
+                {sortedItems.map(item => {
                   return (
                     <tr 
                       key={item.id} 

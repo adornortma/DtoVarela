@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeft, Plus, Trash2, Edit3, Upload, Loader2, 
-  Database, Briefcase, RefreshCw, X, AlertCircle, FileText, CheckCircle2
+  Database, Briefcase, RefreshCw, X, AlertCircle, FileText, CheckCircle2, Search
 } from 'lucide-react';
 import { DesplieguesService } from '../services/supabase';
 import { Sigest, Cto } from '../types';
@@ -16,6 +16,8 @@ export default function DesplieguesAdminPage() {
   const [loading, setLoading] = useState(true);
   const [loadingCtos, setLoadingCtos] = useState(false);
   const [user, setUser] = useState<string>('Admin');
+
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
 
   // Modales y formularios
   const [showSigestModal, setShowSigestModal] = useState(false);
@@ -433,6 +435,22 @@ export default function DesplieguesAdminPage() {
             </button>
           </div>
 
+          {/* Sidebar Search Input */}
+          <div style={{ position: 'relative', marginBottom: '16px' }}>
+            <input 
+              type="text" 
+              value={adminSearchQuery}
+              onChange={e => setAdminSearchQuery(e.target.value)}
+              placeholder="Buscar SIGEST o central..."
+              style={{
+                width: '100%', padding: '10px 16px 10px 36px', borderRadius: '12px', border: '1px solid #e2e8f0',
+                fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a', backgroundColor: '#f8fafc',
+                boxSizing: 'border-box'
+              }}
+            />
+            <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          </div>
+
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
               <Loader2 className="animate-spin" size={24} color="#019df4" />
@@ -443,9 +461,14 @@ export default function DesplieguesAdminPage() {
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {sigests.map(sigest => {
-                const isSelected = selectedSigest?.id === sigest.id;
-                return (
+              {sigests
+                .filter(s => 
+                  s.numero_sigest.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  s.central.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                )
+                .map(sigest => {
+                  const isSelected = selectedSigest?.id === sigest.id;
+                  return (
                   <div 
                     key={sigest.id}
                     onClick={() => loadCtos(sigest)}
