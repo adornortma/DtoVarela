@@ -287,15 +287,26 @@ export default function SigestDetailPage({ params }: PageProps) {
   // Upload multiple images helper
   const handleUploadPhotos = async (activityId: string, files: File[], currentStatus: string) => {
     if (files.length === 0) return;
+    
+    // Check file sizes before uploading (Max 15MB)
+    const MAX_SIZE_MB = 15;
+    for (const file of files) {
+      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        alert(`La imagen "${file.name}" supera el tamaño máximo permitido de ${MAX_SIZE_MB}MB. Por favor reduce su resolución o comprímela antes de subir.`);
+        return;
+      }
+    }
+
     setUploadingPhotos(true);
     try {
       for (const file of files) {
         const publicUrl = await DesplieguesService.uploadFoto(file, usuario);
         await DesplieguesService.addFoto(activityId, publicUrl, usuario, currentStatus);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Error al subir algunas fotografías');
+      const errMsg = e?.message || e?.error_description || JSON.stringify(e);
+      alert(`Error al subir fotografía: ${errMsg}\n\nNota: Asegúrate de tener creado el bucket público llamado 'despliegues' con políticas RLS de inserción activas en Supabase.`);
     } finally {
       setUploadingPhotos(false);
     }
