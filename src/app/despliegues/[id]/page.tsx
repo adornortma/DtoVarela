@@ -79,6 +79,69 @@ export default function SigestDetailPage({ params }: PageProps) {
   const [lightboxPhotos, setLightboxPhotos] = useState<Foto[]>([]);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(0);
 
+  const [selectedCtoIds, setSelectedCtoIds] = useState<string[]>([]);
+  const [bulkObservation, setBulkObservation] = useState('');
+
+  const handleApplyBulkObservation = async (tipo: 'Instalación' | 'Certificación') => {
+    if (!bulkObservation.trim()) {
+      alert('Por favor escribe un motivo u observación.');
+      return;
+    }
+
+    const observadoState = estados.find(e => e.nombre.toLowerCase() === 'observado');
+    if (!observadoState) {
+      alert('Estado "Observado" no encontrado.');
+      return;
+    }
+
+    setSavingAction(true);
+    try {
+      // Find activities to update
+      const targets = actividades.filter(act => {
+        const matchesCto = selectedCtoIds.includes(act.cto_id);
+        const matchesTipo = act.despliegues_tipos_actividad?.nombre.toLowerCase().includes(tipo === 'Instalación' ? 'instalar' : 'certificar');
+        return matchesCto && matchesTipo;
+      });
+
+      for (const act of targets) {
+        // Update activity state & comment
+        await DesplieguesService.updateActividad(
+          act.id,
+          observadoState.id,
+          act.tecnico_nombre || '',
+          bulkObservation,
+          usuario,
+          act.despliegues_estados?.nombre || 'Pendiente',
+          observadoState.nombre
+        );
+
+        // Find the cto to update its observations inline
+        const cto = ctos.find(c => c.id === act.cto_id);
+        if (cto) {
+          await DesplieguesService.updateCto(
+            cto.id,
+            cto.codigo,
+            cto.direccion || '',
+            usuario,
+            cto.pelo_cto || undefined,
+            bulkObservation
+          );
+        }
+      }
+
+      // Reload
+      await loadSigestData();
+      setSelectedCtoIds([]);
+      setBulkObservation('');
+      alert('Observación aplicada con éxito a las actividades seleccionadas.');
+    } catch (err) {
+      console.error(err);
+      alert('Error al aplicar la observación masiva');
+    } finally {
+      setSavingAction(false);
+    }
+  };
+
   // Load catalogs on mount
   useEffect(() => {
     const saved = localStorage.getItem('bp_session');
@@ -799,27 +862,115 @@ export default function SigestDetailPage({ params }: PageProps) {
                 <p style={{ color: '#64748b', fontWeight: '600' }}>No hay cajas CTO asociadas a este SIGEST.</p>
               </div>
             ) : (
-              <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
-                      <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Observaciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ctos.map(cto => {
-                      const ctoActs = actividades.filter(a => a.cto_id === cto.id);
-                      const installAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar'));
-                      const certAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar'));
+              <>
+                {/* Bulk Actions Panel */}
+                {selectedCtoIds.length > 0 && (
+                  <div style={{
+                    backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '16px', padding: '16px',
+                    display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px',
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.05)'
+                  }}>
+                    <span style={{ fontSize: '14px', fontWeight: '850', color: '#1e3a8a' }}>
+                      {selectedCtoIds.length} CTOs seleccionadas
+                    </span>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '300px' }}>
+                      <input 
+                        type="text"
+                        placeholder="Escribe la observación común que se guardará..."
+                        value={bulkObservation}
+                        onChange={e => setBulkObservation(e.target.value)}
+                        style={{
+                          width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1',
+                          fontSize: '14px', fontWeight: '600', outline: 'none'
+                        }}
+                      />
+                    </div>
 
-                      return (
-                        <tr key={cto.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleApplyBulkObservation('Instalación')}
+                        disabled={savingAction}
+                        style={{
+                          backgroundColor: '#2563eb', color: 'white', padding: '10px 16px', borderRadius: '10px',
+                          fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                      >
+                        Marcar Observado en Inst.
+                      </button>
+                      <button
+                        onClick={() => handleApplyBulkObservation('Certificación')}
+                        disabled={savingAction}
+                        style={{
+                          backgroundColor: '#7c3aed', color: 'white', padding: '10px 16px', borderRadius: '10px',
+                          fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                      >
+                        Marcar Observado en Cert.
+                      </button>
+                      <button
+                        onClick={() => setSelectedCtoIds([])}
+                        disabled={savingAction}
+                        style={{
+                          backgroundColor: 'transparent', color: '#64748b', padding: '10px 12px', borderRadius: '10px',
+                          fontSize: '13px', fontWeight: '800', border: '1px solid #e2e8f0', cursor: 'pointer'
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                        <th style={{ padding: '12px 16px', width: '40px' }}>
+                          <input 
+                            type="checkbox"
+                            checked={selectedCtoIds.length > 0 && selectedCtoIds.length === ctos.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCtoIds(ctos.map(c => c.id));
+                              } else {
+                                setSelectedCtoIds([]);
+                              }
+                            }}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                        </th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ctos.map(cto => {
+                        const ctoActs = actividades.filter(a => a.cto_id === cto.id);
+                        const installAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar'));
+                        const certAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar'));
+
+                        return (
+                          <tr key={cto.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s', backgroundColor: selectedCtoIds.includes(cto.id) ? '#eff6ff' : 'transparent' }}>
+                            <td style={{ padding: '12px 16px' }}>
+                              <input 
+                                type="checkbox"
+                                checked={selectedCtoIds.includes(cto.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCtoIds(prev => [...prev, cto.id]);
+                                  } else {
+                                    setSelectedCtoIds(prev => prev.filter(id => id !== cto.id));
+                                  }
+                                }}
+                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                              />
+                            </td>
+                            <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ backgroundColor: '#f1f5f9', color: '#0f172a', padding: '4px 8px', borderRadius: '8px' }}>
                                 {cto.codigo}
@@ -1064,7 +1215,8 @@ export default function SigestDetailPage({ params }: PageProps) {
                   </tbody>
                 </table>
               </div>
-            )}
+            </>
+          )}
           </div>
 
         </div>
