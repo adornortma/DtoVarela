@@ -1099,30 +1099,72 @@ export default function SigestDetailPage({ params }: PageProps) {
                           {/* Instalacion */}
                           <td style={{ padding: '16px' }}>
                             {installAct ? (
-                              <div style={{ position: 'relative', display: 'inline-block' }}>
-                                <select
-                                  value={installAct.despliegues_estados?.nombre}
-                                  onChange={(e) => handleOpenStatusDialog(cto, installAct, e.target.value)}
-                                  style={{
-                                    appearance: 'none',
-                                    backgroundColor: `${installAct.despliegues_estados?.color_hex || '#64748b'}12`,
-                                    color: installAct.despliegues_estados?.color_hex || '#64748b',
-                                    border: `1px solid ${installAct.despliegues_estados?.color_hex || '#64748b'}33`,
-                                    borderRadius: '10px',
-                                    padding: '6px 28px 6px 14px',
-                                    fontSize: '13px',
-                                    fontWeight: '850',
-                                    cursor: 'pointer',
-                                    outline: 'none',
-                                    minWidth: '130px',
-                                    textAlign: 'left'
-                                  }}
-                                >
-                                  {estados.filter(e => ['pendiente', 'completado', 'observado'].includes(e.nombre.toLowerCase())).map(est => (
-                                    <option key={est.id} value={est.nombre} style={{ backgroundColor: 'white', color: '#0f172a' }}>{est.nombre}</option>
-                                  ))}
-                                </select>
-                                <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: installAct.despliegues_estados?.color_hex || '#94a3b8' }} />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <select
+                                    value={installAct.despliegues_estados?.nombre}
+                                    onChange={(e) => handleOpenStatusDialog(cto, installAct, e.target.value)}
+                                    style={{
+                                      appearance: 'none',
+                                      backgroundColor: `${installAct.despliegues_estados?.color_hex || '#64748b'}12`,
+                                      color: installAct.despliegues_estados?.color_hex || '#64748b',
+                                      border: `1px solid ${installAct.despliegues_estados?.color_hex || '#64748b'}33`,
+                                      borderRadius: '10px',
+                                      padding: '6px 28px 6px 14px',
+                                      fontSize: '13px',
+                                      fontWeight: '850',
+                                      cursor: 'pointer',
+                                      outline: 'none',
+                                      minWidth: '130px',
+                                      textAlign: 'left',
+                                      width: '100%'
+                                    }}
+                                  >
+                                    {estados.filter(e => ['pendiente', 'completado', 'observado'].includes(e.nombre.toLowerCase())).map(est => (
+                                      <option key={est.id} value={est.nombre} style={{ backgroundColor: 'white', color: '#0f172a' }}>{est.nombre}</option>
+                                    ))}
+                                  </select>
+                                  <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: installAct.despliegues_estados?.color_hex || '#94a3b8' }} />
+                                </div>
+
+                                {installAct.despliegues_estados?.nombre.toLowerCase() !== 'completado' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <input 
+                                      type="text"
+                                      placeholder="Asignar técnico..."
+                                      key={`asig-inst-${installAct.id}-${installAct.tecnico_asignado || ''}`}
+                                      defaultValue={installAct.tecnico_asignado || ''}
+                                      onBlur={async (e) => {
+                                        const val = e.target.value.trim();
+                                        if (val !== (installAct.tecnico_asignado || '')) {
+                                          try {
+                                            await DesplieguesService.assignActividad(installAct.id, val || null, usuario);
+                                            installAct.tecnico_asignado = val || null;
+                                            installAct.fecha_asignacion = val ? new Date().toISOString() : null;
+                                            await loadSigestData();
+                                          } catch (err) {
+                                            console.error(err);
+                                            alert('Error al asignar técnico');
+                                          }
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      style={{
+                                        fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1',
+                                        fontWeight: '600', width: '130px', outline: 'none'
+                                      }}
+                                    />
+                                    {installAct.tecnico_asignado && installAct.fecha_asignacion && (
+                                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '750', marginTop: '1px' }}>
+                                        Asig: {new Date(installAct.fecha_asignacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <span style={{ fontSize: '13px', color: '#94a3b8' }}>N/A</span>
@@ -1132,30 +1174,72 @@ export default function SigestDetailPage({ params }: PageProps) {
                           {/* Certificacion */}
                           <td style={{ padding: '16px' }}>
                             {certAct ? (
-                              <div style={{ position: 'relative', display: 'inline-block' }}>
-                                <select
-                                  value={certAct.despliegues_estados?.nombre}
-                                  onChange={(e) => handleOpenStatusDialog(cto, certAct, e.target.value)}
-                                  style={{
-                                    appearance: 'none',
-                                    backgroundColor: `${certAct.despliegues_estados?.color_hex || '#64748b'}12`,
-                                    color: certAct.despliegues_estados?.color_hex || '#64748b',
-                                    border: `1px solid ${certAct.despliegues_estados?.color_hex || '#64748b'}33`,
-                                    borderRadius: '10px',
-                                    padding: '6px 28px 6px 14px',
-                                    fontSize: '13px',
-                                    fontWeight: '850',
-                                    cursor: 'pointer',
-                                    outline: 'none',
-                                    minWidth: '130px',
-                                    textAlign: 'left'
-                                  }}
-                                >
-                                  {estados.filter(e => ['pendiente', 'completado', 'observado'].includes(e.nombre.toLowerCase())).map(est => (
-                                    <option key={est.id} value={est.nombre} style={{ backgroundColor: 'white', color: '#0f172a' }}>{est.nombre}</option>
-                                  ))}
-                                </select>
-                                <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: certAct.despliegues_estados?.color_hex || '#94a3b8' }} />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <select
+                                    value={certAct.despliegues_estados?.nombre}
+                                    onChange={(e) => handleOpenStatusDialog(cto, certAct, e.target.value)}
+                                    style={{
+                                      appearance: 'none',
+                                      backgroundColor: `${certAct.despliegues_estados?.color_hex || '#64748b'}12`,
+                                      color: certAct.despliegues_estados?.color_hex || '#64748b',
+                                      border: `1px solid ${certAct.despliegues_estados?.color_hex || '#64748b'}33`,
+                                      borderRadius: '10px',
+                                      padding: '6px 28px 6px 14px',
+                                      fontSize: '13px',
+                                      fontWeight: '850',
+                                      cursor: 'pointer',
+                                      outline: 'none',
+                                      minWidth: '130px',
+                                      textAlign: 'left',
+                                      width: '100%'
+                                    }}
+                                  >
+                                    {estados.filter(e => ['pendiente', 'completado', 'observado'].includes(e.nombre.toLowerCase())).map(est => (
+                                      <option key={est.id} value={est.nombre} style={{ backgroundColor: 'white', color: '#0f172a' }}>{est.nombre}</option>
+                                    ))}
+                                  </select>
+                                  <ChevronRight size={10} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', color: certAct.despliegues_estados?.color_hex || '#94a3b8' }} />
+                                </div>
+
+                                {certAct.despliegues_estados?.nombre.toLowerCase() !== 'completado' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <input 
+                                      type="text"
+                                      placeholder="Asignar técnico..."
+                                      key={`asig-cert-${certAct.id}-${certAct.tecnico_asignado || ''}`}
+                                      defaultValue={certAct.tecnico_asignado || ''}
+                                      onBlur={async (e) => {
+                                        const val = e.target.value.trim();
+                                        if (val !== (certAct.tecnico_asignado || '')) {
+                                          try {
+                                            await DesplieguesService.assignActividad(certAct.id, val || null, usuario);
+                                            certAct.tecnico_asignado = val || null;
+                                            certAct.fecha_asignacion = val ? new Date().toISOString() : null;
+                                            await loadSigestData();
+                                          } catch (err) {
+                                            console.error(err);
+                                            alert('Error al asignar técnico');
+                                          }
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      style={{
+                                        fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1',
+                                        fontWeight: '600', width: '130px', outline: 'none'
+                                      }}
+                                    />
+                                    {certAct.tecnico_asignado && certAct.fecha_asignacion && (
+                                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '750', marginTop: '1px' }}>
+                                        Asig: {new Date(certAct.fecha_asignacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <span style={{ fontSize: '13px', color: '#94a3b8' }}>N/A</span>

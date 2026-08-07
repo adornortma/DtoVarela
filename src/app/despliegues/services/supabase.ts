@@ -273,6 +273,34 @@ export const DesplieguesService = {
       });
     if (histError) console.error('Error logging history:', histError);
   },
+  async assignActividad(
+    actividadId: string,
+    tecnicoAsignado: string | null,
+    usuario: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('actividades')
+      .update({
+        tecnico_asignado: tecnicoAsignado ? tecnicoAsignado.trim() : null,
+        fecha_asignacion: tecnicoAsignado ? new Date().toISOString() : null,
+        updated_by: usuario,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', actividadId);
+    if (error) throw error;
+
+    const { error: histError } = await supabase
+      .from('historial_despliegues')
+      .insert({
+        actividad_id: actividadId,
+        usuario,
+        accion: 'ASIGNACION_TECNICO',
+        estado_anterior: '',
+        estado_nuevo: '',
+        observaciones: tecnicoAsignado ? `Asignado a: ${tecnicoAsignado}` : 'Asignación removida'
+      });
+    if (histError) console.error('Error logging history for assignment:', histError);
+  },
 
   async saveActividadMateriales(
     actividadId: string,

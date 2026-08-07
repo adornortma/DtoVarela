@@ -48,6 +48,8 @@ export interface Actividad {
   estado_id: string;
   observaciones?: string | null;
   tecnico_nombre?: string | null;
+  tecnico_asignado?: string | null;
+  fecha_asignacion?: string | null;
   fecha_estado: string;
   created_at: string;
   updated_at: string;
