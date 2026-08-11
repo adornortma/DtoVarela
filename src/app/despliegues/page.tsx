@@ -529,6 +529,27 @@ export default function DesplieguesTrackingPage() {
                         </div>
                         <div style={{ fontSize: '13px', color: '#475569', fontWeight: '700', marginTop: '6px' }}>Dirección: {item.direccion || 'Sin dirección registrada'}</div>
                         {item.pelo_cto && <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Pelo: {item.pelo_cto}</div>}
+
+                        {/* Assignment info badge */}
+                        {item.tecnico_asignado ? (
+                          <div style={{
+                            marginTop: '8px', fontSize: '11px', fontWeight: '800', color: '#1e3a8a',
+                            backgroundColor: '#eff6ff', padding: '6px 10px', borderRadius: '8px',
+                            border: '1px solid #bfdbfe', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            marginRight: '8px'
+                          }}>
+                            <span>Asignado a: {item.tecnico_asignado} {item.fecha_asignacion ? `(${new Date(item.fecha_asignacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })})` : ''}</span>
+                          </div>
+                        ) : (
+                          <div style={{
+                            marginTop: '8px', fontSize: '11px', fontWeight: '800', color: '#b45309',
+                            backgroundColor: '#fffbeb', padding: '6px 10px', borderRadius: '8px',
+                            border: '1px solid #fde68a', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            marginRight: '8px'
+                          }}>
+                            <span>Sin asignar</span>
+                          </div>
+                        )}
                         
                         {(item.observaciones || item.act_observaciones) && (
                           <div style={{

@@ -510,6 +510,8 @@ export const DesplieguesService = {
       .select(`
         cto_id,
         observaciones,
+        tecnico_asignado,
+        fecha_asignacion,
         despliegues_estados ( nombre ),
         despliegues_tipos_actividad ( nombre )
       `);
@@ -620,18 +622,38 @@ export const DesplieguesService = {
         listInstalled.push(baseItem);
       }
       if (states.instalar === 'pendiente') {
-        listInstallPendientes.push(baseItem);
+        const act = acts.find(a => a.cto_id === c.id && (a.despliegues_tipos_actividad as any)?.nombre?.toLowerCase().includes('instalar'));
+        listInstallPendientes.push({
+          ...baseItem,
+          tecnico_asignado: act?.tecnico_asignado,
+          fecha_asignacion: act?.fecha_asignacion
+        });
       }
       if (states.instalar === 'observado') {
         const act = acts.find(a => a.cto_id === c.id && (a.despliegues_tipos_actividad as any)?.nombre?.toLowerCase().includes('instalar'));
-        listInstallObservadas.push({ ...baseItem, act_observaciones: act?.observaciones });
+        listInstallObservadas.push({
+          ...baseItem,
+          act_observaciones: act?.observaciones,
+          tecnico_asignado: act?.tecnico_asignado,
+          fecha_asignacion: act?.fecha_asignacion
+        });
       }
       if (states.certificar === 'pendiente') {
-        listCertPendientes.push(baseItem);
+        const act = acts.find(a => a.cto_id === c.id && (a.despliegues_tipos_actividad as any)?.nombre?.toLowerCase().includes('certificar'));
+        listCertPendientes.push({
+          ...baseItem,
+          tecnico_asignado: act?.tecnico_asignado,
+          fecha_asignacion: act?.fecha_asignacion
+        });
       }
       if (states.certificar === 'observado') {
         const act = acts.find(a => a.cto_id === c.id && (a.despliegues_tipos_actividad as any)?.nombre?.toLowerCase().includes('certificar'));
-        listCertObservadas.push({ ...baseItem, act_observaciones: act?.observaciones });
+        listCertObservadas.push({
+          ...baseItem,
+          act_observaciones: act?.observaciones,
+          tecnico_asignado: act?.tecnico_asignado,
+          fecha_asignacion: act?.fecha_asignacion
+        });
       }
     });
 
