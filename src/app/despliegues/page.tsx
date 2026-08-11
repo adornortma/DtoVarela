@@ -46,7 +46,7 @@ export default function DesplieguesTrackingPage() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [filterAssignable, setFilterAssignable] = useState(false);
-  const [filterAssignedToday, setFilterAssignedToday] = useState(false);
+  const [filterAssigned, setFilterAssigned] = useState(false);
   const [expandedSigestIds, setExpandedSigestIds] = useState<string[]>([]);
   
   const toggleExpandSigest = (sigestId: string) => {
@@ -136,7 +136,7 @@ export default function DesplieguesTrackingPage() {
     return Array.from(ids);
   }, [unassignedActivities]);
 
-  const assignedTodayActivities = React.useMemo(() => {
+  const assignedActivities = React.useMemo(() => {
     if (!summaryStats) return [];
     
     const listInst = summaryStats.listInstallPendientes || [];
@@ -145,12 +145,9 @@ export default function DesplieguesTrackingPage() {
     const listCertObs = summaryStats.listCertObservadas || [];
     
     const combined = [...listInst, ...listInstObs, ...listCert, ...listCertObs];
-    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
     
     return combined.filter((item: any) => {
-      if (!item.tecnico_asignado || !item.fecha_asignacion) return false;
-      const assignDateStr = new Date(item.fecha_asignacion).toLocaleDateString('en-CA');
-      return assignDateStr === todayStr;
+      return !!item.tecnico_asignado;
     }).map((item: any) => {
       const isInstall = listInst.some(x => x.id === item.id) || listInstObs.some(x => x.id === item.id);
       return {
@@ -160,20 +157,20 @@ export default function DesplieguesTrackingPage() {
     });
   }, [summaryStats]);
 
-  const assignedTodaySigestIds = React.useMemo(() => {
-    const ids = new Set(assignedTodayActivities.map(act => act.sigest_id));
+  const assignedSigestIds = React.useMemo(() => {
+    const ids = new Set(assignedActivities.map(act => act.sigest_id));
     return Array.from(ids);
-  }, [assignedTodayActivities]);
+  }, [assignedActivities]);
 
   const filteredDashboardItems = React.useMemo(() => {
     let items = sortedItems;
     if (filterAssignable) {
       items = items.filter(item => assignableSigestIds.includes(item.id));
-    } else if (filterAssignedToday) {
-      items = items.filter(item => assignedTodaySigestIds.includes(item.id));
+    } else if (filterAssigned) {
+      items = items.filter(item => assignedSigestIds.includes(item.id));
     }
     return items;
-  }, [sortedItems, filterAssignable, filterAssignedToday, assignableSigestIds, assignedTodaySigestIds]);
+  }, [sortedItems, filterAssignable, filterAssigned, assignableSigestIds, assignedSigestIds]);
 
   useEffect(() => {
     loadDashboard();
@@ -357,7 +354,7 @@ export default function DesplieguesTrackingPage() {
           <button
             onClick={() => {
               setFilterAssignable(prev => !prev);
-              setFilterAssignedToday(false);
+              setFilterAssigned(false);
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
@@ -379,25 +376,25 @@ export default function DesplieguesTrackingPage() {
             )}
           </button>
 
-          {/* Asignados Hoy Filter */}
+          {/* Asignados Filter */}
           <button
             onClick={() => {
-              setFilterAssignedToday(prev => !prev);
+              setFilterAssigned(prev => !prev);
               setFilterAssignable(false);
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
               padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '850',
               cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent',
-              backgroundColor: filterAssignedToday ? '#eff6ff' : '#f1f5f9',
-              color: filterAssignedToday ? '#1e3a8a' : '#475569',
-              borderColor: filterAssignedToday ? '#bfdbfe' : '#e2e8f0',
-              boxShadow: filterAssignedToday ? '0 4px 12px rgba(30, 58, 138, 0.1)' : 'none'
+              backgroundColor: filterAssigned ? '#eff6ff' : '#f1f5f9',
+              color: filterAssigned ? '#1e3a8a' : '#475569',
+              borderColor: filterAssigned ? '#bfdbfe' : '#e2e8f0',
+              boxShadow: filterAssigned ? '0 4px 12px rgba(30, 58, 138, 0.1)' : 'none'
             }}
           >
             <Database size={16} />
-            <span>Asignados Hoy ({assignedTodayActivities.length})</span>
-            {filterAssignedToday && (
+            <span>Asignados ({assignedActivities.length})</span>
+            {filterAssigned && (
               <span style={{
                 backgroundColor: '#1e3a8a', color: 'white', fontSize: '10px',
                 padding: '2px 6px', borderRadius: '50%', fontWeight: '900'
@@ -494,9 +491,9 @@ export default function DesplieguesTrackingPage() {
               <tbody>
                 {filteredDashboardItems.map(item => {
                   const sigestUnassigned = unassignedActivities.filter(act => act.sigest_id === item.id);
-                  const sigestAssignedToday = assignedTodayActivities.filter(act => act.sigest_id === item.id);
+                  const sigestAssigned = assignedActivities.filter(act => act.sigest_id === item.id);
                   
-                  const drawerActivities = filterAssignedToday ? sigestAssignedToday : sigestUnassigned;
+                  const drawerActivities = filterAssigned ? sigestAssigned : sigestUnassigned;
                   const hasDrawerActivities = drawerActivities.length > 0;
                   const isExpanded = expandedSigestIds.includes(item.id);
 
@@ -591,8 +588,8 @@ export default function DesplieguesTrackingPage() {
                         <tr style={{ backgroundColor: '#f8fafc' }} onClick={e => e.stopPropagation()}>
                           <td colSpan={7} style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: '850', color: filterAssignedToday ? '#2563eb' : '#b45309', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {filterAssignedToday ? `📅 Actividades asignadas hoy (${drawerActivities.length}):` : `⚠️ Actividades sin asignar (${drawerActivities.length}):`}
+                              <span style={{ fontSize: '13px', fontWeight: '850', color: filterAssigned ? '#2563eb' : '#b45309', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {filterAssigned ? `📅 Actividades asignadas (${drawerActivities.length}):` : `⚠️ Actividades sin asignar (${drawerActivities.length}):`}
                               </span>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px', marginTop: '6px' }}>
                                 {drawerActivities.map((act, idx) => (
@@ -610,15 +607,15 @@ export default function DesplieguesTrackingPage() {
                                       <span style={{ fontWeight: '850', color: '#0f172a', fontSize: '13px', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '6px' }}>{act.codigo}</span>
                                       <span style={{
                                         fontSize: '10px', fontWeight: '850', padding: '3px 8px', borderRadius: '8px',
-                                        backgroundColor: filterAssignedToday ? '#eff6ff' : (act.tipo.includes('Observada') ? '#fef2f2' : '#fffbeb'),
-                                        color: filterAssignedToday ? '#1e3a8a' : (act.tipo.includes('Observada') ? '#dc2626' : '#b45309'),
-                                        border: filterAssignedToday ? '1px solid #bfdbfe' : (act.tipo.includes('Observada') ? '1px solid #fee2e2' : '1px solid #fde68a')
+                                        backgroundColor: filterAssigned ? '#eff6ff' : (act.tipo.includes('Observada') ? '#fef2f2' : '#fffbeb'),
+                                        color: filterAssigned ? '#1e3a8a' : (act.tipo.includes('Observada') ? '#dc2626' : '#b45309'),
+                                        border: filterAssigned ? '1px solid #bfdbfe' : (act.tipo.includes('Observada') ? '1px solid #fee2e2' : '1px solid #fde68a')
                                       }}>
-                                        {filterAssignedToday ? `${act.tipo}: Asignada` : act.tipo}
+                                        {filterAssigned ? `${act.tipo}: Asignada` : act.tipo}
                                       </span>
                                     </div>
                                     <div style={{ fontSize: '12px', color: '#475569', fontWeight: '700', marginTop: '6px' }}>Dir: {act.direccion}</div>
-                                    {filterAssignedToday && act.tecnico_asignado && (
+                                    {filterAssigned && act.tecnico_asignado && (
                                       <div style={{ fontSize: '11px', color: '#1e3a8a', fontWeight: '800', marginTop: '6px', backgroundColor: '#eff6ff', padding: '4px 8px', borderRadius: '6px', display: 'inline-block' }}>
                                         Téc: {act.tecnico_asignado}
                                       </div>
