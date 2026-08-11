@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Search, Database, Briefcase, ChevronRight, Loader2, ClipboardList, X, ExternalLink
+  Search, Database, Briefcase, ChevronRight, Loader2, ClipboardList, X, ExternalLink, UserCheck
 } from 'lucide-react';
 import { DesplieguesService } from './services/supabase';
 import { Sigest } from './types';
@@ -45,7 +45,14 @@ export default function DesplieguesTrackingPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
-
+  const [filterAssignable, setFilterAssignable] = useState(false);
+  const [expandedSigestIds, setExpandedSigestIds] = useState<string[]>([]);
+  
+  const toggleExpandSigest = (sigestId: string) => {
+    setExpandedSigestIds(prev => 
+      prev.includes(sigestId) ? prev.filter(id => id !== sigestId) : [...prev, sigestId]
+    );
+  };
   const loadDashboard = async () => {
     setLoadingDashboard(true);
     try {
@@ -105,6 +112,38 @@ export default function DesplieguesTrackingPage() {
       return aVal > bVal ? modifier : -modifier;
     });
   }, [dashboardItems, sortField, sortDirection]);
+
+  const unassignedActivities = React.useMemo(() => {
+    if (!summaryStats) return [];
+    
+    const unassignedInst = (summaryStats.listInstallPendientes || [])
+      .filter((item: any) => !item.tecnico_asignado)
+      .map((item: any) => ({ ...item, tipo: 'Instalación: Pendiente' }));
+      
+    const unassignedInstObs = (summaryStats.listInstallObservadas || [])
+      .filter((item: any) => !item.tecnico_asignado)
+      .map((item: any) => ({ ...item, tipo: 'Instalación: Observada' }));
+
+    const unassignedCert = (summaryStats.listCertPendientes || [])
+      .filter((item: any) => !item.tecnico_asignado)
+      .map((item: any) => ({ ...item, tipo: 'Certificación: Pendiente' }));
+
+    const unassignedCertObs = (summaryStats.listCertObservadas || [])
+      .filter((item: any) => !item.tecnico_asignado)
+      .map((item: any) => ({ ...item, tipo: 'Certificación: Observada' }));
+
+    return [...unassignedInst, ...unassignedInstObs, ...unassignedCert, ...unassignedCertObs];
+  }, [summaryStats]);
+
+  const assignableSigestIds = React.useMemo(() => {
+    const ids = new Set(unassignedActivities.map(act => act.sigest_id));
+    return Array.from(ids);
+  }, [unassignedActivities]);
+
+  const filteredDashboardItems = React.useMemo(() => {
+    if (!filterAssignable) return sortedItems;
+    return sortedItems.filter(item => assignableSigestIds.includes(item.id));
+  }, [sortedItems, filterAssignable, assignableSigestIds]);
 
   useEffect(() => {
     loadDashboard();
@@ -282,6 +321,31 @@ export default function DesplieguesTrackingPage() {
           </button>
         </form>
 
+        {/* Filters and Toggle options */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%', marginTop: '4px' }}>
+          <button
+            onClick={() => setFilterAssignable(prev => !prev)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '850',
+              cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent',
+              backgroundColor: filterAssignable ? '#fffbeb' : '#f1f5f9',
+              color: filterAssignable ? '#b45309' : '#475569',
+              borderColor: filterAssignable ? '#fde68a' : '#e2e8f0',
+              boxShadow: filterAssignable ? '0 4px 12px rgba(180, 83, 9, 0.1)' : 'none'
+            }}
+          >
+            <UserCheck size={16} />
+            <span>Asignable ({unassignedActivities.length} act. sin asignar)</span>
+            {filterAssignable && (
+              <span style={{
+                backgroundColor: '#b45309', color: 'white', fontSize: '10px',
+                padding: '2px 6px', borderRadius: '50%', fontWeight: '900'
+              }}>✓</span>
+            )}
+          </button>
+        </div>
+
         {/* Search Results selection */}
         {searchResults.length > 0 && (
           <div style={{
@@ -328,6 +392,7 @@ export default function DesplieguesTrackingPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                  <th style={{ width: '40px', padding: '12px 16px' }}></th>
                   <th 
                     onClick={() => handleSort('numero_sigest')}
                     style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
@@ -367,75 +432,136 @@ export default function DesplieguesTrackingPage() {
                 </tr>
               </thead>
               <tbody>
-                {sortedItems.map(item => {
+                {filteredDashboardItems.map(item => {
+                  const sigestUnassigned = unassignedActivities.filter(act => act.sigest_id === item.id);
+                  const isExpanded = expandedSigestIds.includes(item.id);
+
                   return (
-                    <tr 
-                      key={item.id} 
-                      onClick={() => router.push(`/despliegues/${item.id}`)}
-                      style={{ 
-                        borderBottom: '1px solid #f1f5f9', 
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
-                        {item.numero_sigest}
-                      </td>
-                      <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
-                        {item.central}
-                      </td>
-                      <td style={{ padding: '16px' }}>
-                        {item.progreso === 100 ? (
-                          <span style={{
-                            display: 'inline-block', backgroundColor: '#ecfdf5', color: '#047857',
-                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
-                            border: '1px solid #a7f3d0', textTransform: 'uppercase'
-                          }}>
-                            Finalizado
-                          </span>
-                        ) : item.progreso === 0 ? (
-                          <span style={{
-                            display: 'inline-block', backgroundColor: '#fffbeb', color: '#b45309',
-                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
-                            border: '1px solid #fde68a', textTransform: 'uppercase'
-                          }}>
-                            Pendiente
-                          </span>
-                        ) : item.tiene_observadas ? (
-                          <span style={{
-                            display: 'inline-block', backgroundColor: '#fef2f2', color: '#dc2626',
-                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
-                            border: '1px solid #fecaca', textTransform: 'uppercase'
-                          }}>
-                            Con reparos pendientes
-                          </span>
-                        ) : (
-                          <span style={{
-                            display: 'inline-block', backgroundColor: '#eff6ff', color: '#1d4ed8',
-                            padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
-                            border: '1px solid #bfdbfe', textTransform: 'uppercase'
-                          }}>
-                            Iniciado
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
-                        <span style={{ color: '#16a34a', fontWeight: '800' }}>{item.instaladas}</span> / {item.total_ctos}
-                      </td>
-                      <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
-                        <span style={{ color: '#0369a1', fontWeight: '800' }}>{item.certificadas}</span> / {item.total_ctos}
-                      </td>
-                      <td style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ flex: 1, height: '8px', backgroundColor: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${item.progreso}%`, backgroundColor: '#2563eb', borderRadius: '10px' }}></div>
+                    <React.Fragment key={item.id}>
+                      <tr 
+                        onClick={() => router.push(`/despliegues/${item.id}`)}
+                        style={{ 
+                          borderBottom: '1px solid #f1f5f9', 
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s',
+                          backgroundColor: isExpanded ? '#f8fafc' : 'transparent'
+                        }}
+                        onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                        onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <td style={{ padding: '16px', width: '40px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                          {sigestUnassigned.length > 0 && (
+                            <button 
+                              onClick={() => toggleExpandSigest(item.id)}
+                              style={{
+                                border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px',
+                                color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                borderRadius: '6px', transform: isExpanded ? 'rotate(90deg)' : 'none',
+                                transition: 'transform 0.2s, background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e2e8f0'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          )}
+                        </td>
+                        <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
+                          {item.numero_sigest}
+                        </td>
+                        <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
+                          {item.central}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          {item.progreso === 100 ? (
+                            <span style={{
+                              display: 'inline-block', backgroundColor: '#ecfdf5', color: '#047857',
+                              padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                              border: '1px solid #a7f3d0', textTransform: 'uppercase'
+                            }}>
+                              Finalizado
+                            </span>
+                          ) : item.progreso === 0 ? (
+                            <span style={{
+                              display: 'inline-block', backgroundColor: '#fffbeb', color: '#b45309',
+                              padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                              border: '1px solid #fde68a', textTransform: 'uppercase'
+                            }}>
+                              Pendiente
+                            </span>
+                          ) : item.tiene_observadas ? (
+                            <span style={{
+                              display: 'inline-block', backgroundColor: '#fef2f2', color: '#dc2626',
+                              padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                              border: '1px solid #fecaca', textTransform: 'uppercase'
+                            }}>
+                              Con reparos pendientes
+                            </span>
+                          ) : (
+                            <span style={{
+                              display: 'inline-block', backgroundColor: '#eff6ff', color: '#1d4ed8',
+                              padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '850',
+                              border: '1px solid #bfdbfe', textTransform: 'uppercase'
+                            }}>
+                              Iniciado
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
+                          <span style={{ color: '#16a34a', fontWeight: '800' }}>{item.instaladas}</span> / {item.total_ctos}
+                        </td>
+                        <td style={{ padding: '16px', color: '#475569', fontSize: '15px', fontWeight: '700' }}>
+                          <span style={{ color: '#0369a1', fontWeight: '800' }}>{item.certificadas}</span> / {item.total_ctos}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ flex: 1, height: '8px', backgroundColor: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${item.progreso}%`, backgroundColor: '#2563eb', borderRadius: '10px' }}></div>
+                            </div>
+                            <span style={{ fontSize: '14px', fontWeight: '800', color: '#2563eb', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
                           </div>
-                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#2563eb', minWidth: '35px', textAlign: 'right' }}>{item.progreso}%</span>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+
+                      {isExpanded && sigestUnassigned.length > 0 && (
+                        <tr style={{ backgroundColor: '#f8fafc' }} onClick={e => e.stopPropagation()}>
+                          <td colSpan={7} style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: '850', color: '#b45309', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                ⚠️ Actividades sin asignar ({sigestUnassigned.length}):
+                              </span>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px', marginTop: '6px' }}>
+                                {sigestUnassigned.map((act, idx) => (
+                                  <div 
+                                    key={idx} 
+                                    onClick={() => router.push(`/despliegues/${item.id}`)}
+                                    style={{ 
+                                      backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', 
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.01)', cursor: 'pointer', transition: 'all 0.2s' 
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'none'; }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontWeight: '850', color: '#0f172a', fontSize: '13px', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '6px' }}>{act.codigo}</span>
+                                      <span style={{
+                                        fontSize: '10px', fontWeight: '850', padding: '3px 8px', borderRadius: '8px',
+                                        backgroundColor: act.tipo.includes('Observada') ? '#fef2f2' : '#fffbeb',
+                                        color: act.tipo.includes('Observada') ? '#dc2626' : '#b45309',
+                                        border: act.tipo.includes('Observada') ? '1px solid #fee2e2' : '1px solid #fde68a'
+                                      }}>
+                                        {act.tipo}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#475569', fontWeight: '700', marginTop: '6px' }}>Dir: {act.direccion}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
