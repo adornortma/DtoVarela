@@ -116,23 +116,18 @@ export default function DesplieguesTrackingPage() {
   const unassignedActivities = React.useMemo(() => {
     if (!summaryStats) return [];
     
+    // Rule 1: Only pending activities are assignable (Observed ones are NOT assignable)
     const unassignedInst = (summaryStats.listInstallPendientes || [])
       .filter((item: any) => !item.tecnico_asignado)
       .map((item: any) => ({ ...item, tipo: 'Instalación: Pendiente' }));
       
-    const unassignedInstObs = (summaryStats.listInstallObservadas || [])
-      .filter((item: any) => !item.tecnico_asignado)
-      .map((item: any) => ({ ...item, tipo: 'Instalación: Observada' }));
-
+    // Rule 2: Certification is ONLY assignable if the corresponding CTO installation is completed
+    const installedCtoIds = new Set((summaryStats.listInstalled || []).map((c: any) => c.id));
     const unassignedCert = (summaryStats.listCertPendientes || [])
-      .filter((item: any) => !item.tecnico_asignado)
+      .filter((item: any) => !item.tecnico_asignado && installedCtoIds.has(item.id))
       .map((item: any) => ({ ...item, tipo: 'Certificación: Pendiente' }));
 
-    const unassignedCertObs = (summaryStats.listCertObservadas || [])
-      .filter((item: any) => !item.tecnico_asignado)
-      .map((item: any) => ({ ...item, tipo: 'Certificación: Observada' }));
-
-    return [...unassignedInst, ...unassignedInstObs, ...unassignedCert, ...unassignedCertObs];
+    return [...unassignedInst, ...unassignedCert];
   }, [summaryStats]);
 
   const assignableSigestIds = React.useMemo(() => {
