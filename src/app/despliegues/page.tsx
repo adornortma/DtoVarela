@@ -47,6 +47,8 @@ export default function DesplieguesTrackingPage() {
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [filterAssignable, setFilterAssignable] = useState(false);
   const [filterAssigned, setFilterAssigned] = useState(false);
+  const [showInstalacion, setShowInstalacion] = useState(true);
+  const [showCertificacion, setShowCertificacion] = useState(true);
   const [expandedSigestIds, setExpandedSigestIds] = useState<string[]>([]);
   
   const toggleExpandSigest = (sigestId: string) => {
@@ -118,18 +120,24 @@ export default function DesplieguesTrackingPage() {
     if (!summaryStats) return [];
     
     // Rule 1: Only pending activities are assignable (Observed ones are NOT assignable)
-    const unassignedInst = (summaryStats.listInstallPendientes || [])
-      .filter((item: any) => !item.tecnico_asignado)
-      .map((item: any) => ({ ...item, tipo: 'Instalación: Pendiente' }));
+    let unassignedInst: any[] = [];
+    if (showInstalacion) {
+      unassignedInst = (summaryStats.listInstallPendientes || [])
+        .filter((item: any) => !item.tecnico_asignado)
+        .map((item: any) => ({ ...item, tipo: 'Instalación: Pendiente' }));
+    }
       
     // Rule 2: Certification is ONLY assignable if the corresponding CTO installation is completed
-    const installedCtoIds = new Set((summaryStats.listInstalled || []).map((c: any) => c.id));
-    const unassignedCert = (summaryStats.listCertPendientes || [])
-      .filter((item: any) => !item.tecnico_asignado && installedCtoIds.has(item.id))
-      .map((item: any) => ({ ...item, tipo: 'Certificación: Pendiente' }));
+    let unassignedCert: any[] = [];
+    if (showCertificacion) {
+      const installedCtoIds = new Set((summaryStats.listInstalled || []).map((c: any) => c.id));
+      unassignedCert = (summaryStats.listCertPendientes || [])
+        .filter((item: any) => !item.tecnico_asignado && installedCtoIds.has(item.id))
+        .map((item: any) => ({ ...item, tipo: 'Certificación: Pendiente' }));
+    }
 
     return [...unassignedInst, ...unassignedCert];
-  }, [summaryStats]);
+  }, [summaryStats, showInstalacion, showCertificacion]);
 
   const assignableSigestIds = React.useMemo(() => {
     const ids = new Set(unassignedActivities.map(act => act.sigest_id));
@@ -144,7 +152,13 @@ export default function DesplieguesTrackingPage() {
     const listCert = summaryStats.listCertPendientes || [];
     const listCertObs = summaryStats.listCertObservadas || [];
     
-    const combined = [...listInst, ...listInstObs, ...listCert, ...listCertObs];
+    const combined: any[] = [];
+    if (showInstalacion) {
+      combined.push(...listInst, ...listInstObs);
+    }
+    if (showCertificacion) {
+      combined.push(...listCert, ...listCertObs);
+    }
     
     return combined.filter((item: any) => {
       return !!item.tecnico_asignado;
@@ -155,7 +169,7 @@ export default function DesplieguesTrackingPage() {
         tipo: isInstall ? 'Instalación' : 'Certificación'
       };
     });
-  }, [summaryStats]);
+  }, [summaryStats, showInstalacion, showCertificacion]);
 
   const assignedSigestIds = React.useMemo(() => {
     const ids = new Set(assignedActivities.map(act => act.sigest_id));
@@ -349,58 +363,93 @@ export default function DesplieguesTrackingPage() {
         </form>
 
         {/* Filters and Toggle options */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%', marginTop: '4px' }}>
-          {/* Asignable Filter */}
-          <button
-            onClick={() => {
-              setFilterAssignable(prev => !prev);
-              setFilterAssigned(false);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '850',
-              cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent',
-              backgroundColor: filterAssignable ? '#fffbeb' : '#f1f5f9',
-              color: filterAssignable ? '#b45309' : '#475569',
-              borderColor: filterAssignable ? '#fde68a' : '#e2e8f0',
-              boxShadow: filterAssignable ? '0 4px 12px rgba(180, 83, 9, 0.1)' : 'none'
-            }}
-          >
-            <UserCheck size={16} />
-            <span>Asignable ({unassignedActivities.length} act. sin asignar)</span>
-            {filterAssignable && (
-              <span style={{
-                backgroundColor: '#b45309', color: 'white', fontSize: '10px',
-                padding: '2px 6px', borderRadius: '50%', fontWeight: '900'
-              }}>✓</span>
-            )}
-          </button>
+        <div style={{
+          display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', width: '100%', marginTop: '8px',
+          backgroundColor: '#f8fafc', padding: '14px 20px', borderRadius: '16px', border: '1px solid #e2e8f0',
+          boxSizing: 'border-box'
+        }}>
+          
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Asignable Filter */}
+            <button
+              onClick={() => {
+                setFilterAssignable(prev => !prev);
+                setFilterAssigned(false);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: '850',
+                cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent',
+                backgroundColor: filterAssignable ? '#fffbeb' : '#f1f5f9',
+                color: filterAssignable ? '#b45309' : '#475569',
+                borderColor: filterAssignable ? '#fde68a' : '#e2e8f0',
+                boxShadow: filterAssignable ? '0 4px 12px rgba(180, 83, 9, 0.1)' : 'none'
+              }}
+            >
+              <UserCheck size={15} />
+              <span>Asignable ({unassignedActivities.length} act. sin asignar)</span>
+              {filterAssignable && (
+                <span style={{
+                  backgroundColor: '#b45309', color: 'white', fontSize: '10px',
+                  padding: '2px 6px', borderRadius: '50%', fontWeight: '900'
+                }}>✓</span>
+              )}
+            </button>
 
-          {/* Asignados Filter */}
-          <button
-            onClick={() => {
-              setFilterAssigned(prev => !prev);
-              setFilterAssignable(false);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '850',
-              cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent',
-              backgroundColor: filterAssigned ? '#eff6ff' : '#f1f5f9',
-              color: filterAssigned ? '#1e3a8a' : '#475569',
-              borderColor: filterAssigned ? '#bfdbfe' : '#e2e8f0',
-              boxShadow: filterAssigned ? '0 4px 12px rgba(30, 58, 138, 0.1)' : 'none'
-            }}
-          >
-            <Database size={16} />
-            <span>Asignados ({assignedActivities.length})</span>
-            {filterAssigned && (
-              <span style={{
-                backgroundColor: '#1e3a8a', color: 'white', fontSize: '10px',
-                padding: '2px 6px', borderRadius: '50%', fontWeight: '900'
-              }}>✓</span>
-            )}
-          </button>
+            {/* Asignados Filter */}
+            <button
+              onClick={() => {
+                setFilterAssigned(prev => !prev);
+                setFilterAssignable(false);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: '850',
+                cursor: 'pointer', transition: 'all 0.2s', border: '1px solid transparent',
+                backgroundColor: filterAssigned ? '#eff6ff' : '#f1f5f9',
+                color: filterAssigned ? '#1e3a8a' : '#475569',
+                borderColor: filterAssigned ? '#bfdbfe' : '#e2e8f0',
+                boxShadow: filterAssigned ? '0 4px 12px rgba(30, 58, 138, 0.1)' : 'none'
+              }}
+            >
+              <Database size={15} />
+              <span>Asignados ({assignedActivities.length})</span>
+              {filterAssigned && (
+                <span style={{
+                  backgroundColor: '#1e3a8a', color: 'white', fontSize: '10px',
+                  padding: '2px 6px', borderRadius: '50%', fontWeight: '900'
+                }}>✓</span>
+              )}
+            </button>
+          </div>
+
+          {/* Separator Line */}
+          <div style={{ width: '1px', height: '24px', backgroundColor: '#e2e8f0' }}></div>
+
+          {/* Activity checkboxes */}
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', fontWeight: '850', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ver Tipo:</span>
+            
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', color: '#334155', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                checked={showInstalacion} 
+                onChange={e => setShowInstalacion(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+              />
+              <span>Instalación CTO</span>
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', color: '#334155', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                checked={showCertificacion} 
+                onChange={e => setShowCertificacion(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#7c3aed', cursor: 'pointer' }}
+              />
+              <span>Certificación CTO</span>
+            </label>
+          </div>
         </div>
 
         {/* Search Results selection */}
