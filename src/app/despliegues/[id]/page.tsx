@@ -704,7 +704,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                     <th style={{ padding: '16px', fontSize: '13px', fontWeight: '850', color: '#475569', textTransform: 'uppercase' }}>Concepto</th>
                     {(selectedSigest?.tipo === 'desbalanceado'
                       ? [
-                          { key: 'Caja CTO', label: 'CTO' },
+                          { key: 'CTO COMÚN', label: 'CTO COMÚN' },
                           { key: 'CTO 70/30', label: 'CTO 70/30' },
                           { key: 'CTO 50/50', label: 'CTO 50/50' },
                           { key: 'Drop 75 mts', label: 'DROP 75' },
@@ -729,7 +729,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '16px', fontWeight: '900', color: '#0f172a', fontSize: '15px' }}>Requerido</td>
                     {(selectedSigest?.tipo === 'desbalanceado'
-                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      ? ['CTO COMÚN', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                       : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                     ).map(key => {
                       const req = (selectedSigest?.material_requerido as Record<string, number>)?.[key] ?? 0;
@@ -766,7 +766,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '16px', fontWeight: '900', color: '#0f172a', fontSize: '15px' }}>Entregados</td>
                     {(selectedSigest?.tipo === 'desbalanceado'
-                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      ? ['CTO COMÚN', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                       : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                     ).map(key => {
                       const ent = (selectedSigest?.material_entregado as Record<string, number>)?.[key] ?? 0;
@@ -803,11 +803,12 @@ export default function SigestDetailPage({ params }: PageProps) {
                   <tr>
                     <td style={{ padding: '16px', fontWeight: '900', color: '#0f172a', fontSize: '15px' }}>Usado</td>
                     {(selectedSigest?.tipo === 'desbalanceado'
-                      ? ['Caja CTO', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
+                      ? ['CTO COMÚN', 'CTO 70/30', 'CTO 50/50', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                       : ['Caja CTO', 'Drop 75 mts', 'Drop 125 mts', 'Drop 175 mts']
                     ).map(key => {
                       let usd = 0;
                       if (key === 'Caja CTO') usd = materialsSummary.cajasUsed;
+                      else if (key === 'CTO COMÚN') usd = materialsSummary.ctoComun;
                       else if (key === 'CTO 70/30') usd = materialsSummary.cto7030;
                       else if (key === 'CTO 50/50') usd = materialsSummary.cto5050;
                       else if (key === 'Drop 75 mts') usd = materialsSummary.drop75;
