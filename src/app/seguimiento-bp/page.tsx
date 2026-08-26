@@ -1594,8 +1594,9 @@ function BPTrackingContent() {
       fecha_fin: end.toISOString().split('T')[0],
       observacion_lider: observationText,
       confirmado: true,
+      es_mensual: false,
       fecha_confirmacion: new Date().toISOString()
-    }, { onConflict: 'tecnico_id, fecha_inicio' });
+    }, { onConflict: 'tecnico_id, fecha_inicio, es_mensual' });
 
     if (error) alert('Error: ' + error.message);
     else { 
