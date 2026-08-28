@@ -578,10 +578,10 @@ export const DesplieguesService = {
 
       if (estNombre === 'completado') {
         statsMap[sigestId].completed_acts++;
-        if (tipoNombre?.includes('instalar')) {
+        if (tipoNombre?.includes('instalaci')) {
           statsMap[sigestId].instaladas++;
         }
-        if (tipoNombre?.includes('certificar')) {
+        if (tipoNombre?.includes('certifica')) {
           statsMap[sigestId].certificadas++;
         }
       }
@@ -591,9 +591,9 @@ export const DesplieguesService = {
       }
 
       if (ctoStates[act.cto_id]) {
-        if (tipoNombre?.includes('instalar')) {
+        if (tipoNombre?.includes('instalaci')) {
           ctoStates[act.cto_id].instalar = estNombre;
-        } else if (tipoNombre?.includes('certificar')) {
+        } else if (tipoNombre?.includes('certifica')) {
           ctoStates[act.cto_id].certificar = estNombre;
         }
       }

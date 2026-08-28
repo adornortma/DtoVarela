@@ -92,7 +92,7 @@ export default function ActivityManagementDialog({
 
         if (!act) {
           const acts = await DesplieguesService.getActividadesByCtoIds([ctoId]);
-          const sufijo = tipoActividad === 'instalacion' ? 'instalar' : 'certificar';
+          const sufijo = tipoActividad === 'instalacion' ? 'instalaci' : 'certifica';
           act = acts.find(a => 
             a.cto_id === ctoId && 
             (a.despliegues_tipos_actividad as any)?.nombre.toLowerCase().includes(sufijo)
