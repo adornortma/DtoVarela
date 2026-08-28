@@ -578,10 +578,10 @@ export const DesplieguesService = {
 
       if (estNombre === 'completado') {
         statsMap[sigestId].completed_acts++;
-        if (tipoNombre?.includes('instalaci')) {
+        if ((tipoNombre?.includes('instalar') || tipoNombre?.includes('instalaci'))) {
           statsMap[sigestId].instaladas++;
         }
-        if (tipoNombre?.includes('certifica')) {
+        if ((tipoNombre?.includes('certificar') || tipoNombre?.includes('certifica'))) {
           statsMap[sigestId].certificadas++;
         }
       }
@@ -591,9 +591,9 @@ export const DesplieguesService = {
       }
 
       if (ctoStates[act.cto_id]) {
-        if (tipoNombre?.includes('instalaci')) {
+        if ((tipoNombre?.includes('instalar') || tipoNombre?.includes('instalaci'))) {
           ctoStates[act.cto_id].instalar = estNombre;
-        } else if (tipoNombre?.includes('certifica')) {
+        } else if ((tipoNombre?.includes('certificar') || tipoNombre?.includes('certifica'))) {
           ctoStates[act.cto_id].certificar = estNombre;
         }
       }
@@ -613,7 +613,7 @@ export const DesplieguesService = {
 
     Object.entries(ctoStates).forEach(([ctoId, states]) => {
       const sigestId = ctoToSigest[ctoId];
-      if (sigestId && statsMap[sigestId]?.is_finalizado) return;
+      // Eliminamos el return temprano para que las CTOs completadas de proyectos finalizados SI sumen a los contadores historicos
 
       if (states.instalar === 'completado') {
         totalInstalledCtos++;
@@ -640,7 +640,7 @@ export const DesplieguesService = {
 
     ctos?.forEach(c => {
       const parent = ctoToSigestObj[c.id];
-      if (!parent || statsMap[parent.id]?.is_finalizado) return;
+      if (!parent) return;
 
       const states = ctoStates[c.id] || {};
       const baseItem = {
