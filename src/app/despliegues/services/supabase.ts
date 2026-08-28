@@ -456,6 +456,59 @@ export const DesplieguesService = {
     return results || [];
   },
 
+  async getEstadisticasEvolucion(): Promise<any[]> {
+    const fetchAll = async (table: string, selectQuery: string) => {
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+      while(hasMore) {
+        const { data, error } = await supabase.from(table).select(selectQuery).range(from, from + step - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += step;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allData;
+    };
+
+    const [sigests, ctos, acts] = await Promise.all([
+      fetchAll('sigests', 'id, central'),
+      fetchAll('ctos', 'id, sigest_id'),
+      fetchAll('actividades', 'id, cto_id, fecha_estado, despliegues_estados(nombre), despliegues_tipos_actividad(nombre)')
+    ]);
+
+    const ctoToSigest = Object.fromEntries(ctos.map((c: any) => [c.id, c.sigest_id]));
+    const sigestToCentral = Object.fromEntries(sigests.map((s: any) => [s.id, s.central]));
+
+    const result = acts
+      .filter((act: any) => {
+        const estado = act.despliegues_estados?.nombre?.toLowerCase();
+        return estado === 'completado' && act.fecha_estado;
+      })
+      .map((act: any) => {
+        const sigestId = ctoToSigest[act.cto_id];
+        const central = sigestId ? sigestToCentral[sigestId] : 'Desconocida';
+        const tipoNombre = act.despliegues_tipos_actividad?.nombre?.toLowerCase() || '';
+        let tipo = 'Otro';
+        if (tipoNombre.includes('instalar') || tipoNombre.includes('instalaci')) tipo = 'Instalación';
+        if (tipoNombre.includes('certificar') || tipoNombre.includes('certifica')) tipo = 'Certificación';
+
+        return {
+          id: act.id,
+          fecha_estado: act.fecha_estado,
+          tipo,
+          central
+        };
+      })
+      .filter((act: any) => act.tipo !== 'Otro');
+
+    return result;
+  },
+
   async getDashboardStats(): Promise<{
     items: {
       id: string;

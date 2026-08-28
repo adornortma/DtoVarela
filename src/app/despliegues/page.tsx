@@ -540,7 +540,23 @@ export default function DesplieguesTrackingPage() {
           <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <ClipboardList size={20} color="#2563eb" /> Centrales y Polígonos de Despliegue
           </h3>
-          <Link href="/despliegues/finalizados" style={{
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Link href="/despliegues/estadisticas" style={{
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: '1px solid #bfdbfe',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              📊 Estadísticas
+            </Link>
+            <Link href="/despliegues/finalizados" style={{
             backgroundColor: 'white',
             color: '#334155',
             padding: '10px 16px',
