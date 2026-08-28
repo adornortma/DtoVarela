@@ -580,7 +580,7 @@ export default function DesplieguesTrackingPage() {
                   const sigestUnassigned = unassignedActivities.filter(act => act.sigest_id === item.id);
                   const sigestAssigned = assignedActivities.filter(act => act.sigest_id === item.id);
                   
-                  const drawerActivities = filterAssigned ? sigestAssigned : sigestUnassigned;
+                  const drawerActivities = filterAssigned ? sigestAssigned : filterAssignable ? sigestUnassigned : [...sigestUnassigned, ...sigestAssigned];
                   const hasDrawerActivities = drawerActivities.length > 0;
                   const isExpanded = expandedSigestIds.includes(item.id);
 
@@ -676,7 +676,7 @@ export default function DesplieguesTrackingPage() {
                           <td colSpan={7} style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               <span style={{ fontSize: '13px', fontWeight: '850', color: filterAssigned ? '#2563eb' : '#b45309', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {filterAssigned ? `📅 Actividades asignadas (${drawerActivities.length}):` : `⚠️ Actividades sin asignar (${drawerActivities.length}):`}
+                                {filterAssigned ? `▶ Actividades asignadas (${drawerActivities.length}):` : filterAssignable ? `▶ Actividades sin asignar (${drawerActivities.length}):` : `▶ Actividades pendientes (${drawerActivities.length}):`}
                               </span>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px', marginTop: '6px' }}>
                                 {drawerActivities.map((act, idx) => (
@@ -701,15 +701,15 @@ export default function DesplieguesTrackingPage() {
                                       <span style={{ fontWeight: '850', color: '#0f172a', fontSize: '13px', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '6px' }}>{act.codigo}</span>
                                       <span style={{
                                         fontSize: '10px', fontWeight: '850', padding: '3px 8px', borderRadius: '8px',
-                                        backgroundColor: filterAssigned ? '#eff6ff' : (act.tipo.includes('Observada') ? '#fef2f2' : '#fffbeb'),
-                                        color: filterAssigned ? '#1e3a8a' : (act.tipo.includes('Observada') ? '#dc2626' : '#b45309'),
-                                        border: filterAssigned ? '1px solid #bfdbfe' : (act.tipo.includes('Observada') ? '1px solid #fee2e2' : '1px solid #fde68a')
+                                        backgroundColor: act.tecnico_asignado ? '#eff6ff' : (act.tipo.includes('Observada') ? '#fef2f2' : '#fffbeb'),
+                                        color: act.tecnico_asignado ? '#1e3a8a' : (act.tipo.includes('Observada') ? '#dc2626' : '#b45309'),
+                                        border: act.tecnico_asignado ? '1px solid #bfdbfe' : (act.tipo.includes('Observada') ? '1px solid #fee2e2' : '1px solid #fde68a')
                                       }}>
-                                        {filterAssigned ? `${act.tipo}: Asignada` : act.tipo}
+                                        {act.tecnico_asignado ? `${act.tipo}: Asignada` : act.tipo}
                                       </span>
                                     </div>
                                     <div style={{ fontSize: '12px', color: '#475569', fontWeight: '700', marginTop: '6px' }}>Dir: {act.direccion}</div>
-                                    {filterAssigned && act.tecnico_asignado && (
+                                    {act.tecnico_asignado && (
                                       <div style={{ fontSize: '11px', color: '#1e3a8a', fontWeight: '800', marginTop: '6px', backgroundColor: '#eff6ff', padding: '4px 8px', borderRadius: '6px', display: 'inline-block' }}>
                                         Téc: {act.tecnico_asignado}
                                       </div>
