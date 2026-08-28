@@ -504,24 +504,41 @@ export const DesplieguesService = {
       };
     }
 
+    // Helper to fetch all rows circumventing the 1000 row limit
+    const fetchAll = async (table: string, selectQuery: string) => {
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+      while(hasMore) {
+        const { data, error } = await supabase
+          .from(table)
+          .select(selectQuery)
+          .range(from, from + step - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          if (data.length < step) hasMore = false;
+          else from += step;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allData;
+    };
+
     // 2. Fetch all CTOs
-    const { data: ctos, error: ctosError } = await supabase
-      .from('ctos')
-      .select('id, sigest_id, codigo, direccion, pelo_cto, observaciones');
-    if (ctosError) throw ctosError;
+    const ctos = await fetchAll('ctos', 'id, sigest_id, codigo, direccion, pelo_cto, observaciones');
 
     // 3. Fetch all activities
-    const { data: acts, error: actsError } = await supabase
-      .from('actividades')
-      .select(`
+    const acts = await fetchAll('actividades', `
         cto_id,
         observaciones,
         tecnico_asignado,
         fecha_asignacion,
         despliegues_estados ( nombre ),
         despliegues_tipos_actividad ( nombre )
-      `);
-    if (actsError) throw actsError;
+    `);
 
     // Map CTO to its SIGEST ID
     const ctoToSigest: Record<string, string> = {};
