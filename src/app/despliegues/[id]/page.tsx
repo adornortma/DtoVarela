@@ -1690,7 +1690,13 @@ export default function SigestDetailPage({ params }: PageProps) {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white'
           }}>
             <div>
-              <p style={{ fontWeight: '800', fontSize: '16px' }}>Evidencia Fotográfica</p>
+              <p style={{ fontWeight: '800', fontSize: '16px' }}>
+                Evidencia Fotográfica {
+                  actividades.find(a => a.id === lightboxPhotos[activeLightboxIndex]?.actividad_id)?.despliegues_tipos_actividad?.nombre 
+                    ? ` - ${actividades.find(a => a.id === lightboxPhotos[activeLightboxIndex]?.actividad_id)?.despliegues_tipos_actividad?.nombre}`
+                    : ''
+                }
+              </p>
               <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px', fontWeight: '600' }}>
                 Subido por: {lightboxPhotos[activeLightboxIndex]?.usuario} | {new Date(lightboxPhotos[activeLightboxIndex]?.fecha_subida).toLocaleString('es-AR')}
               </p>
