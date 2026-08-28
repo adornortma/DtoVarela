@@ -54,6 +54,7 @@ export default function DesplieguesTrackingPage() {
   
   // Dialog state
   const [selectedActivityForDialog, setSelectedActivityForDialog] = useState<{ ctoId: string, sigestId: string, tipoActividad: 'instalacion' | 'certificacion' } | null>(null);
+  const [finishedCount, setFinishedCount] = useState(0);
 
   const toggleExpandSigest = (sigestId: string) => {
     setExpandedSigestIds(prev => 
@@ -64,7 +65,10 @@ export default function DesplieguesTrackingPage() {
     setLoadingDashboard(true);
     try {
       const stats = await DesplieguesService.getDashboardStats();
-      setDashboardItems(stats.items);
+      const active = stats.items.filter((i: any) => !i.is_finalizado);
+      const finished = stats.items.filter((i: any) => i.is_finalizado);
+      setDashboardItems(active);
+      setFinishedCount(finished.length);
       setSummaryStats(stats.summary);
     } catch (e) {
       console.error('Error loading dashboard stats:', e);
@@ -232,6 +236,21 @@ export default function DesplieguesTrackingPage() {
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
+            <Link href="/despliegues/finalizados" style={{
+              backgroundColor: 'white',
+              color: '#334155',
+              padding: '12px 20px',
+              borderRadius: '16px',
+              fontWeight: '800',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              📁 Finalizados ({finishedCount})
+            </Link>
             <Link href="/despliegues/admin" style={{
               backgroundColor: '#003366',
               color: 'white',

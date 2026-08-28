@@ -466,6 +466,7 @@ export const DesplieguesService = {
       certificadas: number;
       progreso: number;
       tiene_observadas: boolean;
+      is_finalizado: boolean;
     }[];
     summary: {
       totalSigests: number;
@@ -482,28 +483,6 @@ export const DesplieguesService = {
       listCertObservadas: any[];
     };
   }> {
-    // 1. Fetch all SIGESTs
-    const sigests = await this.getSigests();
-    if (sigests.length === 0) {
-      return {
-        items: [],
-        summary: {
-          totalSigests: 0,
-          totalInstalledCtos: 0,
-          installPendientes: 0,
-          installObservadas: 0,
-          certPendientes: 0,
-          certObservadas: 0,
-          listSigests: [],
-          listInstalled: [],
-          listInstallPendientes: [],
-          listInstallObservadas: [],
-          listCertPendientes: [],
-          listCertObservadas: []
-        }
-      };
-    }
-
     // Helper to fetch all rows circumventing the 1000 row limit
     const fetchAll = async (table: string, selectQuery: string) => {
       let allData: any[] = [];
@@ -527,6 +506,28 @@ export const DesplieguesService = {
       return allData;
     };
 
+    // 1. Fetch all SIGESTs
+    const sigests = await fetchAll('sigests', 'id, numero_sigest, central, tipo');
+    if (sigests.length === 0) {
+      return {
+        items: [],
+        summary: {
+          totalSigests: 0,
+          totalInstalledCtos: 0,
+          installPendientes: 0,
+          installObservadas: 0,
+          certPendientes: 0,
+          certObservadas: 0,
+          listSigests: [],
+          listInstalled: [],
+          listInstallPendientes: [],
+          listInstallObservadas: [],
+          listCertPendientes: [],
+          listCertObservadas: []
+        }
+      };
+    }
+
     // 2. Fetch all CTOs
     const ctos = await fetchAll('ctos', 'id, sigest_id, codigo, direccion, pelo_cto, observaciones');
 
@@ -543,10 +544,10 @@ export const DesplieguesService = {
     // Map CTO to its SIGEST ID
     const ctoToSigest: Record<string, string> = {};
     const ctoToSigestObj: Record<string, { id: string; numero: string; central: string }> = {};
-    const statsMap: Record<string, { total_ctos: number; instaladas: number; certificadas: number; tiene_observadas: boolean }> = {};
+    const statsMap: Record<string, { total_ctos: number; instaladas: number; certificadas: number; tiene_observadas: boolean; total_acts: number; completed_acts: number; is_finalizado: boolean }> = {};
 
     sigests.forEach(s => {
-      statsMap[s.id] = { total_ctos: 0, instaladas: 0, certificadas: 0, tiene_observadas: false };
+      statsMap[s.id] = { total_ctos: 0, instaladas: 0, certificadas: 0, tiene_observadas: false, total_acts: 0, completed_acts: 0, is_finalizado: false };
     });
 
     ctos?.forEach(c => {
@@ -570,10 +571,13 @@ export const DesplieguesService = {
       const sigestId = ctoToSigest[act.cto_id];
       if (!sigestId || !statsMap[sigestId]) return;
 
+      statsMap[sigestId].total_acts++;
+
       const estNombre = (act.despliegues_estados as any)?.nombre?.toLowerCase();
       const tipoNombre = (act.despliegues_tipos_actividad as any)?.nombre?.toLowerCase();
 
       if (estNombre === 'completado') {
+        statsMap[sigestId].completed_acts++;
         if (tipoNombre?.includes('instalar')) {
           statsMap[sigestId].instaladas++;
         }
@@ -595,13 +599,22 @@ export const DesplieguesService = {
       }
     });
 
+    // Compute is_finalizado for each SIGEST
+    sigests.forEach(s => {
+      const info = statsMap[s.id];
+      info.is_finalizado = info.total_acts > 0 && info.completed_acts === info.total_acts;
+    });
+
     let totalInstalledCtos = 0;
     let installPendientes = 0;
     let installObservadas = 0;
     let certPendientes = 0;
     let certObservadas = 0;
 
-    Object.values(ctoStates).forEach(states => {
+    Object.entries(ctoStates).forEach(([ctoId, states]) => {
+      const sigestId = ctoToSigest[ctoId];
+      if (sigestId && statsMap[sigestId]?.is_finalizado) return;
+
       if (states.instalar === 'completado') {
         totalInstalledCtos++;
       }
@@ -627,7 +640,7 @@ export const DesplieguesService = {
 
     ctos?.forEach(c => {
       const parent = ctoToSigestObj[c.id];
-      if (!parent) return;
+      if (!parent || statsMap[parent.id]?.is_finalizado) return;
 
       const states = ctoStates[c.id] || {};
       const baseItem = {
@@ -680,7 +693,7 @@ export const DesplieguesService = {
       }
     });
 
-    const listSigests = sigests.map(s => {
+    const listSigests = sigests.filter(s => !statsMap[s.id].is_finalizado).map(s => {
       const info = statsMap[s.id];
       const totalActivities = info.total_ctos * 2;
       const completedActivities = info.instaladas + info.certificadas;
@@ -708,14 +721,15 @@ export const DesplieguesService = {
         instaladas: info.instaladas,
         certificadas: info.certificadas,
         progreso,
-        tiene_observadas: info.tiene_observadas
+        tiene_observadas: info.tiene_observadas,
+        is_finalizado: info.is_finalizado
       };
     });
 
     return {
       items,
       summary: {
-        totalSigests: sigests.length,
+        totalSigests: sigests.filter(s => !statsMap[s.id].is_finalizado).length,
         totalInstalledCtos,
         installPendientes,
         installObservadas,
