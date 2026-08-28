@@ -81,7 +81,10 @@ export default function SigestDetailPage({ params }: PageProps) {
 
   const [selectedCtoIds, setSelectedCtoIds] = useState<string[]>([]);
   const [bulkObservation, setBulkObservation] = useState('');
-
+  const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
+  const [bulkAssignTechName, setBulkAssignTechName] = useState('');
+  const [bulkAssignApplyInstall, setBulkAssignApplyInstall] = useState(true);
+  const [bulkAssignApplyCert, setBulkAssignApplyCert] = useState(false);
   const handleApplyBulkObservation = async (tipo: 'Instalación' | 'Certificación') => {
     if (!bulkObservation.trim()) {
       alert('Por favor escribe un motivo u observación.');
@@ -141,6 +144,55 @@ export default function SigestDetailPage({ params }: PageProps) {
       setSavingAction(false);
     }
   };
+
+  const handleApplyBulkAssignment = async () => {
+    if (!bulkAssignTechName.trim()) {
+      alert('Por favor selecciona o escribe el nombre de un técnico.');
+      return;
+    }
+    if (!bulkAssignApplyInstall && !bulkAssignApplyCert) {
+      alert('Debes seleccionar al menos una actividad (Instalación o Certificación).');
+      return;
+    }
+
+    setSavingAction(true);
+    try {
+      const targets = actividades.filter(act => {
+        if (!selectedCtoIds.includes(act.cto_id)) return false;
+        const nombreTipo = act.despliegues_tipos_actividad?.nombre.toLowerCase() || '';
+        if (bulkAssignApplyInstall && nombreTipo.includes('instalar')) return true;
+        if (bulkAssignApplyCert && nombreTipo.includes('certificar')) return true;
+        return false;
+      });
+
+      for (const act of targets) {
+        await DesplieguesService.assignActividad(act.id, bulkAssignTechName.trim(), usuario, act.tecnico_asignado || null);
+      }
+
+      await loadSigestData();
+      setShowBulkAssignDialog(false);
+      setBulkAssignTechName('');
+      alert(`${targets.length} actividades asignadas a ${bulkAssignTechName.trim()} con éxito.`);
+    } catch (err) {
+      console.error(err);
+      alert('Error al aplicar la asignación masiva');
+    } finally {
+      setSavingAction(false);
+    }
+  };
+
+  const uniqueTechnicians = React.useMemo(() => {
+    const map = new Map<string, string>();
+    actividades.forEach(a => {
+      const t = (a.tecnico_asignado || '').trim();
+      if (t) {
+        if (!map.has(t.toUpperCase())) {
+          map.set(t.toUpperCase(), t);
+        }
+      }
+    });
+    return Array.from(map.values()).sort();
+  }, [actividades]);
 
   // Load catalogs on mount
   useEffect(() => {
@@ -890,6 +942,16 @@ export default function SigestDetailPage({ params }: PageProps) {
 
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
+                        onClick={() => setShowBulkAssignDialog(true)}
+                        disabled={savingAction}
+                        style={{
+                          backgroundColor: '#10b981', color: 'white', padding: '10px 16px', borderRadius: '10px',
+                          fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                      >
+                        <User size={14} /> Asignar técnico
+                      </button>
+                      <button
                         onClick={() => handleApplyBulkObservation('Instalación')}
                         disabled={savingAction}
                         style={{
@@ -1132,14 +1194,15 @@ export default function SigestDetailPage({ params }: PageProps) {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                     <input 
                                       type="text"
-                                      placeholder="Asignar técnico..."
+                                      list="tecnicos-list"
+                                      placeholder="Asignar técnico... ▼"
                                       key={`asig-inst-${installAct.id}-${installAct.tecnico_asignado || ''}`}
                                       defaultValue={installAct.tecnico_asignado || ''}
                                       onBlur={async (e) => {
                                         const val = e.target.value.trim();
                                         if (val !== (installAct.tecnico_asignado || '')) {
                                           try {
-                                            await DesplieguesService.assignActividad(installAct.id, val || null, usuario);
+                                            await DesplieguesService.assignActividad(installAct.id, val || null, usuario, installAct.tecnico_asignado || null);
                                             installAct.tecnico_asignado = val || null;
                                             installAct.fecha_asignacion = val ? new Date().toISOString() : null;
                                             await loadSigestData();
@@ -1207,14 +1270,15 @@ export default function SigestDetailPage({ params }: PageProps) {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                     <input 
                                       type="text"
-                                      placeholder="Asignar técnico..."
+                                      list="tecnicos-list"
+                                      placeholder="Asignar técnico... ▼"
                                       key={`asig-cert-${certAct.id}-${certAct.tecnico_asignado || ''}`}
                                       defaultValue={certAct.tecnico_asignado || ''}
                                       onBlur={async (e) => {
                                         const val = e.target.value.trim();
                                         if (val !== (certAct.tecnico_asignado || '')) {
                                           try {
-                                            await DesplieguesService.assignActividad(certAct.id, val || null, usuario);
+                                            await DesplieguesService.assignActividad(certAct.id, val || null, usuario, certAct.tecnico_asignado || null);
                                             certAct.tecnico_asignado = val || null;
                                             certAct.fecha_asignacion = val ? new Date().toISOString() : null;
                                             await loadSigestData();
@@ -1847,6 +1911,124 @@ export default function SigestDetailPage({ params }: PageProps) {
           </div>
         </div>
       )}
+      {showBulkAssignDialog && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+          zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: 'white', borderRadius: '24px', padding: '32px', width: '90%', maxWidth: '400px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '20px'
+          }}>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={20} color="#2563eb" /> Asignar Técnico
+              </h2>
+              <p style={{ fontSize: '13px', fontWeight: '700', color: '#64748b', marginTop: '6px' }}>
+                {selectedCtoIds.length} CTOs seleccionadas
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Técnico</label>
+              <input
+                list="tecnicos-list"
+                value={bulkAssignTechName}
+                onChange={e => setBulkAssignTechName(e.target.value)}
+                placeholder="Seleccionar técnico... ▼"
+                style={{
+                  width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
+                  fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a',
+                  backgroundColor: '#f8fafc', transition: 'all 0.2s', boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aplicar a</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={bulkAssignApplyInstall}
+                  onChange={e => setBulkAssignApplyInstall(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: '750', color: '#0f172a' }}>Instalación (_1)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={bulkAssignApplyCert}
+                  onChange={e => setBulkAssignApplyCert(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: '750', color: '#0f172a' }}>Certificación (_5)</span>
+              </label>
+            </div>
+
+            {bulkAssignTechName.trim() && (bulkAssignApplyInstall || bulkAssignApplyCert) && (() => {
+              const actsToUpdate = actividades.filter(act => {
+                if (!selectedCtoIds.includes(act.cto_id)) return false;
+                const nombreTipo = act.despliegues_tipos_actividad?.nombre.toLowerCase() || '';
+                if (bulkAssignApplyInstall && nombreTipo.includes('instalar')) return true;
+                if (bulkAssignApplyCert && nombreTipo.includes('certificar')) return true;
+                return false;
+              });
+              
+              const alreadyAssigned = actsToUpdate.filter(a => !!a.tecnico_asignado).length;
+
+              return (
+                <div style={{ backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#334155' }}>Resumen:</p>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '20px', fontSize: '13px', fontWeight: '700', color: '#475569' }}>
+                    <li>Actividades a modificar: <strong>{actsToUpdate.length}</strong></li>
+                    {alreadyAssigned > 0 && (
+                      <li style={{ color: '#dc2626', marginTop: '4px' }}>
+                        ¡Advertencia! {alreadyAssigned} actividades ya tienen un técnico y serán reasignadas.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                onClick={() => setShowBulkAssignDialog(false)}
+                disabled={savingAction}
+                style={{
+                  flex: 1, padding: '14px', borderRadius: '14px', border: '2px solid #e2e8f0',
+                  backgroundColor: 'transparent', color: '#64748b', fontSize: '14px', fontWeight: '850',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkAssignment}
+                disabled={savingAction || !bulkAssignTechName.trim() || (!bulkAssignApplyInstall && !bulkAssignApplyCert)}
+                style={{
+                  flex: 1, padding: '14px', borderRadius: '14px', border: 'none',
+                  backgroundColor: (!bulkAssignTechName.trim() || (!bulkAssignApplyInstall && !bulkAssignApplyCert)) ? '#cbd5e1' : '#2563eb',
+                  color: 'white', fontSize: '14px', fontWeight: '850',
+                  cursor: (!bulkAssignTechName.trim() || (!bulkAssignApplyInstall && !bulkAssignApplyCert)) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                }}
+              >
+                {savingAction ? 'Guardando...' : 'Asignar técnico'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <datalist id="tecnicos-list">
+        {uniqueTechnicians.map(t => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
 
     </div>
   );

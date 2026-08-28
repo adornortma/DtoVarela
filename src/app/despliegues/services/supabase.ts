@@ -276,7 +276,8 @@ export const DesplieguesService = {
   async assignActividad(
     actividadId: string,
     tecnicoAsignado: string | null,
-    usuario: string
+    usuario: string,
+    tecnicoAnterior: string | null = null
   ): Promise<void> {
     const { error } = await supabase
       .from('actividades')
@@ -289,15 +290,20 @@ export const DesplieguesService = {
       .eq('id', actividadId);
     if (error) throw error;
 
+    let obs = tecnicoAsignado ? `Asignado a: ${tecnicoAsignado}` : 'Asignación removida';
+    if (tecnicoAnterior && tecnicoAsignado) {
+      obs = `Reasignado de ${tecnicoAnterior} a ${tecnicoAsignado}`;
+    }
+
     const { error: histError } = await supabase
       .from('historial_despliegues')
       .insert({
         actividad_id: actividadId,
         usuario,
-        accion: 'ASIGNACION_TECNICO',
+        accion: tecnicoAnterior && tecnicoAsignado ? 'REASIGNACION_TECNICO' : 'ASIGNACION_TECNICO',
         estado_anterior: '',
         estado_nuevo: '',
-        observaciones: tecnicoAsignado ? `Asignado a: ${tecnicoAsignado}` : 'Asignación removida'
+        observaciones: obs
       });
     if (histError) console.error('Error logging history for assignment:', histError);
   },
