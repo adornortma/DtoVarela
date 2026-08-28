@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { DesplieguesService } from './services/supabase';
 import { Sigest } from './types';
+import ActivityManagementDialog from './components/ActivityManagementDialog';
 
 export default function DesplieguesTrackingPage() {
   const router = useRouter();
@@ -51,6 +52,9 @@ export default function DesplieguesTrackingPage() {
   const [showCertificacion, setShowCertificacion] = useState(true);
   const [expandedSigestIds, setExpandedSigestIds] = useState<string[]>([]);
   
+  // Dialog state
+  const [selectedActivityForDialog, setSelectedActivityForDialog] = useState<{ ctoId: string, sigestId: string, tipoActividad: 'instalacion' | 'certificacion' } | null>(null);
+
   const toggleExpandSigest = (sigestId: string) => {
     setExpandedSigestIds(prev => 
       prev.includes(sigestId) ? prev.filter(id => id !== sigestId) : [...prev, sigestId]
@@ -661,7 +665,14 @@ export default function DesplieguesTrackingPage() {
                                 {drawerActivities.map((act, idx) => (
                                   <div 
                                     key={idx} 
-                                    onClick={() => router.push(`/despliegues/${item.id}`)}
+                                    onClick={() => {
+                                      const isInstalar = act.tipo.toLowerCase().includes('instalaci');
+                                      setSelectedActivityForDialog({
+                                        ctoId: act.id,
+                                        sigestId: act.sigest_id,
+                                        tipoActividad: isInstalar ? 'instalacion' : 'certificacion'
+                                      });
+                                    }}
                                     style={{ 
                                       backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', 
                                       boxShadow: '0 2px 4px rgba(0,0,0,0.01)', cursor: 'pointer', transition: 'all 0.2s' 
@@ -827,6 +838,21 @@ export default function DesplieguesTrackingPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Activity Management Dialog */}
+      {selectedActivityForDialog && (
+        <ActivityManagementDialog
+          isOpen={true}
+          onClose={() => setSelectedActivityForDialog(null)}
+          ctoId={selectedActivityForDialog.ctoId}
+          sigestId={selectedActivityForDialog.sigestId}
+          tipoActividad={selectedActivityForDialog.tipoActividad}
+          usuario="Admin" // or whoever is logged in. In [id]/page.tsx they used 'Invitado' if no user
+          onSaved={() => {
+            loadDashboard(); // Refresh data!
+          }}
+        />
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
