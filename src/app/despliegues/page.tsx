@@ -87,7 +87,18 @@ export default function DesplieguesTrackingPage() {
   };
 
   const sortedItems = React.useMemo(() => {
-    if (!sortField) return dashboardItems;
+    if (!sortField) {
+      return [...dashboardItems].sort((a, b) => {
+        const pendingInstA = a.total_ctos - a.instaladas;
+        const pendingInstB = b.total_ctos - b.instaladas;
+        if (pendingInstA !== pendingInstB) {
+          return pendingInstB - pendingInstA;
+        }
+        const pendingCertA = a.total_ctos - a.certificadas;
+        const pendingCertB = b.total_ctos - b.certificadas;
+        return pendingCertB - pendingCertA;
+      });
+    }
     return [...dashboardItems].sort((a, b) => {
       let aVal: any;
       let bVal: any;
@@ -177,6 +188,27 @@ export default function DesplieguesTrackingPage() {
         tipo: isInstall ? 'Instalación' : 'Certificación'
       };
     });
+  }, [summaryStats, showInstalacion, showCertificacion]);
+
+  const allPendingActivities = React.useMemo(() => {
+    if (!summaryStats) return [];
+    
+    const listInst = summaryStats.listInstallPendientes || [];
+    const listInstObs = summaryStats.listInstallObservadas || [];
+    const listCert = summaryStats.listCertPendientes || [];
+    const listCertObs = summaryStats.listCertObservadas || [];
+    
+    const combined: any[] = [];
+    if (showInstalacion) {
+      listInst.forEach((i: any) => combined.push({ ...i, tipo: 'Instalación: Pendiente' }));
+      listInstObs.forEach((i: any) => combined.push({ ...i, tipo: 'Instalación: Observada' }));
+    }
+    if (showCertificacion) {
+      listCert.forEach((i: any) => combined.push({ ...i, tipo: 'Certificación: Pendiente' }));
+      listCertObs.forEach((i: any) => combined.push({ ...i, tipo: 'Certificación: Observada' }));
+    }
+    
+    return combined;
   }, [summaryStats, showInstalacion, showCertificacion]);
 
   const assignedSigestIds = React.useMemo(() => {
@@ -580,7 +612,8 @@ export default function DesplieguesTrackingPage() {
                   const sigestUnassigned = unassignedActivities.filter(act => act.sigest_id === item.id);
                   const sigestAssigned = assignedActivities.filter(act => act.sigest_id === item.id);
                   
-                  const drawerActivities = filterAssigned ? sigestAssigned : filterAssignable ? sigestUnassigned : [...sigestUnassigned, ...sigestAssigned];
+                  const sigestAllPending = allPendingActivities.filter(act => act.sigest_id === item.id);
+                    const drawerActivities = filterAssigned ? sigestAssigned : filterAssignable ? sigestUnassigned : sigestAllPending;
                   const hasDrawerActivities = drawerActivities.length > 0;
                   const isExpanded = expandedSigestIds.includes(item.id);
 
