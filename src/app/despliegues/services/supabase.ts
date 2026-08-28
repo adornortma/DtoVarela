@@ -739,5 +739,71 @@ export const DesplieguesService = {
       .in('codigo', codigos);
     if (error) throw error;
     return (data || []).map(item => item.codigo);
+  },
+
+  async getAsignadosData(): Promise<any[]> {
+    // Helper to fetch all rows circumventing the 1000 row limit
+    const fetchAll = async (table: string, selectQuery: string) => {
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+      while(hasMore) {
+        const { data, error } = await supabase
+          .from(table)
+          .select(selectQuery)
+          .range(from, from + step - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          if (data.length < step) hasMore = false;
+          else from += step;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allData;
+    };
+
+    const [sigests, ctos, acts] = await Promise.all([
+      fetchAll('sigests', 'id, numero, central'),
+      fetchAll('ctos', 'id, sigest_id, codigo, direccion'),
+      fetchAll('actividades', `
+        id,
+        cto_id,
+        observaciones,
+        tecnico_asignado,
+        fecha_asignacion,
+        despliegues_estados ( nombre ),
+        despliegues_tipos_actividad ( nombre )
+      `)
+    ]);
+
+    const sigestMap: Record<string, any> = {};
+    sigests.forEach(s => sigestMap[s.id] = s);
+
+    const ctoMap: Record<string, any> = {};
+    ctos.forEach(c => {
+      c.sigest = sigestMap[c.sigest_id];
+      ctoMap[c.id] = c;
+    });
+
+    return acts.map(act => {
+      const cto = ctoMap[act.cto_id];
+      return {
+        id: act.id,
+        tecnico_asignado: act.tecnico_asignado,
+        fecha_asignacion: act.fecha_asignacion,
+        estado: (act.despliegues_estados as any)?.nombre || 'Pendiente',
+        tipo: (act.despliegues_tipos_actividad as any)?.nombre || 'Desconocido',
+        observaciones: act.observaciones,
+        cto_id: act.cto_id,
+        cto_codigo: cto?.codigo || '',
+        cto_direccion: cto?.direccion || '',
+        sigest_id: cto?.sigest?.id || '',
+        sigest_numero: cto?.sigest?.numero || '',
+        sigest_central: cto?.sigest?.central || ''
+      };
+    });
   }
 };

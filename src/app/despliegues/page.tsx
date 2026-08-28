@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Search, Database, Briefcase, ChevronRight, Loader2, ClipboardList, X, ExternalLink, UserCheck
+  Search, Database, Briefcase, ChevronRight, Loader2, ClipboardList, X, ExternalLink, UserCheck, Settings
 } from 'lucide-react';
 import { DesplieguesService } from './services/supabase';
 import { Sigest } from './types';
@@ -227,20 +227,37 @@ export default function DesplieguesTrackingPage() {
             </p>
           </div>
           
-          <Link href="/despliegues/admin" style={{
-            backgroundColor: '#003366',
-            color: 'white',
-            padding: '12px 20px',
-            borderRadius: '16px',
-            fontWeight: '800',
-            fontSize: '13px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 4px 12px rgba(0, 51, 102, 0.15)'
-          }}>
-            <Database size={16} /> Modo Admin / CRUD
-          </Link>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Link href="/despliegues/asignados" style={{
+              backgroundColor: 'white',
+              color: '#0f172a',
+              padding: '12px 20px',
+              borderRadius: '16px',
+              fontWeight: '800',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <ClipboardList size={18} /> Resumen asignado
+            </Link>
+            <Link href="/despliegues/admin" style={{
+              backgroundColor: '#003366',
+              color: 'white',
+              padding: '12px 20px',
+              borderRadius: '16px',
+              fontWeight: '800',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(0, 51, 102, 0.15)'
+            }}>
+              <Settings size={18} /> Administrar SIGESTs
+            </Link>
+          </div>
         </div>
 
         {/* Summary Stats Cards */}
