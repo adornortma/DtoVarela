@@ -232,21 +232,6 @@ export default function DesplieguesTrackingPage() {
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
-            <Link href="/despliegues/asignados" style={{
-              backgroundColor: 'white',
-              color: '#0f172a',
-              padding: '12px 20px',
-              borderRadius: '16px',
-              fontWeight: '800',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              border: '1px solid #cbd5e1',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-            }}>
-              <ClipboardList size={18} /> Resumen asignado
-            </Link>
             <Link href="/despliegues/admin" style={{
               backgroundColor: '#003366',
               color: 'white',
@@ -391,6 +376,19 @@ export default function DesplieguesTrackingPage() {
         }}>
           
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Link href="/despliegues/asignados" style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: '850',
+              textDecoration: 'none',
+              backgroundColor: 'white',
+              color: '#0f172a',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+            }}>
+              <ClipboardList size={15} />
+              <span>Resumen asignado</span>
+            </Link>
+
             {/* Asignable Filter */}
             <button
               onClick={() => {
