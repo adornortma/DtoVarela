@@ -766,7 +766,7 @@ export const DesplieguesService = {
     };
 
     const [sigests, ctos, acts] = await Promise.all([
-      fetchAll('sigests', 'id, numero, central'),
+      fetchAll('sigests', 'id, numero_sigest, central'),
       fetchAll('ctos', 'id, sigest_id, codigo, direccion'),
       fetchAll('actividades', `
         id,
@@ -801,7 +801,7 @@ export const DesplieguesService = {
         cto_codigo: cto?.codigo || '',
         cto_direccion: cto?.direccion || '',
         sigest_id: cto?.sigest?.id || '',
-        sigest_numero: cto?.sigest?.numero || '',
+        sigest_numero: cto?.sigest?.numero_sigest || '',
         sigest_central: cto?.sigest?.central || ''
       };
     });
