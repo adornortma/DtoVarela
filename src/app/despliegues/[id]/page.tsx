@@ -18,6 +18,118 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+function TechnicianSelector({ 
+  value, 
+  onChange, 
+  technicians, 
+  placeholder = "Seleccionar técnico...",
+  size = "default"
+}: { 
+  value: string; 
+  onChange: (v: string) => void; 
+  technicians: string[]; 
+  placeholder?: string;
+  size?: "default" | "sm";
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filtered = technicians.filter(t => t.toLowerCase().includes(search.toLowerCase()));
+  const isSm = size === "sm";
+
+  return (
+    <div style={{ position: 'relative', width: '100%', boxSizing: 'border-box' }} ref={wrapperRef}>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+          setSearch('');
+        }}
+        style={{
+          width: '100%', 
+          padding: isSm ? '4px 8px' : '10px 14px', 
+          borderRadius: isSm ? '6px' : '10px', 
+          border: '1px solid #cbd5e1',
+          fontSize: isSm ? '11px' : '13px', 
+          fontWeight: isSm ? '600' : '700', 
+          color: value ? '#0f172a' : '#94a3b8',
+          backgroundColor: 'white', textAlign: 'left', display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', cursor: 'pointer'
+        }}
+      >
+        <span>{value || placeholder}</span>
+        {value ? (
+          <span style={{ fontSize: isSm ? '12px' : '14px', color: '#10b981' }}>✓</span>
+        ) : (
+          <ChevronRight size={12} style={{ transform: open ? 'rotate(270deg)' : 'rotate(90deg)', transition: 'transform 0.2s' }} />
+        )}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px',
+          backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
+          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 5000,
+          display: 'flex', flexDirection: 'column', maxHeight: '250px', overflow: 'hidden'
+        }}>
+          <div style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+            <input
+              autoFocus
+              type="text"
+              placeholder="🔍 Buscar técnico..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0',
+                fontSize: '13px', fontWeight: '600', color: '#0f172a', boxSizing: 'border-box',
+                outline: 'none', backgroundColor: '#f8fafc'
+              }}
+            />
+          </div>
+          <div style={{ overflowY: 'auto', flex: 1, padding: '4px' }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: '12px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>No encontrado</div>
+            ) : (
+              filtered.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    onChange(t);
+                    setOpen(false);
+                  }}
+                  style={{
+                    width: '100%', padding: '8px 12px', border: 'none', backgroundColor: 'transparent',
+                    textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#334155',
+                    cursor: 'pointer', borderRadius: '6px', display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  {t}
+                  {value === t && <span style={{ color: '#10b981' }}>✓</span>}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SigestDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id: sigestId } = use(params);
@@ -84,7 +196,7 @@ export default function SigestDetailPage({ params }: PageProps) {
   const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
   const [bulkAssignTechName, setBulkAssignTechName] = useState('');
   const [bulkAssignApplyInstall, setBulkAssignApplyInstall] = useState(true);
-  const [bulkAssignApplyCert, setBulkAssignApplyCert] = useState(false);
+  const [bulkAssignApplyCert, setBulkAssignApplyCert] = useState(true);
   const handleApplyBulkObservation = async (tipo: 'Instalación' | 'Certificación') => {
     if (!bulkObservation.trim()) {
       alert('Por favor escribe un motivo u observación.');
@@ -930,7 +1042,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '300px' }}>
                       <input 
                         type="text"
-                        placeholder="Escribe la observación común que se guardará..."
+                        placeholder="Observación común para las CTO seleccionadas..."
                         value={bulkObservation}
                         onChange={e => setBulkObservation(e.target.value)}
                         style={{
@@ -1191,37 +1303,28 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 </div>
 
                                 {installAct.despliegues_estados?.nombre.toLowerCase() !== 'completado' && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <input 
-                                      type="text"
-                                      list="tecnicos-list"
-                                      placeholder="Asignar técnico... ▼"
-                                      key={`asig-inst-${installAct.id}-${installAct.tecnico_asignado || ''}`}
-                                      defaultValue={installAct.tecnico_asignado || ''}
-                                      onBlur={async (e) => {
-                                        const val = e.target.value.trim();
-                                        if (val !== (installAct.tecnico_asignado || '')) {
-                                          try {
-                                            await DesplieguesService.assignActividad(installAct.id, val || null, usuario, installAct.tecnico_asignado || null);
-                                            installAct.tecnico_asignado = val || null;
-                                            installAct.fecha_asignacion = val ? new Date().toISOString() : null;
-                                            await loadSigestData();
-                                          } catch (err) {
-                                            console.error(err);
-                                            alert('Error al asignar técnico');
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', position: 'relative' }}>
+                                    <div style={{ width: '100%' }}>
+                                      <TechnicianSelector
+                                        value={installAct.tecnico_asignado || ''}
+                                        technicians={uniqueTechnicians}
+                                        size="sm"
+                                        placeholder="Asignar técnico..."
+                                        onChange={async (val) => {
+                                          if (val !== (installAct.tecnico_asignado || '')) {
+                                            try {
+                                              await DesplieguesService.assignActividad(installAct.id, val || null, usuario, installAct.tecnico_asignado || null);
+                                              installAct.tecnico_asignado = val || null;
+                                              installAct.fecha_asignacion = val ? new Date().toISOString() : null;
+                                              await loadSigestData();
+                                            } catch (err) {
+                                              console.error(err);
+                                              alert('Error al asignar técnico');
+                                            }
                                           }
-                                        }
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.currentTarget.blur();
-                                        }
-                                      }}
-                                      style={{
-                                        fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1',
-                                        fontWeight: '600', width: '130px', outline: 'none'
-                                      }}
-                                    />
+                                        }}
+                                      />
+                                    </div>
                                     {installAct.tecnico_asignado && installAct.fecha_asignacion && (
                                       <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '750', marginTop: '1px' }}>
                                         Asig: {new Date(installAct.fecha_asignacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
@@ -1267,37 +1370,28 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 </div>
 
                                 {certAct.despliegues_estados?.nombre.toLowerCase() !== 'completado' && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <input 
-                                      type="text"
-                                      list="tecnicos-list"
-                                      placeholder="Asignar técnico... ▼"
-                                      key={`asig-cert-${certAct.id}-${certAct.tecnico_asignado || ''}`}
-                                      defaultValue={certAct.tecnico_asignado || ''}
-                                      onBlur={async (e) => {
-                                        const val = e.target.value.trim();
-                                        if (val !== (certAct.tecnico_asignado || '')) {
-                                          try {
-                                            await DesplieguesService.assignActividad(certAct.id, val || null, usuario, certAct.tecnico_asignado || null);
-                                            certAct.tecnico_asignado = val || null;
-                                            certAct.fecha_asignacion = val ? new Date().toISOString() : null;
-                                            await loadSigestData();
-                                          } catch (err) {
-                                            console.error(err);
-                                            alert('Error al asignar técnico');
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', position: 'relative' }}>
+                                    <div style={{ width: '100%' }}>
+                                      <TechnicianSelector
+                                        value={certAct.tecnico_asignado || ''}
+                                        technicians={uniqueTechnicians}
+                                        size="sm"
+                                        placeholder="Asignar técnico..."
+                                        onChange={async (val) => {
+                                          if (val !== (certAct.tecnico_asignado || '')) {
+                                            try {
+                                              await DesplieguesService.assignActividad(certAct.id, val || null, usuario, certAct.tecnico_asignado || null);
+                                              certAct.tecnico_asignado = val || null;
+                                              certAct.fecha_asignacion = val ? new Date().toISOString() : null;
+                                              await loadSigestData();
+                                            } catch (err) {
+                                              console.error(err);
+                                              alert('Error al asignar técnico');
+                                            }
                                           }
-                                        }
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.currentTarget.blur();
-                                        }
-                                      }}
-                                      style={{
-                                        fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1',
-                                        fontWeight: '600', width: '130px', outline: 'none'
-                                      }}
-                                    />
+                                        }}
+                                      />
+                                    </div>
                                     {certAct.tecnico_asignado && certAct.fecha_asignacion && (
                                       <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '750', marginTop: '1px' }}>
                                         Asig: {new Date(certAct.fecha_asignacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
@@ -1933,16 +2027,10 @@ export default function SigestDetailPage({ params }: PageProps) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '12px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Técnico</label>
-              <input
-                list="tecnicos-list"
+              <TechnicianSelector 
                 value={bulkAssignTechName}
-                onChange={e => setBulkAssignTechName(e.target.value)}
-                placeholder="Seleccionar técnico... ▼"
-                style={{
-                  width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                  fontSize: '14px', outline: 'none', fontWeight: '600', color: '#0f172a',
-                  backgroundColor: '#f8fafc', transition: 'all 0.2s', boxSizing: 'border-box'
-                }}
+                onChange={setBulkAssignTechName}
+                technicians={uniqueTechnicians}
               />
             </div>
 
@@ -1977,19 +2065,25 @@ export default function SigestDetailPage({ params }: PageProps) {
                 return false;
               });
               
+              const installCount = actsToUpdate.filter(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar')).length;
+              const certCount = actsToUpdate.filter(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar')).length;
               const alreadyAssigned = actsToUpdate.filter(a => !!a.tecnico_asignado).length;
 
               return (
                 <div style={{ backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#334155' }}>Resumen:</p>
-                  <ul style={{ margin: '8px 0 0', paddingLeft: '20px', fontSize: '13px', fontWeight: '700', color: '#475569' }}>
-                    <li>Actividades a modificar: <strong>{actsToUpdate.length}</strong></li>
+                  <div style={{ margin: '8px 0 0', fontSize: '13px', fontWeight: '700', color: '#475569' }}>
+                    <p style={{ marginBottom: '4px' }}>Se actualizarán:</p>
+                    <ul style={{ paddingLeft: '20px', margin: '4px 0 0' }}>
+                      <li>{installCount} instalaciones</li>
+                      <li>{certCount} certificaciones</li>
+                    </ul>
                     {alreadyAssigned > 0 && (
-                      <li style={{ color: '#dc2626', marginTop: '4px' }}>
-                        ¡Advertencia! {alreadyAssigned} actividades ya tienen un técnico y serán reasignadas.
-                      </li>
+                      <p style={{ color: '#dc2626', marginTop: '12px', fontWeight: '800' }}>
+                        ¡Advertencia! {alreadyAssigned} de las actividades seleccionadas ya tienen un técnico asignado. ¿Deseás reemplazar esas asignaciones?
+                      </p>
                     )}
-                  </ul>
+                  </div>
                 </div>
               );
             })()}
@@ -2017,18 +2111,23 @@ export default function SigestDetailPage({ params }: PageProps) {
                   transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
                 }}
               >
-                {savingAction ? 'Guardando...' : 'Asignar técnico'}
+                {(() => {
+                  if (savingAction) return 'Guardando...';
+                  const actsToUpdate = actividades.filter(act => {
+                    if (!selectedCtoIds.includes(act.cto_id)) return false;
+                    const nombreTipo = act.despliegues_tipos_actividad?.nombre.toLowerCase() || '';
+                    if (bulkAssignApplyInstall && nombreTipo.includes('instalar')) return true;
+                    if (bulkAssignApplyCert && nombreTipo.includes('certificar')) return true;
+                    return false;
+                  });
+                  const alreadyAssigned = actsToUpdate.filter(a => !!a.tecnico_asignado).length;
+                  return alreadyAssigned > 0 ? 'Reasignar' : 'Asignar técnico';
+                })()}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <datalist id="tecnicos-list">
-        {uniqueTechnicians.map(t => (
-          <option key={t} value={t} />
-        ))}
-      </datalist>
 
     </div>
   );
