@@ -211,8 +211,11 @@ export default function ResumenAsignadoPage() {
         if (!map.has(t)) map.set(t, []);
         map.get(t)!.push(act);
       } else {
-        sum.unassigned++;
-        sinAsig.push(act);
+        const isCompletado = act.estado.toLowerCase() === 'completado';
+        if (!isCompletado) {
+          sum.unassigned++;
+          sinAsig.push(act);
+        }
       }
     });
 
