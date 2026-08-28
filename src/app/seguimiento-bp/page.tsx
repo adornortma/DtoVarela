@@ -1518,7 +1518,7 @@ function BPTrackingContent() {
       .maybeSingle();
 
     const { error } = await supabase.from('seguimiento_bp').upsert(payload, { 
-      onConflict: 'tecnico_id, fecha_inicio, es_mensual' 
+      onConflict: 'tecnico_id,fecha_inicio,es_mensual' 
     });
 
     if (error) {
@@ -1596,7 +1596,7 @@ function BPTrackingContent() {
       confirmado: true,
       es_mensual: false,
       fecha_confirmacion: new Date().toISOString()
-    }, { onConflict: 'tecnico_id, fecha_inicio, es_mensual' });
+    }, { onConflict: 'tecnico_id,fecha_inicio,es_mensual' });
 
     if (error) alert('Error: ' + error.message);
     else { 
@@ -2310,7 +2310,7 @@ function BPTrackingContent() {
                      observacion_lider: observationText,
                      fecha_confirmacion: new Date().toISOString(),
                      es_mensual: false 
-                   }, { onConflict: 'tecnico_id, fecha_inicio, es_mensual' });
+                   }, { onConflict: 'tecnico_id,fecha_inicio,es_mensual' });
 
                    if (error) alert('Error al guardar: ' + error.message);
                    else {
