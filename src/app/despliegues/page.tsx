@@ -268,22 +268,7 @@ export default function DesplieguesTrackingPage() {
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
-            <Link href="/despliegues/finalizados" style={{
-              backgroundColor: 'white',
-              color: '#334155',
-              padding: '12px 20px',
-              borderRadius: '16px',
-              fontWeight: '800',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              border: '1px solid #cbd5e1',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-            }}>
-              📁 Finalizados ({finishedCount})
-            </Link>
-            <Link href="/despliegues/admin" style={{
+          <Link href="/despliegues/admin" style={{
               backgroundColor: '#003366',
               color: 'white',
               padding: '12px 20px',
@@ -551,9 +536,26 @@ export default function DesplieguesTrackingPage() {
 
       {/* Master Summary Dashboard Table */}
       <section style={{ marginBottom: '32px' }}>
-        <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ClipboardList size={20} color="#2563eb" /> Centrales y Polígonos de Despliegue
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <ClipboardList size={20} color="#2563eb" /> Centrales y Polígonos de Despliegue
+          </h3>
+          <Link href="/despliegues/finalizados" style={{
+            backgroundColor: 'white',
+            color: '#334155',
+            padding: '10px 16px',
+            borderRadius: '12px',
+            fontWeight: '800',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            border: '1px solid #cbd5e1',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+          }}>
+            📁 Finalizados ({finishedCount})
+          </Link>
+        </div>
         
         {loadingDashboard ? (
           <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', display: 'flex', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
