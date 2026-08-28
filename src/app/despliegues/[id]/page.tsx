@@ -98,30 +98,51 @@ function TechnicianSelector({
             />
           </div>
           <div style={{ overflowY: 'auto', flex: 1, padding: '4px' }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: '12px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>No encontrado</div>
+            {filtered.length === 0 && !search.trim() ? (
+              <div style={{ padding: '12px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>No hay técnicos</div>
             ) : (
-              filtered.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    onChange(t);
-                    setOpen(false);
-                  }}
-                  style={{
-                    width: '100%', padding: '8px 12px', border: 'none', backgroundColor: 'transparent',
-                    textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#334155',
-                    cursor: 'pointer', borderRadius: '6px', display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  {t}
-                  {value === t && <span style={{ color: '#10b981' }}>✓</span>}
-                </button>
-              ))
+              <>
+                {filtered.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      onChange(t);
+                      setOpen(false);
+                    }}
+                    style={{
+                      width: '100%', padding: '8px 12px', border: 'none', backgroundColor: 'transparent',
+                      textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#334155',
+                      cursor: 'pointer', borderRadius: '6px', display: 'flex', justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    {t}
+                    {value === t && <span style={{ color: '#10b981' }}>✓</span>}
+                  </button>
+                ))}
+                {search.trim() && !technicians.some(t => t.toLowerCase() === search.trim().toLowerCase()) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(search.trim().toUpperCase());
+                      setOpen(false);
+                    }}
+                    style={{
+                      width: '100%', padding: '8px 12px', border: 'none', backgroundColor: 'transparent',
+                      textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#2563eb',
+                      cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px',
+                      borderTop: filtered.length > 0 ? '1px solid #e2e8f0' : 'none', marginTop: filtered.length > 0 ? '4px' : '0'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Plus size={14} /> Asignar "{search.trim().toUpperCase()}"
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1032,67 +1053,81 @@ export default function SigestDetailPage({ params }: PageProps) {
                 {selectedCtoIds.length > 0 && (
                   <div style={{
                     backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '16px', padding: '16px',
-                    display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px',
+                    display: 'flex', flexDirection: 'column', gap: '16px',
                     boxShadow: '0 4px 12px rgba(37, 99, 235, 0.05)'
                   }}>
-                    <span style={{ fontSize: '14px', fontWeight: '850', color: '#1e3a8a' }}>
-                      {selectedCtoIds.length} CTOs seleccionadas
-                    </span>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '300px' }}>
-                      <input 
-                        type="text"
-                        placeholder="Observación común para las CTO seleccionadas..."
-                        value={bulkObservation}
-                        onChange={e => setBulkObservation(e.target.value)}
-                        style={{
-                          width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1',
-                          fontSize: '14px', fontWeight: '600', outline: 'none'
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => setShowBulkAssignDialog(true)}
-                        disabled={savingAction}
-                        style={{
-                          backgroundColor: '#10b981', color: 'white', padding: '10px 16px', borderRadius: '10px',
-                          fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                        }}
-                      >
-                        <User size={14} /> Asignar técnico
-                      </button>
-                      <button
-                        onClick={() => handleApplyBulkObservation('Instalación')}
-                        disabled={savingAction}
-                        style={{
-                          backgroundColor: '#2563eb', color: 'white', padding: '10px 16px', borderRadius: '10px',
-                          fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                        }}
-                      >
-                        Marcar Observado en Inst.
-                      </button>
-                      <button
-                        onClick={() => handleApplyBulkObservation('Certificación')}
-                        disabled={savingAction}
-                        style={{
-                          backgroundColor: '#7c3aed', color: 'white', padding: '10px 16px', borderRadius: '10px',
-                          fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                        }}
-                      >
-                        Marcar Observado en Cert.
-                      </button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #bfdbfe', paddingBottom: '12px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: '850', color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle size={18} color="#2563eb" /> {selectedCtoIds.length} CTOs seleccionadas
+                      </span>
                       <button
                         onClick={() => setSelectedCtoIds([])}
                         disabled={savingAction}
                         style={{
-                          backgroundColor: 'transparent', color: '#64748b', padding: '10px 12px', borderRadius: '10px',
-                          fontSize: '13px', fontWeight: '800', border: '1px solid #e2e8f0', cursor: 'pointer'
+                          backgroundColor: 'transparent', color: '#64748b', padding: '6px 12px', borderRadius: '8px',
+                          fontSize: '12px', fontWeight: '800', border: '1px solid #cbd5e1', cursor: 'pointer'
                         }}
                       >
-                        Cancelar
+                        Cancelar selección
                       </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px' }}>
+                      {/* Left Side: Asignacion */}
+                      <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Asignación de Técnico
+                        </span>
+                        <button
+                          onClick={() => setShowBulkAssignDialog(true)}
+                          disabled={savingAction}
+                          style={{
+                            backgroundColor: '#10b981', color: 'white', padding: '10px 16px', borderRadius: '10px',
+                            fontSize: '13px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: 'fit-content'
+                          }}
+                        >
+                          <User size={16} /> Asignar técnico masivamente
+                        </button>
+                      </div>
+
+                      {/* Right Side: Observaciones */}
+                      <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '1px solid #bfdbfe', paddingLeft: '24px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Observación Común
+                        </span>
+                        <input 
+                          type="text"
+                          placeholder="Observación común para las CTO seleccionadas..."
+                          value={bulkObservation}
+                          onChange={e => setBulkObservation(e.target.value)}
+                          style={{
+                            width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1',
+                            fontSize: '13px', fontWeight: '600', outline: 'none'
+                          }}
+                        />
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                          <button
+                            onClick={() => handleApplyBulkObservation('Instalación')}
+                            disabled={savingAction}
+                            style={{
+                              backgroundColor: '#2563eb', color: 'white', padding: '8px 14px', borderRadius: '8px',
+                              fontSize: '12px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                            }}
+                          >
+                            Marcar Observado en Inst.
+                          </button>
+                          <button
+                            onClick={() => handleApplyBulkObservation('Certificación')}
+                            disabled={savingAction}
+                            style={{
+                              backgroundColor: '#7c3aed', color: 'white', padding: '8px 14px', borderRadius: '8px',
+                              fontSize: '12px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                            }}
+                          >
+                            Marcar Observado en Cert.
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
