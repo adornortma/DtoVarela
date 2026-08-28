@@ -1152,7 +1152,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                         </th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
-                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Dirección</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', minWidth: '250px' }}>Dirección</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Observaciones</th>
@@ -1264,6 +1264,7 @@ export default function SigestDetailPage({ params }: PageProps) {
                             <input
                               type="text"
                               defaultValue={cto.direccion || ''}
+                              title={cto.direccion || ''}
                               onBlur={async (e) => {
                                 const val = e.target.value.trim();
                                 if (val !== (cto.direccion || '')) {
@@ -1293,7 +1294,8 @@ export default function SigestDetailPage({ params }: PageProps) {
                                 padding: '4px 8px',
                                 borderRadius: '6px',
                                 transition: 'all 0.2s',
-                                boxSizing: 'border-box'
+                                boxSizing: 'border-box',
+                                textOverflow: 'ellipsis'
                               }}
                               onFocus={(e) => {
                                 e.target.style.border = '1px solid #cbd5e1';
