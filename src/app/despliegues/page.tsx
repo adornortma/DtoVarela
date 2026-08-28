@@ -571,6 +571,7 @@ export default function DesplieguesTrackingPage() {
           }}>
             📁 Finalizados ({finishedCount})
           </Link>
+          </div>
         </div>
         
         {loadingDashboard ? (

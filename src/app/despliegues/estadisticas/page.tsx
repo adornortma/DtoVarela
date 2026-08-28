@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,7 @@ export default function EstadisticasPage() {
         setData(result);
       } catch (err: any) {
         console.error('Error fetching stats:', err);
-        setError('Error al cargar las estadísticas');
+        setError('Error al cargar las estadÃ­sticas');
       } finally {
         setLoading(false);
       }
@@ -97,7 +97,7 @@ export default function EstadisticasPage() {
           timestamp: new Date(act.fecha_estado).getTime()
         };
       }
-      if (act.tipo === 'Instalación') {
+      if (act.tipo === 'InstalaciÃ³n') {
         grouped[key].Instalacion++;
       } else {
         grouped[key].Certificacion++;
@@ -112,7 +112,7 @@ export default function EstadisticasPage() {
       <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Loader2 className="animate-spin" size={24} color="#2563eb" />
-          <h1 style={{ margin: 0 }}>Cargando Estadísticas...</h1>
+          <h1 style={{ margin: 0 }}>Cargando EstadÃ­sticas...</h1>
         </div>
       </div>
     );
@@ -126,7 +126,7 @@ export default function EstadisticasPage() {
         </button>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <BarChart2 color="#2563eb" size={32} /> Evolución de Despliegues
+            <BarChart2 color="#2563eb" size={32} /> EvoluciÃ³n de Despliegues
           </h1>
         </div>
       </div>
@@ -138,9 +138,9 @@ export default function EstadisticasPage() {
             { label: 'Este Mes', value: kpiMes, bg: '#f0fdf4', color: '#15803d' }
           ].map((kpi, idx) => (
             <div key={idx} style={{ backgroundColor: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '800', color: #64748b', textTransform: 'uppercase' }}>{kpi.label}</span>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>{kpi.label}</span>
               <div style={{ fontSize: '40px', fontWeight: '900', color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
-              <span style={{ fontSize: '14px', color: #94a3b8', fontWeight: '500' }}>Actividades completadas</span>
+              <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>Actividades completadas</span>
             </div>
           ))
         }
@@ -159,7 +159,7 @@ export default function EstadisticasPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <Filter size={16} color="#64748b" />
               <select value={granularidad} onChange={(e) => setGranularidad(e.target.value as any)} style={{ border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                <option value="dia">Ver por Día</option>
+                <option value="dia">Ver por DÃ­a</option>
                 <option value="semana">Ver por Semana</option>
                 <option value="mes">Ver por Mes</option>
               </select>
@@ -176,8 +176,8 @@ export default function EstadisticasPage() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} labelStyle={{ fontWeight: '900', color: '#0f172a', marginBottom: '8px' }} />
                 <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
-                <Bar dataKey="Instalacion" name="Instalación CTO" stackId="a" fill="#3b82f6" radius={[0, 0, 4, 4]} />
-                <Bar dataKey="Certificacion" name="Certificación CTO" stackId="a" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Instalacion" name="InstalaciÃ³n CTO" stackId="a" fill="#3b82f6" radius={[0, 0, 4, 4]} />
+                <Bar dataKey="Certificacion" name="CertificaciÃ³n CTO" stackId="a" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -190,3 +190,4 @@ export default function EstadisticasPage() {
     </div>
   );
 }
+
