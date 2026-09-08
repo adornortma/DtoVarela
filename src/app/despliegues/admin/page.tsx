@@ -253,64 +253,65 @@ export default function DesplieguesAdminPage() {
       // Keep track of codes we are planning to insert in this batch to detect duplicates in the pasted text
       const batchCodes = new Set<string>();
 
-      // Check if it's the raw multi-line system log format (e.g. containing 6560228501_5 or similar)
-      const rawCtoMatches = bulkText.match(/\b\d{10}_\d\b/g);
+      // Line-by-line processing
+      const lines = bulkText.split('\n');
       
-      if (rawCtoMatches && rawCtoMatches.length > 0) {
-        // Extract unique 10-digit base codes
-        const uniqueBases = Array.from(new Set(rawCtoMatches.map(m => m.split('_')[0])));
-        processedCount = uniqueBases.length;
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
         
-        uniqueBases.forEach(base => {
-          const codigo = `${base}_1`;
-          const codigoLower = codigo.toLowerCase();
-          
-          if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
-            duplicates.push(codigo);
-          } else {
-            batchCodes.add(codigoLower);
-            validItems.push({ codigo, direccion: '', peloCto: '' });
-          }
-        });
-      } else {
-        const lines = bulkText.split('\n');
+        processedCount++;
+        // Split by tab first, fallback to multiple spaces
+        const parts = trimmed.split('\t');
+        let rawCodigo = '';
+        let direccion = '';
+        let peloCto = '';
 
-        for (let line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          
-          processedCount++;
-          // Split by tab first, fallback to multiple spaces
-          const parts = trimmed.split('\t');
-          let codigo = '';
-          let direccion = '';
-          let peloCto = '';
-
-          if (parts.length >= 2) {
-            codigo = parts[0]?.trim() || '';
-            direccion = parts[1]?.trim() || '';
-            peloCto = parts[2]?.trim() || '';
-          } else {
-            const spaceParts = trimmed.split(/\s{2,}/);
-            codigo = spaceParts[0]?.trim() || '';
-            direccion = spaceParts[1]?.trim() || '';
-            peloCto = spaceParts[2]?.trim() || '';
-          }
-
-          if (!codigo) {
-            errors.push(`Línea ${processedCount}: Código vacío`);
-            continue;
-          }
-
-          const codigoLower = codigo.toLowerCase().trim();
-          if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
-            duplicates.push(codigo);
-            continue;
-          }
-
-          batchCodes.add(codigoLower);
-          validItems.push({ codigo, direccion, peloCto });
+        if (parts.length >= 2) {
+          rawCodigo = parts[0]?.trim() || '';
+          direccion = parts[1]?.trim() || '';
+          peloCto = parts[2]?.trim() || '';
+        } else {
+          const spaceParts = trimmed.split(/\s{2,}/);
+          rawCodigo = spaceParts[0]?.trim() || '';
+          direccion = spaceParts[1]?.trim() || '';
+          peloCto = spaceParts[2]?.trim() || '';
         }
+
+        if (!rawCodigo) {
+          errors.push(`Línea ${processedCount}: Código vacío`);
+          continue;
+        }
+
+        // Clean up appended junk like ' - Instalar CTO...' from the CTO code
+        if (rawCodigo.includes(' - ')) {
+           rawCodigo = rawCodigo.split(' - ')[0].trim();
+        } else if (rawCodigo.includes(' ')) {
+           rawCodigo = rawCodigo.split(' ')[0].trim();
+        }
+
+        // Extract base code (remove _1 or _5) to group them correctly
+        let baseCode = rawCodigo;
+        if (rawCodigo.includes('_')) {
+           baseCode = rawCodigo.split('_')[0];
+        }
+        
+        // We use baseCode_1 as the standard CTO identifier
+        const finalCodigo = `${baseCode}_1`;
+        const codigoLower = finalCodigo.toLowerCase();
+
+        // Deduplicate locally
+        if (currentCodes.has(codigoLower) || batchCodes.has(codigoLower)) {
+          // Si es un duplicado, lo omitimos silenciosamente (ej. la fila _5)
+          // a menos que realmente no haya sido reportado
+          if (!duplicates.includes(finalCodigo)) {
+             duplicates.push(finalCodigo);
+          }
+          continue;
+        }
+
+        batchCodes.add(codigoLower);
+        validItems.push({ codigo: finalCodigo, direccion, peloCto });
       }
 
       // Check globally for duplicates across the database
