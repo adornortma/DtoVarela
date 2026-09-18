@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search, Loader2 } from 'lucide-react';
 import { DesplieguesService } from '../services/supabase';
 
 export default function FinalizadosPage() {
+  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,7 +88,13 @@ export default function FinalizadosPage() {
                 </thead>
                 <tbody>
                   {filteredItems.map(item => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr 
+                      key={item.id} 
+                      onClick={() => router.push(`/despliegues/${item.id}`)}
+                      style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer', transition: 'background-color 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
                       <td style={{ padding: '16px', fontWeight: '800', color: '#0f172a' }}>{item.numero_sigest}</td>
                       <td style={{ padding: '16px', fontWeight: '600', color: '#475569' }}>{item.central}</td>
                       <td style={{ padding: '16px', fontWeight: '700' }}>{item.total_ctos}</td>
