@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, ChevronRight } from 'lucide-react';
 import { DesplieguesService } from '../services/supabase';
 
 export default function FinalizadosPage() {
@@ -84,6 +84,7 @@ export default function FinalizadosPage() {
                     <th style={{ padding: '16px' }}>INSTALADAS</th>
                     <th style={{ padding: '16px' }}>CERTIFICADAS</th>
                     <th style={{ padding: '16px' }}>AVANCE</th>
+                    <th style={{ padding: '16px', width: '40px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -105,11 +106,14 @@ export default function FinalizadosPage() {
                           100% Completado
                         </span>
                       </td>
+                      <td style={{ padding: '16px', textAlign: 'center' }}>
+                        <ChevronRight size={18} color="#94a3b8" />
+                      </td>
                     </tr>
                   ))}
                   {filteredItems.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: '#64748b', fontWeight: '600' }}>
+                      <td colSpan={7} style={{ padding: '48px', textAlign: 'center', color: '#64748b', fontWeight: '600' }}>
                         No se encontraron proyectos finalizados.
                       </td>
                     </tr>
