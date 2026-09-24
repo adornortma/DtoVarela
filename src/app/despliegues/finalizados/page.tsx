@@ -3,14 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Loader2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { DesplieguesService } from '../services/supabase';
+
+type SortField = 'numero_sigest' | 'central' | 'total_ctos' | 'instaladas' | 'certificadas';
 
 export default function FinalizadosPage() {
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     loadData();
@@ -29,10 +33,47 @@ export default function FinalizadosPage() {
     }
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   const filteredItems = items.filter(item => {
     const q = searchQuery.toLowerCase();
     return item.numero_sigest?.toLowerCase().includes(q) || item.central?.toLowerCase().includes(q);
   });
+
+  const sortedItems = React.useMemo(() => {
+    if (!sortField) return filteredItems;
+    return [...filteredItems].sort((a, b) => {
+      const aVal = a[sortField] ?? '';
+      const bVal = b[sortField] ?? '';
+
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      if (aVal === bVal) return 0;
+      const modifier = sortDirection === 'asc' ? 1 : -1;
+      return aVal > bVal ? modifier : -modifier;
+    });
+  }, [filteredItems, sortField, sortDirection]);
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={14} style={{ color: '#94a3b8', marginLeft: '6px', flexShrink: 0 }} />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp size={14} style={{ color: '#2563eb', marginLeft: '6px', flexShrink: 0 }} />
+    ) : (
+      <ArrowDown size={14} style={{ color: '#2563eb', marginLeft: '6px', flexShrink: 0 }} />
+    );
+  };
 
   return (
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '32px' }}>
@@ -78,17 +119,57 @@ export default function FinalizadosPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b', fontSize: '13px' }}>
-                    <th style={{ padding: '16px' }}>SIGEST</th>
-                    <th style={{ padding: '16px' }}>CENTRAL / POLÍGONO</th>
-                    <th style={{ padding: '16px' }}>CTOS</th>
-                    <th style={{ padding: '16px' }}>INSTALADAS</th>
-                    <th style={{ padding: '16px' }}>CERTIFICADAS</th>
+                    <th 
+                      onClick={() => handleSort('numero_sigest')} 
+                      style={{ padding: '16px', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span>SIGEST</span>
+                        {renderSortIcon('numero_sigest')}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSort('central')} 
+                      style={{ padding: '16px', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span>CENTRAL / POLÍGONO</span>
+                        {renderSortIcon('central')}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSort('total_ctos')} 
+                      style={{ padding: '16px', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span>CTOS</span>
+                        {renderSortIcon('total_ctos')}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSort('instaladas')} 
+                      style={{ padding: '16px', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span>INSTALADAS</span>
+                        {renderSortIcon('instaladas')}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSort('certificadas')} 
+                      style={{ padding: '16px', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span>CERTIFICADAS</span>
+                        {renderSortIcon('certificadas')}
+                      </div>
+                    </th>
                     <th style={{ padding: '16px' }}>AVANCE</th>
                     <th style={{ padding: '16px', width: '40px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.map(item => (
+                  {sortedItems.map(item => (
                     <tr 
                       key={item.id} 
                       onClick={() => router.push(`/despliegues/${item.id}`)}
@@ -111,7 +192,7 @@ export default function FinalizadosPage() {
                       </td>
                     </tr>
                   ))}
-                  {filteredItems.length === 0 && (
+                  {sortedItems.length === 0 && (
                     <tr>
                       <td colSpan={7} style={{ padding: '48px', textAlign: 'center', color: '#64748b', fontWeight: '600' }}>
                         No se encontraron proyectos finalizados.
@@ -127,3 +208,4 @@ export default function FinalizadosPage() {
     </div>
   );
 }
+
