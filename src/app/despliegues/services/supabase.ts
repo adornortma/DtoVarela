@@ -308,6 +308,105 @@ export const DesplieguesService = {
     if (histError) console.error('Error logging history for assignment:', histError);
   },
 
+  async unassignPendingActividades(usuario: string, tecnicoAsignado?: string | null): Promise<number> {
+    const estados = await this.getEstados();
+    const pendiente = estados.find(e => e.nombre.toLowerCase() === 'pendiente');
+    if (!pendiente) return 0;
+
+    let query = supabase
+      .from('actividades')
+      .select('id, tecnico_asignado')
+      .eq('estado_id', pendiente.id)
+      .not('tecnico_asignado', 'is', null);
+
+    if (tecnicoAsignado) {
+      query = query.ilike('tecnico_asignado', tecnicoAsignado.trim());
+    }
+
+    const { data: targets, error: fetchErr } = await query;
+    if (fetchErr) throw fetchErr;
+
+    if (!targets || targets.length === 0) return 0;
+
+    const ids = targets.map(t => t.id);
+
+    // Update activities in chunks to avoid URL length limits
+    const chunkSize = 200;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunkIds = ids.slice(i, i + chunkSize);
+      const { error: updateErr } = await supabase
+        .from('actividades')
+        .update({
+          tecnico_asignado: null,
+          fecha_asignacion: null,
+          updated_by: usuario,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', chunkIds);
+      if (updateErr) throw updateErr;
+    }
+
+    // Log history
+    const historyLogs = targets.map(t => ({
+      actividad_id: t.id,
+      usuario,
+      accion: 'DESASIGNACION_TECNICO',
+      estado_anterior: 'Pendiente',
+      estado_nuevo: 'Pendiente',
+      observaciones: `Desasignación masiva (Técnico anterior: ${t.tecnico_asignado})`
+    }));
+
+    for (let i = 0; i < historyLogs.length; i += 200) {
+      const chunkLogs = historyLogs.slice(i, i + 200);
+      const { error: histErr } = await supabase.from('historial_despliegues').insert(chunkLogs);
+      if (histErr) console.error('Error logging bulk unassignment history chunk:', histErr);
+    }
+
+    return ids.length;
+  },
+
+  async unassignActividadesBatch(actividadIds: string[], usuario: string): Promise<void> {
+    if (actividadIds.length === 0) return;
+
+    const { data: targets, error: fetchErr } = await supabase
+      .from('actividades')
+      .select('id, tecnico_asignado')
+      .in('id', actividadIds);
+
+    if (fetchErr) throw fetchErr;
+    if (!targets || targets.length === 0) return;
+
+    const chunkSize = 200;
+    for (let i = 0; i < actividadIds.length; i += chunkSize) {
+      const chunkIds = actividadIds.slice(i, i + chunkSize);
+      const { error: updateErr } = await supabase
+        .from('actividades')
+        .update({
+          tecnico_asignado: null,
+          fecha_asignacion: null,
+          updated_by: usuario,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', chunkIds);
+      if (updateErr) throw updateErr;
+    }
+
+    const historyLogs = targets.map(t => ({
+      actividad_id: t.id,
+      usuario,
+      accion: 'DESASIGNACION_TECNICO',
+      estado_anterior: '',
+      estado_nuevo: '',
+      observaciones: `Desasignación manual (Técnico anterior: ${t.tecnico_asignado || 'Sin asignar'})`
+    }));
+
+    for (let i = 0; i < historyLogs.length; i += 200) {
+      const chunkLogs = historyLogs.slice(i, i + 200);
+      const { error: histErr } = await supabase.from('historial_despliegues').insert(chunkLogs);
+      if (histErr) console.error('Error logging unassign batch history:', histErr);
+    }
+  },
+
   async saveActividadMateriales(
     actividadId: string,
     materiales: { material_id: string; cantidad: number; origen: string | null }[]

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DesplieguesService } from '../services/supabase';
 import { 
-  ArrowLeft, Search, User, Filter, CheckCircle, Clock, AlertTriangle, AlertCircle, X, ChevronRight, Briefcase, ClipboardList, Plus, Loader2
+  ArrowLeft, Search, User, Filter, CheckCircle, Clock, AlertTriangle, AlertCircle, X, ChevronRight, Briefcase, ClipboardList, Plus, Loader2, UserX, Trash2
 } from 'lucide-react';
 
 // Data types from getAsignadosData
@@ -176,6 +176,11 @@ export default function ResumenAsignadoPage() {
   const [bulkTechName, setBulkTechName] = useState('');
   const [savingAssign, setSavingAssign] = useState(false);
 
+  // Bulk unassignment state
+  const [unassigning, setUnassigning] = useState(false);
+  const [showUnassignConfirmModal, setShowUnassignConfirmModal] = useState(false);
+  const [unassignTargetTech, setUnassignTargetTech] = useState<string | null>(null);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -190,6 +195,27 @@ export default function ResumenAsignadoPage() {
       alert('Error cargando los datos.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const pendingAssignedCount = useMemo(() => {
+    return actividades.filter(a => a.tecnico_asignado && a.estado.toLowerCase() === 'pendiente').length;
+  }, [actividades]);
+
+  const handleBulkUnassign = async () => {
+    setUnassigning(true);
+    try {
+      const usuario = typeof window !== 'undefined' ? localStorage.getItem('usuario_nombre') || 'Sistema' : 'Sistema';
+      const count = await DesplieguesService.unassignPendingActividades(usuario, unassignTargetTech);
+      alert(`Se desasignaron ${count} actividades pendientes exitosamente.`);
+      setShowUnassignConfirmModal(false);
+      setSelectedSinAsignar([]);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      alert('Error al desasignar actividades.');
+    } finally {
+      setUnassigning(false);
     }
   };
 
@@ -297,7 +323,21 @@ export default function ResumenAsignadoPage() {
         </button>
 
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#0f172a', marginBottom: '16px' }}>{currentName}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#0f172a', margin: 0 }}>{currentName}</h2>
+            {!isSinAsignar && (
+              <button
+                onClick={() => { setUnassignTargetTech(selectedTech); setShowUnassignConfirmModal(true); }}
+                style={{
+                  backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5',
+                  padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '13px',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <UserX size={16} /> Desasignar pendientes de {selectedTech}
+              </button>
+            )}
+          </div>
           
           <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '200px' }}>
@@ -468,9 +508,24 @@ export default function ResumenAsignadoPage() {
             Estado de tareas por técnico y actividades pendientes de asignación
           </p>
         </div>
-        <Link href="/despliegues" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontWeight: '700', textDecoration: 'none' }}>
-          <ArrowLeft size={16} /> Volver a Despliegues
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {pendingAssignedCount > 0 && (
+            <button
+              onClick={() => { setUnassignTargetTech(null); setShowUnassignConfirmModal(true); }}
+              style={{
+                backgroundColor: '#ef4444', color: 'white', padding: '10px 18px',
+                borderRadius: '10px', fontWeight: '800', fontSize: '13px', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.25)'
+              }}
+            >
+              <UserX size={18} /> Desasignación Masiva ({pendingAssignedCount} pendientes)
+            </button>
+          )}
+          <Link href="/despliegues" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontWeight: '700', textDecoration: 'none' }}>
+            <ArrowLeft size={16} /> Volver a Despliegues
+          </Link>
+        </div>
       </header>
 
       {loading ? (
@@ -577,6 +632,51 @@ export default function ResumenAsignadoPage() {
             })}
           </div>
         </>
+      )}
+
+      {/* Bulk Unassign Confirmation Modal */}
+      {showUnassignConfirmModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '440px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
+                <UserX size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                  {unassignTargetTech ? `Desasignar técnico ${unassignTargetTech}` : 'Desasignación Masiva'}
+                </h3>
+                <p style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', margin: 0 }}>Confirmación de desasignación</p>
+              </div>
+            </div>
+            
+            <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5', marginBottom: '20px' }}>
+              {unassignTargetTech ? (
+                <>¿Estás seguro de que deseas desasignar todas las actividades en estado <strong>Pendiente</strong> asignadas a <strong>{unassignTargetTech}</strong>?</>
+              ) : (
+                <>¿Estás seguro de que deseas desasignar <strong>todas las {pendingAssignedCount} actividades pendientes</strong> que actualmente tienen un técnico asignado?</>
+              )}
+              <br /><span style={{ fontSize: '12px', color: '#64748b', marginTop: '6px', display: 'block' }}>Las actividades completadas, en proceso u observadas no sufrirán cambios.</span>
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={handleBulkUnassign}
+                disabled={unassigning}
+                style={{ flex: 1, backgroundColor: '#ef4444', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: '800', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              >
+                {unassigning ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar Desasignación'}
+              </button>
+              <button 
+                onClick={() => setShowUnassignConfirmModal(false)}
+                disabled={unassigning}
+                style={{ flex: 1, backgroundColor: 'transparent', color: '#64748b', padding: '12px', borderRadius: '8px', fontWeight: '700', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
