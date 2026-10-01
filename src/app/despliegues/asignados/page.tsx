@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DesplieguesService } from '../services/supabase';
 import { 
-  ArrowLeft, Search, User, Filter, CheckCircle, Clock, AlertTriangle, AlertCircle, X, ChevronRight, Briefcase, ClipboardList, Plus, Loader2, UserX, Trash2
+  ArrowLeft, Search, User, Filter, CheckCircle, Clock, AlertTriangle, AlertCircle, X, ChevronRight, Briefcase, ClipboardList, Plus, Loader2, UserX, Trash2,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 // Data types from getAsignadosData
@@ -166,9 +167,32 @@ export default function ResumenAsignadoPage() {
   // Selection state
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   
-  // Detail filters
+  // Detail filters & sorting
   const [filterTipo, setFilterTipo] = useState('Todas');
   const [filterEstado, setFilterEstado] = useState('Todos');
+  type DetailSortField = 'sigest_numero' | 'cto_codigo' | 'cto_direccion' | 'tipo' | 'estado';
+  const [detailSortField, setDetailSortField] = useState<DetailSortField | null>(null);
+  const [detailSortDirection, setDetailSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleDetailSort = (field: DetailSortField) => {
+    if (detailSortField === field) {
+      setDetailSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setDetailSortField(field);
+      setDetailSortDirection('asc');
+    }
+  };
+
+  const renderDetailSortIcon = (field: DetailSortField) => {
+    if (detailSortField !== field) {
+      return <ArrowUpDown size={14} style={{ color: '#94a3b8', marginLeft: '4px', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />;
+    }
+    return detailSortDirection === 'asc' ? (
+      <ArrowUp size={14} style={{ color: '#2563eb', marginLeft: '4px', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />
+    ) : (
+      <ArrowDown size={14} style={{ color: '#2563eb', marginLeft: '4px', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />
+    );
+  };
 
   // Bulk assignment state for "Sin asignar"
   const [selectedSinAsignar, setSelectedSinAsignar] = useState<string[]>([]);
@@ -289,6 +313,15 @@ export default function ResumenAsignadoPage() {
       return true;
     });
 
+    if (detailSortField) {
+      list = [...list].sort((a, b) => {
+        const aVal = a[detailSortField] || '';
+        const bVal = b[detailSortField] || '';
+        const comp = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
+        return detailSortDirection === 'asc' ? comp : -comp;
+      });
+    }
+
     const completed = list.filter(a => a.estado.toLowerCase() === 'completado').length;
     const progress = list.length > 0 ? Math.round((completed / list.length) * 100) : 0;
 
@@ -407,11 +440,36 @@ export default function ResumenAsignadoPage() {
                       />
                     </th>
                   )}
-                  <th style={{ padding: '12px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>SIGEST</th>
-                  <th style={{ padding: '12px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>CTO</th>
-                  <th style={{ padding: '12px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>DIRECCIÓN</th>
-                  <th style={{ padding: '12px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>ACTIVIDAD</th>
-                  <th style={{ padding: '12px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>ESTADO</th>
+                  <th onClick={() => handleDetailSort('sigest_numero')} style={{ padding: '12px', fontSize: '12px', color: detailSortField === 'sigest_numero' ? '#2563eb' : '#64748b', fontWeight: '800', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>SIGEST</span>
+                      {renderDetailSortIcon('sigest_numero')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleDetailSort('cto_codigo')} style={{ padding: '12px', fontSize: '12px', color: detailSortField === 'cto_codigo' ? '#2563eb' : '#64748b', fontWeight: '800', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>CTO</span>
+                      {renderDetailSortIcon('cto_codigo')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleDetailSort('cto_direccion')} style={{ padding: '12px', fontSize: '12px', color: detailSortField === 'cto_direccion' ? '#2563eb' : '#64748b', fontWeight: '800', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>DIRECCIÓN</span>
+                      {renderDetailSortIcon('cto_direccion')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleDetailSort('tipo')} style={{ padding: '12px', fontSize: '12px', color: detailSortField === 'tipo' ? '#2563eb' : '#64748b', fontWeight: '800', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>ACTIVIDAD</span>
+                      {renderDetailSortIcon('tipo')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleDetailSort('estado')} style={{ padding: '12px', fontSize: '12px', color: detailSortField === 'estado' ? '#2563eb' : '#64748b', fontWeight: '800', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>ESTADO</span>
+                      {renderDetailSortIcon('estado')}
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody>

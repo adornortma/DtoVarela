@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Search, Database, Briefcase, Plus, Wrench, CheckCircle, 
   Clock, AlertTriangle, Eye, History, Camera, User, ClipboardList, 
-  Sparkles, Sliders, ChevronRight, X, Loader2, RefreshCw, Trash2
+  Sparkles, Sliders, ChevronRight, X, Loader2, RefreshCw, Trash2,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { DesplieguesService } from '../services/supabase';
 import { 
@@ -218,6 +219,53 @@ export default function SigestDetailPage({ params }: PageProps) {
   const [bulkAssignTechName, setBulkAssignTechName] = useState('');
   const [bulkAssignApplyInstall, setBulkAssignApplyInstall] = useState(true);
   const [bulkAssignApplyCert, setBulkAssignApplyCert] = useState(true);
+
+  // Sorting state for CTO table
+  type CtoSortField = 'codigo' | 'pelo_cto' | 'direccion';
+  const [sortField, setSortField] = useState<CtoSortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: CtoSortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedCtos = React.useMemo(() => {
+    if (!sortField) return ctos;
+    return [...ctos].sort((a, b) => {
+      let aVal = '';
+      let bVal = '';
+
+      if (sortField === 'codigo') {
+        aVal = a.codigo || '';
+        bVal = b.codigo || '';
+      } else if (sortField === 'pelo_cto') {
+        aVal = a.pelo_cto || '';
+        bVal = b.pelo_cto || '';
+      } else if (sortField === 'direccion') {
+        aVal = a.direccion || '';
+        bVal = b.direccion || '';
+      }
+
+      const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [ctos, sortField, sortDirection]);
+
+  const renderSortIcon = (field: CtoSortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={14} style={{ color: '#94a3b8', marginLeft: '6px', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp size={14} style={{ color: '#2563eb', marginLeft: '6px', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />
+    ) : (
+      <ArrowDown size={14} style={{ color: '#2563eb', marginLeft: '6px', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />
+    );
+  };
   const handleApplyBulkObservation = async (tipo: 'Instalación' | 'Certificación') => {
     if (!bulkObservation.trim()) {
       alert('Por favor escribe un motivo u observación.');
@@ -1150,16 +1198,43 @@ export default function SigestDetailPage({ params }: PageProps) {
                             style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                           />
                         </th>
-                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código CTO</th>
-                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Pelo/CTO</th>
-                        <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', minWidth: '250px' }}>Dirección</th>
+                        <th 
+                          onClick={() => handleSort('codigo')}
+                          style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: sortField === 'codigo' ? '#2563eb' : '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Código CTO"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Código CTO</span>
+                            {renderSortIcon('codigo')}
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('pelo_cto')}
+                          style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: sortField === 'pelo_cto' ? '#2563eb' : '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Pelo/CTO"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Pelo/CTO</span>
+                            {renderSortIcon('pelo_cto')}
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('direccion')}
+                          style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: sortField === 'direccion' ? '#2563eb' : '#64748b', textTransform: 'uppercase', minWidth: '250px', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Dirección"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Dirección</span>
+                            {renderSortIcon('direccion')}
+                          </div>
+                        </th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Instalación (_1)</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Certificación (_5)</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Observaciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {ctos.map(cto => {
+                      {sortedCtos.map(cto => {
                         const ctoActs = actividades.filter(a => a.cto_id === cto.id);
                         const installAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('instalar'));
                         const certAct = ctoActs.find(a => a.despliegues_tipos_actividad?.nombre.toLowerCase().includes('certificar'));
